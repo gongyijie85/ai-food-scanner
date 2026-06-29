@@ -1,0 +1,16 @@
+[server]
+# 部署时让 Streamlit Cloud 用最大上传限制
+maxUploadSize = 20
+enableXsrfProtection = false
+enableCORS = false
+
+[browser]
+# 适老化：禁止自动收集使用数据
+gatherUsageStats = false
+
+[theme]
+primaryColor = "#1976D2"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F5F5F5"
+textColor = "#212121"
+font = "sans serif"

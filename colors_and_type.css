@@ -1,0 +1,125 @@
+/* ============================================
+   AI食品配料表智能识别工具 — Brand CSS
+   适老化移动端设计系统
+   ============================================ */
+
+:root {
+  /* ── 色彩系统 ── */
+  --color-primary: #2E7D32;
+  --color-primary-light: #E8F5E9;
+  --color-primary-dark: #1B5E20;
+  --color-secondary: #FF9800;
+  --color-secondary-light: #FFF3E0;
+
+  /* 状态色 */
+  --state-success: #43A047;
+  --state-warning: #FDD835;
+  --state-error: #E53935;
+  --state-info: #1E88E5;
+
+  /* 背景色 */
+  --color-bg: #FAFAF5;
+  --color-bg-card: #FFFFFF;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* 文字色 */
+  --color-text-primary: #212121;
+  --color-text-secondary: #616161;
+  --color-text-tertiary: #9E9E9E;
+  --color-text-inverse: #FFFFFF;
+  --color-text-link: #2E7D32;
+
+  /* 边框色 */
+  --color-border: #E0E0E0;
+  --color-border-light: #F0F0F0;
+  --color-divider: #EEEEEE;
+
+  /* ── 字体系统 ── */
+  --font-family-cn: "PingFang SC", "Source Han Sans CN", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-family-num: "Roboto", "DIN Alternate", "Helvetica Neue", sans-serif;
+
+  /* 字号 */
+  --font-size-display: 48px;
+  --font-size-h1: 28px;
+  --font-size-h2: 22px;
+  --font-size-h3: 18px;
+  --font-size-body-lg: 18px;
+  --font-size-body: 16px;
+  --font-size-body-sm: 14px;
+  --font-size-caption: 12px;
+
+  /* 字重 */
+  --font-weight-bold: 700;
+  --font-weight-medium: 500;
+  --font-weight-regular: 400;
+
+  /* 行高 */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ── 间距系统 ── */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-base: 16px;
+  --spacing-lg: 20px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+  --spacing-3xl: 48px;
+
+  /* ── 圆角系统 ── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── 阴影系统 ── */
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-button: 0 4px 12px rgba(46, 125, 50, 0.3);
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  /* ── 动效 ── */
+  --transition-fast: 100ms ease-out;
+  --transition-normal: 200ms ease-out;
+  --transition-page: 300ms ease-out;
+  --transition-score: 500ms ease-out;
+
+  /* ── 布局 ── */
+  --page-padding: 20px;
+  --card-padding: 16px;
+  --card-gap: 16px;
+  --safe-area-bottom: 34px;
+  --nav-height: 44px;
+  --status-bar-height: 44px;
+  --tab-bar-height: 83px;
+  --min-touch-target: 48px;
+  --min-list-item-height: 56px;
+}
+
+/* ── 适老模式（大字） ── */
+:root[data-mode="large"] {
+  --font-size-display: 56px;
+  --font-size-h1: 32px;
+  --font-size-h2: 26px;
+  --font-size-h3: 22px;
+  --font-size-body-lg: 22px;
+  --font-size-body: 20px;
+  --font-size-body-sm: 16px;
+  --font-size-caption: 14px;
+}
+
+/* ── 超大字模式 ── */
+:root[data-mode="extra-large"] {
+  --font-size-display: 64px;
+  --font-size-h1: 36px;
+  --font-size-h2: 28px;
+  --font-size-h3: 24px;
+  --font-size-body-lg: 24px;
+  --font-size-body: 22px;
+  --font-size-body-sm: 18px;
+  --font-size-caption: 16px;
+}

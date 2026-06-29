@@ -1,0 +1,43 @@
+# Python 临时文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 虚拟环境
+venv/
+.venv/
+env/
+ENV/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Streamlit 缓存
+.streamlit/secrets.toml
+
+# API 响应缓存
+last_api_response.txt
+
+# 测试产物
+test_label.jpg
+supplement_1.jpg
+supplement_2.jpg
+supplement_3.jpg
+
+# 大文件 / 设计稿源码
+*.design
+generation-tree.json
+orchestration-summary.json
+
+# 环境变量
+.env
+.env.local
