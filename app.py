@@ -24,6 +24,10 @@ from PIL import Image
 API_URL = "https://token-plan-sgp.xiaomimimo.com/v1/chat/completions"
 MODEL_NAME = "mimo-v2.5"
 
+# Agnes-2.0-Flash 配置（A/B 对比用）
+AGNES_API_URL = "https://apihub.agnes-ai.com/v1/chat/completions"
+AGNES_MODEL_NAME = "agnes-2.0-flash"
+
 # 六大人群选项
 HEALTH_GROUPS = ["糖尿病", "高血压", "脑梗/心血管", "减脂", "过敏", "孕妇/儿童"]
 
@@ -131,13 +135,14 @@ def speak_text(text: str):
 
 # ========== 核心函数（API 调用）==========
 
-def get_api_key():
-    """从环境变量或页面输入读取 API 密钥."""
-    key = os.getenv("MIMO_API_KEY", "")
+def get_api_key(model="mimo"):
+    """从环境变量或 secrets 读取 API 密钥，按模型选不同变量名."""
+    var = "AGNES_API_KEY" if model == "agnes" else "MIMO_API_KEY"
+    key = os.getenv(var, "")
     if key:
         return key
     try:
-        return st.secrets["MIMO_API_KEY"]
+        return st.secrets[var]
     except (KeyError, FileNotFoundError):
         return ""
 
@@ -198,11 +203,16 @@ def build_system_prompt(groups):
     )
 
 
-def call_mimo_api(api_key, image_b64, system_prompt):
-    """调用 MiMo Vision API，返回模型回复文本."""
-    headers = {"api-key": api_key, "Content-Type": "application/json"}
+def call_api(api_key, image_b64, system_prompt, model="mimo"):
+    """统一调用 MiMo 或 Agnes Vision API，返回模型回复文本."""
+    if model == "agnes":
+        url, model_name = AGNES_API_URL, AGNES_MODEL_NAME
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    else:
+        url, model_name = API_URL, MODEL_NAME
+        headers = {"api-key": api_key, "Content-Type": "application/json"}
     payload = {
-        "model": MODEL_NAME,
+        "model": model_name,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": [
@@ -214,7 +224,7 @@ def call_mimo_api(api_key, image_b64, system_prompt):
         "max_tokens": 4096
     }
     try:
-        resp = requests.post(API_URL, headers=headers, json=payload, timeout=90)
+        resp = requests.post(url, headers=headers, json=payload, timeout=90)
     except requests.exceptions.Timeout:
         st.error("API 请求超时（90秒），请重试。")
         return None
@@ -471,19 +481,25 @@ def main():
     st.caption("拍照配料表，3秒读懂添加剂风险")
     st.info("📋 本工具仅翻译包装信息，不构成医疗建议。如有健康问题请咨询医生。")
 
-    # 侧边栏：健康档案 + 历史
+    # 侧边栏：模型选择 + 健康档案 + 历史
     with st.sidebar:
+        st.header("模型选择")
+        model_choice = st.radio("选择识别模型", ["MiMo (mimo-v2.5)", "Agnes (agnes-2.0-flash)"])
+        model = "agnes" if "Agnes" in model_choice else "mimo"
+        st.divider()
         st.header("健康档案")
         st.caption("选择你的健康状况，获取个性化建议")
         groups = st.multiselect("人群标签", HEALTH_GROUPS, default=["脑梗/心血管", "高血压"])
         st.divider()
         show_history()
 
-    # API 密钥
-    api_key = get_api_key()
+    # API 密钥（按模型选不同 key）
+    api_key = get_api_key(model)
     if not api_key:
-        st.warning("未检测到环境变量 MIMO_API_KEY，请在下方输入密钥")
-        api_key = st.text_input("MiMo API 密钥 (tp-xxxxx)", type="password")
+        var_name = "AGNES_API_KEY" if model == "agnes" else "MIMO_API_KEY"
+        label = "Agnes API 密钥" if model == "agnes" else "MiMo API 密钥 (tp-xxxxx)"
+        st.warning(f"未检测到环境变量 {var_name}，请在下方输入密钥")
+        api_key = st.text_input(label, type="password")
 
     # 图片上传
     uploaded = st.file_uploader("上传配料表图片", type=["jpg", "jpeg", "png"])
@@ -498,7 +514,7 @@ def main():
             with st.spinner("正在识别配料表..."):
                 img_b64 = encode_image_to_base64(uploaded)
                 sys_prompt = build_system_prompt(groups)
-                raw = call_mimo_api(api_key, img_b64, sys_prompt)
+                raw = call_api(api_key, img_b64, sys_prompt, model)
                 if raw:
                     result = parse_result(raw)
                     if result:

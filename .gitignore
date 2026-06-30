@@ -41,3 +41,7 @@ orchestration-summary.json
 # 环境变量
 .env
 .env.local
+
+# 推送脚本（含 PAT，绝不进仓库）
+push.ps1
+*.pat
