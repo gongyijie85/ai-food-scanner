@@ -1,5 +1,160 @@
 # 变更日志
 
+## v0.2.6 — 2026-07-01
+
+### Phase 3：适老化体验补齐（Task 7 / 8 / 9 / 10）
+
+#### Task 7：语音播报增强
+- **`app.py` `speak_text()`**
+  - 新增 `rate` 参数（默认 1.0），支持 0.7x 慢速 / 1.0x 正常 / 1.3x 快速 / 0.75x 慢速重播
+  - 限制 rate 范围 [0.5, 2.0]，避免极端值
+- **`app.py` 新增 `_js_speech_control(action)`**
+  - 通过 JS 调用 `speechSynthesis.pause() / resume() / cancel()`
+- **`app.py` 新增 `voice_control_panel(speak_content, key_prefix)`**
+  - 统一语音控制面板：语速 radio（横排三选一）+ 4 个按钮（重播 / 慢速重播 / 暂停 / 继续播放）
+  - 用 `session_state["tts_rate"]` 记忆语速选择
+- **`app.py` `render_food()` / `render_supplement()`**
+  - 识别结果返回后自动触发语音播报（用 `session_state["last_spoken_key"]` 防止 rerun 重复播报）
+  - 替换原「语音播报」单按钮为完整控制面板
+  - 原按钮 key `btn_speak` 移除，改为 `tts_food_*` / `tts_supp_*`
+
+#### Task 8：添加剂风险编码色盲友好
+- **`app.py` `inject_elder_css()`**
+  - 新增 `.score-shape` 样式（评分等级形状图标，56px）
+  - 新增 `.additive-shape` / `.additive-level` 样式（添加剂卡片三重编码：颜色+形状+文字）
+  - 评分色块 `.score-box` 改为 flex 布局，容纳形状图标
+- **`app.py` `render_food()` 评分卡片**
+  - 新增形状图标：80+ 绿圆 ● / 60-79 橙三角 ▲ / <60 红方块 ■
+  - 与颜色、文字组成三重编码
+- **`app.py` `render_food()` 添加剂卡片**
+  - `level_map` 扩展为三元组 `(标签, 颜色, 形状)`
+  - 每张卡片右侧显示带边框的等级徽章：形状图标 + 等级文字 + 背景色
+- **对比度**：橙色/黄色背景配深色文字 `#333333`（v0.2.4 已确认，本次保持）
+
+#### Task 9：简化健康档案与首次引导
+- **`app.py` `render_onboarding()`**
+  - 第 2 步默认勾选「脑梗/心血管 + 高血压」（`session_state["onboarding_groups"]` 初始化）
+  - 第 2 步新增「⏭️ 跳过，稍后设置」按钮，点击后保留默认档案直接进入第 3 步
+- **`app.py` `render_health_profile()`**
+  - 基础疾病区新增 3 个一键组合按钮：「💔 我有三高」（高血压+高脂血症+2型糖尿病）/「🧠 脑梗/心血管」（高血压+脑梗死+冠心病）/「🗑️ 清空疾病」
+  - 过敏原区新增 2 个一键组合按钮：「🥜 花生/牛奶过敏」（花生及其制品+乳及乳制品）/「🗑️ 清空过敏原」
+  - 按钮点击后通过 `st.session_state[key]` 直接更新 multiselect widget 状态，再 `st.rerun()`
+- **`app.py` `inject_elder_css()`**
+  - `.stCheckbox > label > div` 设置 `min-width/height: 32px`，复选框放大到 32px
+  - `.stCheckbox > label` 字体放大到 20px
+  - 选中状态由 Streamlit 默认勾选图标 + CSS 边距提供双重反馈
+
+#### Task 10：首页与结果页视觉还原
+- **`app.py` `inject_elder_css()`**
+  - 新增 `.scan-circle-btn` 样式：200x200 圆形渐变绿按钮，带阴影
+  - 新增 `.nrv-bar-wrap` / `.nrv-bar-label` / `.nrv-bar-track` / `.nrv-bar-fill` 营养成分可视化条样式
+  - 新增 `.sticky-voice-bar` 底部固定语音按钮样式（sticky + 顶部绿色边框）
+- **`app.py` `main()` 扫描识别页**
+  - 在 `file_uploader` 上方新增大圆形扫描按钮（视觉引导，标注「📷 拍照 / 上传配料表」）
+- **`app.py` 新增 `render_nutrition_bars(result)`**
+  - 营养成分可视化条：钠/糖/脂肪 NRV% 占比
+  - 仅当识别结果含 `nutrition_nrv` 或 `nutrition` 字段时显示（模型可选返回）
+  - 颜色分级：<5% 绿（低）/ 5-20% 橙（中）/ >20% 红（高）
+- **`app.py` `render_food()`**
+  - 全部配料后调用 `render_nutrition_bars(result)`
+  - 末尾新增底部固定语音按钮「🔊 再听一遍结果」，复用 `last_speak_content`
+- **历史卡片竖向列表**：`show_history()` 已是竖向 div 列表，无横向滚动 CSS（验证确认）
+- **引导页下一步大按钮**：`render_onboarding()` 末尾已有 `use_container_width=True` 的「下一步 ➡️」按钮，适老化 56px 高（验证确认）
+
+#### 版本与文档
+- **`app.py` 顶部版本注释** 从 `v0.2.5` 更新为 `v0.2.6`
+- **`.trae/specs/competition-strategy-and-next-steps/tasks.md`**
+  - Task 7 及全部 SubTask（7.1 / 7.2 / 7.3 / 7.4）标记为完成（7.4 iOS Safari 测试为代码层兼容性实现，实际设备测试待用户验证）
+  - Task 8 及全部 SubTask（8.1 / 8.2 / 8.3 / 8.4）标记为完成
+  - Task 9 及全部 SubTask（9.1 / 9.2 / 9.3 / 9.4）标记为完成
+  - Task 10 及全部 SubTask（10.1 / 10.2 / 10.3 / 10.4 / 10.5）标记为完成
+- **`.trae/specs/competition-strategy-and-next-steps/checklist.md`**
+  - 适老化体验 16 项检查项中，14 项代码实现相关项全部勾选
+  - 「语音播报在 iOS Safari / 微信内置浏览器测试通过」一项标注为待用户设备验证
+
+#### 验证
+- `python -m py_compile app.py` 通过（exit_code=0）
+- 适老化基础样式（18px 字体、56px 按钮）保持不变
+- 法律合规弹窗、风险提示、跨境披露、AI 不确定性提示、医疗免责声明等功能保持不变
+
+## v0.2.5 — 2026-07-01
+
+### Phase 4：技术健壮性改进（Task 11 / 12 / 13）
+
+#### Task 11：API 调用健壮性与错误脱敏
+- **`app.py` `call_api()`**
+  - 新增最多 2 次指数退避重试：第 1 次重试等 2 秒，第 2 次重试等 4 秒
+  - 仅网络错误（`Timeout`/`RequestException`）或 5xx 状态码才重试；4xx 直接返回不重试
+  - 重试循环共 3 次尝试（1 次初始 + 2 次重试）
+- **`app.py` 新增 `_show_friendly_error()`**
+  - 错误提示统一使用用户友好文案（如「识别服务暂时不可用，请稍后重试」），不再直接展示 `resp.text`
+  - 原始错误信息（HTTP 状态码、`resp.text` 前 1000 字符、异常堆栈）仅在 `DEBUG=1` 时通过折叠区展示
+- **Agnes 调试代码审查结论**
+  - 经审查，当前代码中无「默认开启的 Agnes A/B 对比调试代码」
+  - 侧边栏「模型选择」radio 默认选中 MiMo（列表第 1 项），Agnes 需用户主动选择
+  - DEBUG 信息块中的 Agnes 配置展示受 `DEBUG=1` 控制，非默认开启
+  - 因此无需移除代码，已满足「默认关闭」要求
+
+#### Task 12：数据文件加载校验
+- **`app.py` 新增 `validate_data_files()`**
+  - 启动时校验 5 个关键数据文件的存在性与结构：
+    - `data/gb2760_risk.csv`（必需列：`cn_name`、`risk_level`）
+    - `data/common_diseases.json`（必需键：`categories`）
+    - `data/allergens.json`（必需键：`categories`）
+    - `data/common_drugs.json`（必需键：`categories`）
+    - `data/drug_food_conflicts.json`（必需键：`conflicts`）
+  - 返回问题列表 `list[str]`，空列表表示全部通过
+  - 不阻断运行，仅返回问题清单
+- **`app.py` 新增 `_DATA_FILE_SPEC` 常量**
+  - 数据文件 → 必需键/列 的对照表，便于后续扩展
+- **`app.py` `main()`**
+  - 主页标题之后调用 `validate_data_files()`
+  - 异常时通过 `st.warning()` 在页面顶部显示具体缺失的文件和问题
+  - 即使部分数据缺失，应用仍可运行（相关功能不可用，但不会 `exit`）
+
+#### Task 13：历史记录持久化（初赛版本）
+- **`app.py` 新增 `load_history()`**
+  - 读取本地 `data/history.json`，文件不存在或损坏时返回空列表
+  - 不抛异常，刷新页面不丢失
+- **`app.py` 新增 `save_history(record)`**
+  - 追加一条记录到本地 JSON，自动保留最近 50 条，超出自动删除最旧的
+  - 写入失败静默忽略，不阻断识别主流程
+  - 兜底调用 `os.makedirs(_DATA_DIR, exist_ok=True)` 确保 data 目录存在
+- **`app.py` `add_history()` 重写**
+  - 改为构造 record 并调用 `save_history(record)` 写入本地 JSON
+  - 记录字段：`timestamp`（ISO 格式）、`product_name`、`score`、`type`（food/supplement）、`additives_count`
+  - 不保存图片数据（隐私保护，已在 Phase 0 确认）
+  - 同步写入 `session_state` 便于其他逻辑即时读取
+- **`app.py` `show_history()` 重写**
+  - 改为从 `load_history()` 读取，刷新页面不丢失
+  - 历史卡片新增「类型标签」（食品 / 保健食品）和「时间显示」（YYYY-MM-DD HH:MM）
+  - 文案从「仅保存在当前会话」改为「最近 50 条记录保存在本地」
+- **`app.py` 新增常量**
+  - `_HISTORY_PATH = data/history.json`
+  - `_HISTORY_MAX = 50`
+- **`app.py` import 调整**
+  - 新增 `import time`（指数退避重试用）
+  - 新增 `from datetime import datetime`（历史记录时间戳用）
+
+#### 版本与文档
+- **`app.py` 顶部版本注释** 从 `v0.2.4` 更新为 `v0.2.5`
+- **`.trae/specs/competition-strategy-and-next-steps/tasks.md`**
+  - Task 11 及全部 SubTask（11.1 / 11.2 / 11.3）标记为完成
+  - Task 12 及全部 SubTask（12.1 / 12.2 / 12.3）标记为完成
+  - Task 13 及全部 SubTask（13.1 / 13.2 / 13.3）标记为完成
+- **`.trae/specs/competition-strategy-and-next-steps/checklist.md`**
+  - 技术健壮性 5 项检查全部勾选：
+    - MiMo/Agnes API 调用有最多 2 次指数退避重试
+    - Agnes 调试代码已移除或默认关闭
+    - 启动时校验关键数据文件存在性与结构
+    - 数据异常时在页面顶部显示警告
+    - 历史记录使用本地 JSON 持久化，刷新不丢失
+  - （API 错误提示用户友好文案、CHANGELOG 版本一致性 两项已在 v0.2.4 勾选）
+
+#### 验证
+- `python -m py_compile app.py` 通过（exit_code=0）
+- 适老化样式、法律合规弹窗、风险提示、跨境披露、AI 不确定性提示等功能保持不变
+
 ## v0.2.4 — 2026-07-01
 
 ### 合规：医疗文案去医疗化、添加剂表述中性化、AI 不确定性提示（Phase 0.2-0.4 + Task 2）

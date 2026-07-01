@@ -1,5 +1,5 @@
 """
-AI食品配料表识别工具 - Streamlit Demo 优化版 v0.2.4
+AI食品配料表识别工具 - Streamlit Demo 优化版 v0.2.6
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案
 运行环境：Python 3.10+
@@ -13,6 +13,8 @@ import io
 import json
 import os
 import re
+import time
+from datetime import datetime
 
 import requests
 import streamlit as st
@@ -99,6 +101,61 @@ def load_gb2760_risk():
     return risk_map
 
 
+# ========== 数据文件启动校验（Phase 4 / Task 12）==========
+
+# 数据文件 → 必需键/列 的对照表（用于启动时结构校验）
+_DATA_FILE_SPEC = [
+    # (路径常量, 文件显示名, 校验类型, 必需键/列列表)
+    (_GB2760_RISK_PATH, "gb2760_risk.csv", "csv", ["cn_name", "risk_level"]),
+    (_DISEASES_PATH, "common_diseases.json", "json", ["categories"]),
+    (_ALLERGENS_PATH, "allergens.json", "json", ["categories"]),
+    (_DRUGS_PATH, "common_drugs.json", "json", ["categories"]),
+    (_CONFLICTS_PATH, "drug_food_conflicts.json", "json", ["conflicts"]),
+]
+
+
+def validate_data_files():
+    """启动时校验关键数据文件存在性与结构，返回问题列表.
+
+    校验对象：gb2760_risk.csv / common_diseases.json / allergens.json /
+    common_drugs.json / drug_food_conflicts.json
+    校验内容：文件是否存在 + 必需列/键是否存在
+    返回值：list[str]，每个元素是一条用户可读的问题描述；空列表表示全部通过。
+    注意：本函数不阻断运行，仅返回问题清单由调用方决定如何展示。
+    """
+    issues = []
+    for path, display_name, kind, required_keys in _DATA_FILE_SPEC:
+        # 1. 文件存在性
+        if not os.path.exists(path):
+            issues.append(f"缺失文件：data/{display_name}（相关功能将不可用）")
+            continue
+
+        # 2. 结构校验
+        if kind == "csv":
+            try:
+                with open(path, encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    cols = reader.fieldnames or []
+                    missing = [k for k in required_keys if k not in cols]
+                    if missing:
+                        issues.append(
+                            f"data/{display_name} 缺少必要列：{', '.join(missing)}"
+                        )
+            except Exception as e:
+                issues.append(f"data/{display_name} 读取失败：{e}")
+        elif kind == "json":
+            data = _load_json(path)
+            if not isinstance(data, dict):
+                issues.append(f"data/{display_name} 不是合法 JSON 对象")
+                continue
+            missing = [k for k in required_keys if k not in data]
+            if missing:
+                issues.append(
+                    f"data/{display_name} 缺少键：{', '.join(missing)}"
+                )
+    return issues
+
+
 # ========== 适老化样式 ==========
 
 def inject_elder_css():
@@ -129,16 +186,78 @@ def inject_elder_css():
         .score-box {
             padding: 24px; border-radius: 16px; text-align: center;
             color: #333333; margin: 12px 0;
+            display: flex; align-items: center; justify-content: center; gap: 16px;
         }
         .score-num { font-size: 56px; font-weight: bold; }
         .score-label { font-size: 22px; }
+        /* 评分等级形状图标（色盲友好：圆/三角/方块）*/
+        .score-shape {
+            font-size: 56px; line-height: 1; font-weight: bold;
+            display: inline-block; min-width: 64px;
+        }
 
-        /* 添加剂卡片 */
+        /* 添加剂卡片：色盲友好三重编码（颜色+形状+文字）*/
         .additive-row {
             display: flex; justify-content: space-between;
             align-items: center; padding: 14px 16px;
             border-radius: 10px; margin: 6px 0;
             background: #FAFAF5; font-size: 18px;
+        }
+        .additive-shape {
+            display: inline-block; width: 36px; height: 36px;
+            font-size: 28px; line-height: 36px; text-align: center;
+            margin-right: 10px; vertical-align: middle; font-weight: bold;
+        }
+        .additive-level {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 12px; border-radius: 8px; font-weight: bold;
+            color: #333333;
+        }
+
+        /* 健康档案：大复选框 32px + 绿色边框反馈 */
+        .stCheckbox {
+            padding: 8px 0;
+        }
+        .stCheckbox > label {
+            font-size: 20px !important;
+        }
+        .stCheckbox > label > div {
+            min-width: 32px !important; min-height: 32px !important;
+        }
+
+        /* 首页大圆形扫描按钮 */
+        .scan-circle-btn {
+            display: block; width: 200px; height: 200px; margin: 24px auto;
+            border-radius: 50%; background: linear-gradient(135deg, #43A047, #2E7D32);
+            color: white; font-size: 24px; font-weight: bold; text-align: center;
+            line-height: 200px; box-shadow: 0 6px 20px rgba(67,160,71,0.4);
+            cursor: pointer; border: none;
+        }
+        .scan-circle-btn:hover { transform: scale(1.05); }
+
+        /* 营养成分可视化条 */
+        .nrv-bar-wrap {
+            margin: 10px 0; padding: 8px 0;
+        }
+        .nrv-bar-label {
+            display: flex; justify-content: space-between;
+            font-size: 18px; margin-bottom: 4px; color: #333;
+        }
+        .nrv-bar-track {
+            width: 100%; height: 24px; background: #E0E0E0;
+            border-radius: 12px; overflow: hidden;
+        }
+        .nrv-bar-fill {
+            height: 100%; border-radius: 12px;
+            transition: width 0.3s;
+        }
+
+        /* 底部固定语音按钮 */
+        .sticky-voice-bar {
+            position: sticky; bottom: 0; left: 0; right: 0;
+            background: #fff; padding: 12px 16px;
+            border-top: 2px solid #43A047; z-index: 100;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
         }
         </style>
         """,
@@ -148,8 +267,15 @@ def inject_elder_css():
 
 # ========== 语音播报（浏览器原生，零依赖）==========
 
-def speak_text(text: str):
-    """用浏览器原生 SpeechSynthesis API 播报中文语音."""
+def speak_text(text: str, rate: float = 1.0):
+    """用浏览器原生 SpeechSynthesis API 播报中文语音.
+
+    参数：
+        text: 要播报的文本
+        rate: 语速，0.7 慢速 / 1.0 正常 / 1.3 快速 / 0.75 慢速重播
+    """
+    # 限制 rate 范围，避免极端值
+    rate = max(0.5, min(2.0, float(rate)))
     # 转义文本中的特殊字符，防止 JS 注入
     safe = text.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ")
     js = f"""
@@ -173,7 +299,7 @@ def speak_text(text: str):
             attempt = attempt || 0;
             var u = new SpeechSynthesisUtterance('{safe}');
             u.lang = 'zh-CN';
-            u.rate = 1.0;
+            u.rate = {rate};
             u.pitch = 1.0;
             u.volume = 1.0;
             var v = pickZhVoice();
@@ -181,7 +307,7 @@ def speak_text(text: str):
             speechSynthesis.cancel();
             speechSynthesis.speak(u);
             // 调试日志（不影响功能）
-            console.log('[speak] attempt=' + attempt + ' voice=' + (v ? v.name : 'default') + ' text=' + '{safe}'.slice(0, 30));
+            console.log('[speak] attempt=' + attempt + ' voice=' + (v ? v.name : 'default') + ' rate=' + {rate} + ' text=' + '{safe}'.slice(0, 30));
         }}
         // 第一次立刻尝试，voices 没加载完就等
         if (speechSynthesis.getVoices().length > 0) {{
@@ -198,6 +324,70 @@ def speak_text(text: str):
     </script>
     """
     st.components.v1.html(js, height=0)
+
+
+def _js_speech_control(action: str):
+    """通过 JS 控制 speechSynthesis：pause / resume / cancel.
+
+    参数：
+        action: 'pause' / 'resume' / 'cancel' 之一
+    """
+    action = action if action in ("pause", "resume", "cancel") else "cancel"
+    js = f"""
+    <script>
+    (function() {{
+        try {{ speechSynthesis.{action}(); }} catch(e) {{ console.warn('[tts {action}]', e); }}
+    }})();
+    </script>
+    """
+    st.components.v1.html(js, height=0)
+
+
+def voice_control_panel(speak_content: str, key_prefix: str = "tts"):
+    """语音播报控制面板：语速选择 + 暂停/继续/重播/慢速重播按钮.
+
+    参数：
+        speak_content: 要播报的文本
+        key_prefix: 按钮唯一 key 前缀（避免不同结果页冲突）
+    """
+    # 初始化 session_state：记忆语速
+    if "tts_rate" not in st.session_state:
+        st.session_state["tts_rate"] = 1.0
+
+    st.markdown("#### 🔊 语音播报控制")
+    # 语速选择（横排三选一）
+    rate_options = ["0.7x 慢速", "1.0x 正常", "1.3x 快速"]
+    rate_values = [0.7, 1.0, 1.3]
+    cur_idx = 1  # 默认 1.0x
+    try:
+        cur_idx = rate_values.index(st.session_state["tts_rate"])
+    except ValueError:
+        cur_idx = 1
+    chosen = st.radio(
+        "语速",
+        rate_options,
+        index=cur_idx,
+        horizontal=True,
+        key=f"{key_prefix}_rate_radio",
+        label_visibility="collapsed",
+    )
+    # 同步到 session_state
+    st.session_state["tts_rate"] = rate_values[rate_options.index(chosen)]
+
+    # 4 个控制按钮，4 列排布（适老化大按钮）
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        if st.button("▶️ 重播", key=f"{key_prefix}_replay", use_container_width=True):
+            speak_text(speak_content, rate=st.session_state["tts_rate"])
+    with c2:
+        if st.button("🐢 慢速重播", key=f"{key_prefix}_slow", use_container_width=True):
+            speak_text(speak_content, rate=0.75)
+    with c3:
+        if st.button("⏸️ 暂停", key=f"{key_prefix}_pause", use_container_width=True):
+            _js_speech_control("pause")
+    with c4:
+        if st.button("▶ 继续播放", key=f"{key_prefix}_resume", use_container_width=True):
+            _js_speech_control("resume")
 
 
 # ========== 核心函数（API 调用）==========
@@ -265,8 +455,23 @@ def build_system_prompt(groups):
     )
 
 
+def _show_friendly_error(friendly_msg, debug_detail=""):
+    """显示用户友好的错误提示；DEBUG=1 时附带原始详情折叠区（不直接展示给普通用户）."""
+    st.error(friendly_msg)
+    if os.getenv("DEBUG") == "1" and debug_detail:
+        with st.expander("调试：错误详情"):
+            st.code(debug_detail)
+
+
 def call_api(api_key, image_b64, system_prompt, model="mimo"):
-    """统一调用 MiMo 或 Agnes Vision API，返回模型回复文本."""
+    """统一调用 MiMo 或 Agnes Vision API，返回模型回复文本.
+
+    Phase 4 (v0.2.5) 健壮性增强：
+    - 最多 2 次指数退避重试（第1次等2秒，第2次等4秒）
+    - 仅网络错误或 5xx 状态码才重试，4xx 直接返回不重试
+    - 错误提示使用用户友好文案，不直接展示 resp.text
+    - 原始错误信息仅在 DEBUG=1 时通过折叠区展示
+    """
     if model == "agnes":
         url, model_name = AGNES_API_URL, AGNES_MODEL_NAME
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
@@ -285,28 +490,66 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
         "temperature": 0.2,
         "max_tokens": 4096
     }
-    try:
-        resp = requests.post(url, headers=headers, json=payload, timeout=90)
-    except requests.exceptions.Timeout:
-        st.error("API 请求超时（90秒），请重试。")
+
+    # 指数退避重试：1 次初始 + 最多 2 次重试 = 共 3 次
+    max_attempts = 3
+    for attempt in range(1, max_attempts + 1):
+        # ===== 发起请求 =====
+        try:
+            resp = requests.post(url, headers=headers, json=payload, timeout=90)
+        except requests.exceptions.Timeout:
+            # 超时属于网络错误，可重试
+            if attempt < max_attempts:
+                time.sleep(2 ** attempt)  # attempt=1→2秒，attempt=2→4秒
+                continue
+            _show_friendly_error(
+                "识别服务暂时不可用，请稍后重试。",
+                f"Timeout after 90s, attempts={attempt}"
+            )
+            return None
+        except requests.exceptions.RequestException as e:
+            # 连接错误/网络异常，可重试
+            if attempt < max_attempts:
+                time.sleep(2 ** attempt)
+                continue
+            _show_friendly_error(
+                "网络连接失败，请检查网络后重试。",
+                str(e)[:1000]
+            )
+            return None
+
+        # ===== 收到 HTTP 响应 =====
+        if resp.status_code == 200:
+            try:
+                return resp.json()["choices"][0]["message"]["content"]
+            except (KeyError, IndexError, json.JSONDecodeError) as e:
+                # 响应内容解析失败：不重试（重试也不会变好）
+                _show_friendly_error(
+                    "识别结果解析失败，请重试。",
+                    f"Parse error: {e}\n{resp.text[:1000]}"
+                )
+                return None
+
+        # 4xx 客户端错误：不重试（API Key 无效、请求格式错误等）
+        if 400 <= resp.status_code < 500:
+            _show_friendly_error(
+                "API 密钥无效或请求被拒绝，请检查密钥后重试。",
+                f"HTTP {resp.status_code}\n{resp.text[:1000]}"
+            )
+            return None
+
+        # 5xx 服务端错误：可重试
+        if attempt < max_attempts:
+            time.sleep(2 ** attempt)
+            continue
+        # 最后一次仍失败
+        _show_friendly_error(
+            "识别服务暂时不可用，请稍后重试。",
+            f"HTTP {resp.status_code}\n{resp.text[:1000]}"
+        )
         return None
-    except requests.exceptions.RequestException as e:
-        st.error(f"网络请求失败：{e}")
-        return None
-    if resp.status_code != 200:
-        st.error(f"API 状态码 {resp.status_code}，请检查 API Key 是否有效或已过期。")
-        if os.getenv("DEBUG") == "1":
-            with st.expander("调试：错误响应"):
-                st.code(resp.text[:1000])
-        return None
-    try:
-        return resp.json()["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, json.JSONDecodeError) as e:
-        st.error(f"解析 API 响应失败：{e}")
-        if os.getenv("DEBUG") == "1":
-            with st.expander("调试：原始响应"):
-                st.code(resp.text[:1000])
-        return None
+
+    return None
 
 
 def parse_result(raw, health_groups=None):
@@ -432,40 +675,94 @@ def check_drug_food_conflicts(ingredients_list, user_drugs):
     return conflicts
 
 
-# ========== 历史记录（session_state）==========
+# ========== 历史记录（本地 JSON 持久化，Phase 4 / Task 13）==========
+
+# 历史记录本地文件路径
+_HISTORY_PATH = os.path.join(_DATA_DIR, "history.json")
+# 最多保留最近 50 条（超出自动删除最旧的）
+_HISTORY_MAX = 50
+
+
+def load_history():
+    """读取本地历史记录 JSON，返回 list[dict].
+
+    文件不存在或损坏时返回空列表，不抛异常（初赛版本：刷新不丢失）。
+    每条记录字段：timestamp, product_name, score, type(food/supplement), additives_count。
+    """
+    try:
+        with open(_HISTORY_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, list):
+            return data
+        return []
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return []
+
+
+def save_history(record):
+    """追加一条历史记录到本地 JSON 文件，并保留最近 50 条.
+
+    record: dict，至少包含 timestamp/product_name/score/type/additives_count。
+    异常时静默忽略（写入失败不阻断识别主流程）。
+    """
+    try:
+        history = load_history()
+        history.insert(0, record)
+        history = history[:_HISTORY_MAX]  # 截断到最近 50 条
+        os.makedirs(_DATA_DIR, exist_ok=True)  # 兜底确保 data 目录存在
+        with open(_HISTORY_PATH, "w", encoding="utf-8") as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+    except OSError:
+        # 写入失败不阻断主流程
+        pass
+
 
 def add_history(result):
-    """把一次扫描结果摘要存入历史（最多5条），不保存图片."""
-    if "history" not in st.session_state:
-        st.session_state["history"] = []
-    st.session_state["history"].insert(0, {
+    """识别成功后保存一条历史记录（Phase 4 起改为本地 JSON 持久化，刷新不丢失）.
+
+    不保存图片数据（隐私保护，已在 Phase 0 确认）。
+    """
+    record = {
+        "timestamp": datetime.now().isoformat(timespec="seconds"),
         "product_name": result.get("product_name", "未知"),
         "score": result.get("score", 0),
+        "type": str(result.get("type", "food")),
         "additives_count": len(result.get("additives", [])),
-        "advice": result.get("advice", ""),
-        # Demo 中不保存用户上传图片，仅保留匿名化摘要
-        "image": None
-    })
-    # 只保留最近5条
-    st.session_state["history"] = st.session_state["history"][:5]
+    }
+    save_history(record)
+    # 同步写入 session_state，便于其他逻辑即时读取（可选）
+    if "history" not in st.session_state:
+        st.session_state["history"] = []
+    st.session_state["history"].insert(0, record)
+    st.session_state["history"] = st.session_state["history"][:_HISTORY_MAX]
 
 
 def show_history():
-    """在侧边栏展示历史记录（调用时需已在 sidebar 上下文内）."""
+    """在侧边栏展示历史记录（调用时需已在 sidebar 上下文内）.
+
+    Phase 4 起改为从本地 JSON 加载，刷新页面不丢失。
+    """
     st.header("历史记录")
-    st.caption("历史记录仅保存在当前会话，不存储图片，Demo 结束后自动清空。")
-    history = st.session_state.get("history", [])
+    st.caption(f"最近 {_HISTORY_MAX} 条记录保存在本地，不存储图片。")
+    history = load_history()
     if not history:
         st.caption("暂无记录")
         return
-    for i, item in enumerate(history):
-        score = item["score"]
+    for item in history:
+        score = item.get("score", 0)
         color = "green" if score >= 80 else ("orange" if score >= 60 else "red")
+        # 简短时间显示（YYYY-MM-DD HH:MM），适老化不显示秒
+        ts = item.get("timestamp", "")
+        time_str = ts[:16].replace("T", " ") if ts else ""
+        # 类型标签：保健食品 / 食品
+        type_tag = "保健食品" if item.get("type") == "supplement" else "食品"
         st.markdown(
             f"<div style='border-left:4px solid {color};padding:8px 12px;margin:6px 0;background:#FAFAF5;border-radius:6px;'>"
-            f"<b>{item['product_name']}</b><br>"
+            f"<b>{item.get('product_name', '未知')}</b>"
+            f"<span style='color:#888;font-size:14px;'> [{type_tag}]</span><br>"
             f"<span style='color:{color};font-size:20px;font-weight:bold;'>{score}分</span> "
-            f"<span style='color:#888;'>{item['additives_count']}种添加剂</span>"
+            f"<span style='color:#888;'>{item.get('additives_count', 0)}种添加剂</span>"
+            f"<br><span style='color:#aaa;font-size:13px;'>{time_str}</span>"
             f"</div>",
             unsafe_allow_html=True
         )
@@ -486,12 +783,20 @@ def render_food(result):
     # AI 识别不确定性提示
     st.warning("AI 识别可能存在错误，请以包装原文为准。")
 
-    # 评分大色块（橙色背景用深色文字保证对比度）
+    # 评分大色块（橙色背景用深色文字保证对比度；附形状图标色盲友好）
     text_color = "#333333" if color == "#FF9800" else "white"
+    # 形状图标：A 绿圆 ● / B 橙三角 ▲ / C 红方块 ■（色盲友好三重编码）
+    if score >= 80:
+        shape_icon = "●"
+    elif score >= 60:
+        shape_icon = "▲"
+    else:
+        shape_icon = "■"
     st.markdown(
         f"<div class='score-box' style='background:{color};color:{text_color};'>"
-        f"<div class='score-num'>{score}</div>"
-        f"<div class='score-label'>{label}</div></div>",
+        f"<div class='score-shape'>{shape_icon}</div>"
+        f"<div><div class='score-num'>{score}</div>"
+        f"<div class='score-label'>{label}</div></div></div>",
         unsafe_allow_html=True
     )
     st.caption("评分仅供参考，不构成安全判断。")
@@ -502,37 +807,45 @@ def render_food(result):
     if advice:
         st.info(f"健康建议：{advice}")
 
-    # 语音播报按钮
+    # 语音播报：自动播报 + 控制面板（语速 / 暂停 / 重播 / 慢速重播）
     speak_content = f"评分{score}分，{label}。{advice}本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生/药师/营养师。"
-    if st.button("语音播报", key="btn_speak", use_container_width=True):
-        speak_text(speak_content)
+    st.session_state["last_speak_content"] = speak_content
+    # 自动播报：用 product_name + score 作为唯一 key，避免 rerun 重复播报
+    result_key = f"food_{result.get('product_name', '')}_{score}"
+    if st.session_state.get("last_spoken_key") != result_key:
+        st.session_state["last_spoken_key"] = result_key
+        speak_text(speak_content, rate=st.session_state.get("tts_rate", 1.0))
+    voice_control_panel(speak_content, key_prefix="tts_food")
 
     st.divider()
 
-    # 添加剂清单
+    # 添加剂清单（色盲友好：颜色+形状+文字三重编码）
     st.markdown("### 食品添加剂")
     st.caption("在 GB 2760 合规使用范围内是安全的；以下为科普化展示，仅供参考。")
     additives = result.get("additives", [])
+    # level_map：等级 → (标签, 背景色, 形状图标)
     level_map = {
-        "green": ("较常见", "#43A047"),
-        "A": ("较常见", "#43A047"),
-        "yellow": ("特定人群建议关注", "#FF9800"),
-        "B": ("特定人群建议关注", "#FF9800"),
-        "red": ("建议咨询专业人士", "#E53935"),
-        "C": ("建议咨询专业人士", "#E53935"),
+        "green": ("较常见", "#43A047", "●"),
+        "A": ("较常见", "#43A047", "●"),
+        "yellow": ("特定人群建议关注", "#FF9800", "▲"),
+        "B": ("特定人群建议关注", "#FF9800", "▲"),
+        "red": ("建议咨询专业人士", "#E53935", "■"),
+        "C": ("建议咨询专业人士", "#E53935", "■"),
     }
     if additives:
         for item in additives:
             name = item.get("name", "未知")
             code = item.get("code", "")
             level = item.get("level", "")
-            lv_label, lv_color = level_map.get(level, (level, "#888"))
+            lv_label, lv_color, lv_shape = level_map.get(level, (level, "#888", "●"))
             st.markdown(
                 f"<div class='additive-row'>"
                 f"<span><b>{name}</b>{f' ({code})' if code else ''}<br>"
                 f"<small style='color:#666;'>在 GB 2760 合规使用范围内是安全的。</small></span>"
-                f"<span style='color:{lv_color};font-weight:bold;'>{lv_label}</span>"
-                f"</div>",
+                f"<span class='additive-level' style='background:{lv_color}33; border:2px solid {lv_color};'>"
+                f"<span class='additive-shape' style='color:{lv_color};'>{lv_shape}</span>"
+                f"<span style='color:{lv_color};'>{lv_label}</span>"
+                f"</span></div>",
                 unsafe_allow_html=True
             )
     else:
@@ -547,12 +860,23 @@ def render_food(result):
         st.markdown("### 全部配料")
         st.write("、".join(ingredients))
 
+    # 营养成分可视化条（Task 10.3，仅当识别结果含 NRV 数据时显示）
+    render_nutrition_bars(result)
+
     # 个性化警告：药物-食物冲突 + 过敏原匹配
     render_personal_warnings(result, ingredients)
 
     # 原始 JSON
     with st.expander("查看原始 JSON"):
         st.json(result)
+
+    # 底部固定语音按钮（Task 10.4）：复用 last_speak_content
+    last_speak = st.session_state.get("last_speak_content", "")
+    if last_speak:
+        st.markdown("<div class='sticky-voice-bar'>", unsafe_allow_html=True)
+        if st.button("🔊 再听一遍结果", key="tts_sticky_replay", use_container_width=True):
+            speak_text(last_speak, rate=st.session_state.get("tts_rate", 1.0))
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_personal_warnings(result, ingredients):
@@ -614,6 +938,50 @@ def render_personal_warnings(result, ingredients):
         st.success("✅ 您当前用药/过敏原与本食品无冲突")
 
 
+def render_nutrition_bars(result):
+    """营养成分可视化条（钠/糖/脂肪 NRV%，Task 10.3）.
+
+    仅当识别结果中包含 nutrition_nrv 字段时显示，否则跳过。
+    字段格式：{"钠": 20, "糖": 35, "脂肪": 10}（数值为 NRV 百分比）
+    """
+    nrv = result.get("nutrition_nrv") or result.get("nutrition")
+    if not nrv or not isinstance(nrv, dict):
+        return
+    # 三个关键指标：钠/糖/脂肪
+    items = []
+    for key in ("钠", "糖", "脂肪"):
+        val = nrv.get(key)
+        if isinstance(val, (int, float)) and val >= 0:
+            items.append((key, float(val)))
+    if not items:
+        return
+    st.markdown("### 📊 营养成分（NRV% 占比）")
+    st.caption("NRV% = 营养素参考值百分比，每日推荐摄入量占比。数据来自包装原文。")
+    for name, pct in items:
+        pct_clamped = max(0, min(100, pct))
+        # 颜色：<5% 绿 / 5-20% 橙 / >20% 红
+        if pct < 5:
+            bar_color = "#43A047"
+            level_text = "低"
+        elif pct <= 20:
+            bar_color = "#FF9800"
+            level_text = "中"
+        else:
+            bar_color = "#E53935"
+            level_text = "高"
+        st.markdown(
+            f"<div class='nrv-bar-wrap'>"
+            f"<div class='nrv-bar-label'>"
+            f"<span><b>{name}</b> <small style='color:#888;'>({level_text})</small></span>"
+            f"<span style='color:{bar_color};font-weight:bold;'>{pct:.0f}%</span>"
+            f"</div>"
+            f"<div class='nrv-bar-track'>"
+            f"<div class='nrv-bar-fill' style='width:{pct_clamped:.0f}%;background:{bar_color};'></div>"
+            f"</div></div>",
+            unsafe_allow_html=True
+        )
+
+
 def render_supplement(result):
     """展示保健食品结果（只翻译包装信息，不评价、不推荐，强制免责声明）."""
     # 顶部固定：红条强制免责
@@ -632,15 +1000,20 @@ def render_supplement(result):
     if summary:
         st.info(f"📦 {summary}")
 
-    # 语音播报：仅朗读事实 + 强制免责
+    # 语音播报：仅朗读事实 + 强制免责（自动播报 + 控制面板）
     speak_content = (
         f"保健食品：{result.get('product_name', '未知')}。"
         f"{summary}。"
         f"保健食品不是药物，不能代替药物治疗疾病。"
         f"如需选择，请咨询医生/药师/营养师。"
     )
-    if st.button("语音播报", key="btn_speak", use_container_width=True):
-        speak_text(speak_content)
+    st.session_state["last_speak_content"] = speak_content
+    # 自动播报：用 product_name + summary 作为唯一 key，避免 rerun 重复播报
+    result_key = f"supp_{result.get('product_name', '')}_{summary}"
+    if st.session_state.get("last_spoken_key") != result_key:
+        st.session_state["last_spoken_key"] = result_key
+        speak_text(speak_content, rate=st.session_state.get("tts_rate", 1.0))
+    voice_control_panel(speak_content, key_prefix="tts_supp")
 
     st.divider()
 
@@ -762,6 +1135,9 @@ def render_onboarding():
         st.session_state["onboarding_step"] = 1
     if "onboarded" not in st.session_state:
         st.session_state["onboarded"] = False
+    # 默认档案：脑梗/心血管 + 高血压（Task 9.3，减少首次配置成本）
+    if "onboarding_groups" not in st.session_state:
+        st.session_state["onboarding_groups"] = ["脑梗/心血管", "高血压"]
 
     step = st.session_state["onboarding_step"]
 
@@ -784,9 +1160,9 @@ def render_onboarding():
         st.markdown("✅ **拍照**食品包装，自动识别**配料表**\n\n✅ 用**红黄绿三色**告诉您添加剂风险\n\n✅ **大字体**、**语音播报**，老人也能轻松用")
 
     elif step == 2:
-        # 第 2 步：选人群
+        # 第 2 步：选人群（默认已勾选「脑梗/心血管 + 高血压」，可跳过）
         st.markdown("## 👴 第 2 步：请选择您的健康状况")
-        st.caption("我们会根据您的情况给个性化建议（可多选）")
+        st.caption("我们会根据您的情况给个性化建议（可多选；已为您预选常见选项）")
         selected = st.multiselect(
             "您有以下情况吗？（可多选）",
             HEALTH_GROUPS,
@@ -796,6 +1172,17 @@ def render_onboarding():
         st.session_state["onboarding_groups"] = selected
         if selected:
             st.info(f"已选：{'、'.join(selected)}")
+        # 一键跳过：保留默认档案，直接进入下一步
+        if st.button(
+            "⏭️ 跳过，稍后设置",
+            use_container_width=True,
+            key="ob_skip_health",
+            help="保留默认档案（脑梗/心血管 + 高血压），稍后可在健康档案页修改"
+        ):
+            if not st.session_state.get("onboarding_groups"):
+                st.session_state["onboarding_groups"] = ["脑梗/心血管", "高血压"]
+            st.session_state["onboarding_step"] = 3
+            st.rerun()
 
     elif step == 3:
         # 第 3 步：使用说明
@@ -924,7 +1311,7 @@ def render_health_profile():
             value=profile.get("age", 60), step=1
         )
 
-    # ===== 基础疾病（多分类多选）=====
+    # ===== 基础疾病（多分类多选 + 一键组合）=====
     st.markdown("### 🏥 基础疾病（可多选）")
     st.caption("数据来源：ICD-10 + 国家慢病防治指南，按系统分类")
     if diseases:
@@ -933,6 +1320,23 @@ def render_health_profile():
         for cat in diseases:
             for d in cat.get("diseases", []):
                 all_disease_options.append(d["name"])
+        # 一键组合按钮（Task 9.2）：点击后填入对应疾病组合
+        st.markdown("**一键选择常见组合：**")
+        cb1, cb2, cb3 = st.columns(3)
+        with cb1:
+            if st.button("💔 我有三高", key="combo_sangao", use_container_width=True,
+                         help="高血压 + 高脂血症 + 2型糖尿病"):
+                st.session_state["hp_diseases"] = ["高血压", "高脂血症", "2型糖尿病"]
+                st.rerun()
+        with cb2:
+            if st.button("🧠 脑梗/心血管", key="combo_naogeng", use_container_width=True,
+                         help="高血压 + 脑梗死 + 冠心病（默认档案）"):
+                st.session_state["hp_diseases"] = ["高血压", "脑梗死", "冠心病"]
+                st.rerun()
+        with cb3:
+            if st.button("🗑️ 清空疾病", key="combo_clear_dis", use_container_width=True):
+                st.session_state["hp_diseases"] = []
+                st.rerun()
         profile["diseases"] = st.multiselect(
             "您有以下疾病吗？",
             options=all_disease_options,
@@ -942,11 +1346,23 @@ def render_health_profile():
     else:
         st.warning("⚠️ 疾病库加载失败")
 
-    # ===== 过敏原（GB 7718 8 大类）=====
+    # ===== 过敏原（GB 7718 8 大类 + 一键组合）=====
     st.markdown("### ⚠️ 过敏原（GB 7718 八大类）")
     st.caption("数据来源：GB 7718-2025 食品标识（2027-03-16 实施）")
     if allergens:
         allergen_options = [a["name"] for a in allergens]
+        # 一键组合：常见过敏原
+        st.markdown("**一键选择常见过敏原：**")
+        ab1, ab2 = st.columns(2)
+        with ab1:
+            if st.button("🥜 花生/牛奶过敏", key="combo_pn_milk", use_container_width=True,
+                         help="花生及其制品 + 乳及乳制品"):
+                st.session_state["hp_allergens"] = ["花生及其制品", "乳及乳制品"]
+                st.rerun()
+        with ab2:
+            if st.button("🗑️ 清空过敏原", key="combo_clear_alg", use_container_width=True):
+                st.session_state["hp_allergens"] = []
+                st.rerun()
         selected_allergens = st.multiselect(
             "您对以下食物过敏吗？",
             options=allergen_options,
@@ -1095,6 +1511,14 @@ def main():
     )
     st.info("📋 本工具仅翻译包装信息，不构成医疗建议。如有健康问题请咨询医生。")
 
+    # Phase 4 / Task 12：数据文件启动校验，异常不阻断运行，仅在顶部警告
+    data_issues = validate_data_files()
+    if data_issues:
+        st.warning(
+            "部分数据文件异常，相关功能可能不可用：\n- " +
+            "\n- ".join(data_issues)
+        )
+
     # 侧边栏：页面菜单 + 模型选择 + 历史 + 法律文件入口
     with st.sidebar:
         st.header("📋 功能菜单")
@@ -1164,7 +1588,15 @@ def main():
         st.warning(f"未检测到环境变量 {var_name}，请在下方输入密钥")
         api_key = st.text_input(label, type="password")
 
-    # 图片上传
+    # 大圆形扫描按钮（视觉引导，Task 10.1）+ 文件上传
+    st.markdown(
+        "<div class='scan-circle-btn' role='img' aria-label='扫描按钮'>"
+        "📷 拍照 / 上传配料表"
+        "</div>"
+        "<p style='text-align:center;color:#666;font-size:16px;margin-top:-8px;'>"
+        "点击下方按钮选择图片</p>",
+        unsafe_allow_html=True
+    )
     uploaded = st.file_uploader("上传配料表图片", type=["jpg", "jpeg", "png"])
 
     if uploaded is not None:
