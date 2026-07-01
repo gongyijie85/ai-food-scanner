@@ -2098,7 +2098,16 @@ def render_health_profile_page():
 
 def main():
     """主程序入口：页面配置、CSS、法律同意、引导、页面分发."""
-    st.set_page_config(page_title="AI食品配料表识别", page_icon=":material/scan:", layout="centered")
+    st.set_page_config(
+        page_title="AI食品配料表识别",
+        page_icon=":material/scan:",
+        layout="centered",
+        menu_items={
+            "Get Help": None,
+            "Report a bug": None,
+            "About": None,
+        },
+    )
     inject_elder_css()
 
     # DEBUG 信息块：仅当环境变量 DEBUG=1 时显示，用于部署后排查 API 配置

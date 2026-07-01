@@ -1,8 +1,9 @@
 [server]
 # 部署时让 Streamlit Cloud 用最大上传限制
 maxUploadSize = 20
-enableXsrfProtection = false
-enableCORS = false
+# 安全：公开部署必须开启 XSRF 和 CORS 保护
+enableXsrfProtection = true
+enableCORS = true
 
 [browser]
 # 适老化：禁止自动收集使用数据
