@@ -34,7 +34,10 @@
 | 添加剂分类 | 自动识别 GB 2760 添加剂（含 INS 号） |
 | 三色风险标注 | 绿/黄/红 + 图标 + 文字三重编码，色盲友好 |
 | 个性化建议 | 根据用户健康档案（糖尿病/高血压/过敏等）给建议 |
+| 药物-食物冲突 | 根据健康档案用药，提示配料中的潜在冲突 |
 | 语音播报 | 老人不用看，AI 读出来（Microsoft Yaoyao 1.0x） |
+| 历史记录 | 保存最近扫描，支持详情回看 |
+| 健康档案 | 6 类慢病/过敏/用药档案，个性化风险提示 |
 
 ---
 
@@ -82,17 +85,16 @@ Yuka（8000 万用户）、薄荷健康、营养盒子、Foodvisor、MyFitnessPa
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/<你的用户名>/ai-food-scanner.git
+git clone https://github.com/gongyijie85/ai-food-scanner.git
 cd ai-food-scanner
 
 # 2. 安装依赖（推荐清华源）
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# 3. 设置 API 密钥（推荐）
-# Windows PowerShell:
-$env:MIMO_API_KEY="tp-你的密钥"
-# macOS/Linux:
-# export MIMO_API_KEY="tp-你的密钥"
+# 3. 配置 API 密钥（推荐 .env）
+cp .env.example .env
+# 编辑 .env，填入你的 MiMo Token Plan 密钥：
+# MIMO_API_KEY=tp-你的密钥
 
 # 4. 启动
 streamlit run app.py
