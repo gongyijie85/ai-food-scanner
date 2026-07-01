@@ -1,0 +1,86 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "updated": "2026-07-01",
+    "source": "ICD-10 + 国家慢病防治指南 + 老年健康宣传周 2026",
+    "note": "覆盖老年常见慢病 90%+，按系统分类"
+  },
+  "categories": [
+    {
+      "code": "CIRC",
+      "name": "心血管系统",
+      "diseases": [
+        {"id": "C01", "name": "高血压", "icd10": "I10", "common": true, "prevalence": "50%", "note": "最常见老年慢病"},
+        {"id": "C02", "name": "冠心病", "icd10": "I25", "common": true, "prevalence": "30%", "note": "冠状动脉粥样硬化"},
+        {"id": "C03", "name": "脑梗死", "icd10": "I63", "common": true, "prevalence": "15%", "note": "缺血性脑卒中"},
+        {"id": "C04", "name": "脑出血", "icd10": "I61", "common": false, "prevalence": "5%", "note": "出血性脑卒中"},
+        {"id": "C05", "name": "心房颤动", "icd10": "I48", "common": true, "prevalence": "5%", "note": "常见心律失常"},
+        {"id": "C06", "name": "心力衰竭", "icd10": "I50", "common": false, "prevalence": "8%", "note": "需严格控水钠"},
+        {"id": "C07", "name": "高脂血症", "icd10": "E78", "common": true, "prevalence": "40%", "note": "需低脂饮食"}
+      ]
+    },
+    {
+      "code": "ENDO",
+      "name": "内分泌代谢",
+      "diseases": [
+        {"id": "E01", "name": "2型糖尿病", "icd10": "E11", "common": true, "prevalence": "20%", "note": "需控糖"},
+        {"id": "E02", "name": "1型糖尿病", "icd10": "E10", "common": false, "prevalence": "1%", "note": "需胰岛素"},
+        {"id": "E03", "name": "糖尿病肾病", "icd10": "E11.2", "common": false, "prevalence": "5%", "note": "需低蛋白"},
+        {"id": "E04", "name": "痛风", "icd10": "M10", "common": true, "prevalence": "10%", "note": "需低嘌呤"},
+        {"id": "E05", "name": "甲亢", "icd10": "E05", "common": false, "prevalence": "2%", "note": "需低碘"},
+        {"id": "E06", "name": "甲减", "icd10": "E03", "common": false, "prevalence": "5%", "note": "需控碘"},
+        {"id": "E07", "name": "骨质疏松", "icd10": "M81", "common": true, "prevalence": "30%", "note": "需补钙维生素D"}
+      ]
+    },
+    {
+      "code": "DIGEST",
+      "name": "消化系统",
+      "diseases": [
+        {"id": "D01", "name": "胃溃疡", "icd10": "K25", "common": true, "prevalence": "10%", "note": "需避免刺激食物"},
+        {"id": "D02", "name": "胃食管反流", "icd10": "K21", "common": true, "prevalence": "15%", "note": "需少食多餐"},
+        {"id": "D03", "name": "慢性胃炎", "icd10": "K29", "common": true, "prevalence": "20%", "note": "需温和饮食"},
+        {"id": "D04", "name": "脂肪肝", "icd10": "K76", "common": true, "prevalence": "20%", "note": "需低脂"},
+        {"id": "D05", "name": "胆结石", "icd10": "K80", "common": false, "prevalence": "8%", "note": "需低脂"},
+        {"id": "D06", "name": "便秘", "icd10": "K59", "common": true, "prevalence": "25%", "note": "需高纤维"}
+      ]
+    },
+    {
+      "code": "KIDNEY",
+      "name": "泌尿系统",
+      "diseases": [
+        {"id": "K01", "name": "慢性肾病", "icd10": "N18", "common": true, "prevalence": "10%", "note": "需低蛋白低钠"},
+        {"id": "K02", "name": "肾结石", "icd10": "N20", "common": false, "prevalence": "5%", "note": "需控草酸"},
+        {"id": "K03", "name": "前列腺增生", "icd10": "N40", "common": true, "prevalence": "30%", "note": "老年男性常见"}
+      ]
+    },
+    {
+      "code": "RESP",
+      "name": "呼吸系统",
+      "diseases": [
+        {"id": "R01", "name": "慢性阻塞性肺病", "icd10": "J44", "common": true, "prevalence": "13%", "note": "COPD"},
+        {"id": "R02", "name": "哮喘", "icd10": "J45", "common": false, "prevalence": "3%", "note": "需避过敏原"},
+        {"id": "R03", "name": "支气管炎", "icd10": "J42", "common": true, "prevalence": "10%", "note": "需清淡饮食"}
+      ]
+    },
+    {
+      "code": "NERV",
+      "name": "神经系统",
+      "diseases": [
+        {"id": "N01", "name": "老年痴呆", "icd10": "G30", "common": true, "prevalence": "5%", "note": "阿尔茨海默病"},
+        {"id": "N02", "name": "帕金森病", "icd10": "G20", "common": false, "prevalence": "2%", "note": "需关注吞咽"},
+        {"id": "N03", "name": "脑梗后遗症", "icd10": "I69", "common": true, "prevalence": "10%", "note": "需软食"}
+      ]
+    },
+    {
+      "code": "OTHER",
+      "name": "其他",
+      "diseases": [
+        {"id": "O01", "name": "贫血", "icd10": "D64", "common": true, "prevalence": "15%", "note": "需补铁"},
+        {"id": "O02", "name": "白内障", "icd10": "H25", "common": true, "prevalence": "40%", "note": "老年常见"},
+        {"id": "O03", "name": "肿瘤", "icd10": "C80", "common": false, "prevalence": "5%", "note": "需个体化营养"},
+        {"id": "O04", "name": "孕妇/哺乳", "icd10": "Z34", "common": false, "prevalence": "—", "note": "特殊生理期"},
+        {"id": "O05", "name": "儿童", "icd10": "—", "common": false, "prevalence": "—", "note": "12 岁以下"}
+      ]
+    }
+  ]
+}

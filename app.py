@@ -8,6 +8,7 @@ AI食品配料表识别工具 - Streamlit Demo 优化版 v2
 """
 
 import base64
+import csv
 import io
 import json
 import os
@@ -28,8 +29,65 @@ MODEL_NAME = "mimo-v2.5"
 AGNES_API_URL = "https://apihub.agnes-ai.com/v1/chat/completions"
 AGNES_MODEL_NAME = "agnes-2.0-flash"
 
-# 六大人群选项
+# 六大人群选项（保留向后兼容）
 HEALTH_GROUPS = ["糖尿病", "高血压", "脑梗/心血管", "减脂", "过敏", "孕妇/儿童"]
+
+
+# ========== GB 2760 + 健康档案数据加载 ==========
+
+_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+_GB2760_RISK_PATH = os.path.join(_DATA_DIR, "gb2760_risk.csv")
+_DISEASES_PATH = os.path.join(_DATA_DIR, "common_diseases.json")
+_ALLERGENS_PATH = os.path.join(_DATA_DIR, "allergens.json")
+_DRUGS_PATH = os.path.join(_DATA_DIR, "common_drugs.json")
+_CONFLICTS_PATH = os.path.join(_DATA_DIR, "drug_food_conflicts.json")
+
+# 评分公式常量（A=绿/B=黄/C=红）
+SCORE_PENALTY = {"A": 0, "B": 8, "C": 25}
+
+# 保健品辅料白名单（不参与扣分）
+SUPPLEMENT_EXCIPIENTS = {"鱼油", "明胶", "甘油", "蜂蜡", "卵磷脂", "淀粉", "麦芽糊精", "羧甲基纤维素钠"}
+
+
+def _load_json(path):
+    """读取 JSON 文件，失败返回空 dict/list."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {} if path.endswith(("diseases.json", "allergens.json", "common_drugs.json", "drug_food_conflicts.json")) else {}
+
+
+@st.cache_resource
+def load_health_data():
+    """加载所有健康档案数据（疾病/过敏原/药物/冲突），缓存一次."""
+    return {
+        "diseases": _load_json(_DISEASES_PATH).get("categories", []),
+        "allergens": _load_json(_ALLERGENS_PATH).get("categories", []),
+        "drugs": _load_json(_DRUGS_PATH).get("categories", []),
+        "conflicts": _load_json(_CONFLICTS_PATH).get("conflicts", []),
+    }
+
+
+@st.cache_resource
+def load_gb2760_risk():
+    """加载 GB 2760 添加剂风险分级表，返回 dict[中文名] -> {level, adi, warnings, note}."""
+    risk_map = {}
+    try:
+        with open(_GB2760_RISK_PATH, encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                key = row["cn_name"].strip()
+                if key:
+                    risk_map[key] = {
+                        "level": row.get("risk_level", "B").strip(),
+                        "adi": row.get("adi_value", "").strip(),
+                        "warnings": row.get("health_warnings", "").strip(),
+                        "note": row.get("note", "").strip(),
+                    }
+    except FileNotFoundError:
+        pass
+    return risk_map
 
 
 # ========== 适老化样式 ==========
@@ -188,13 +246,8 @@ def build_system_prompt(groups):
         "- product_name: 产品名称（**必须中文**），英文产品名翻译成中文或填'该产品'，图片未显示则填'未知'\n"
         "- ingredients: 所有配料成分列表，按原文顺序\n"
         "- additives: 只含 GB 2760 具体食品添加剂。**不要**把食品用香精、食用盐、水、糖、油、面粉等基础配料列入。"
-        "每个添加剂含 name、code(INS/E号，没有留空)、level(green/yellow/red)\n"
-        "- score: 0-100 综合安全评分\n"
+        "每个添加剂含 name、code(INS/E号，没有留空)。**不要输出 level 字段，不要给 score 评分，风险等级由系统判定。**\n"
         "- advice: 针对以下人群的一句话建议：" + group_str + "\n\n"
-        "level 分级：\n"
-        "- green: 安全常见，如柠檬酸、维生素C、碳酸氢钠\n"
-        "- yellow: 需适量关注，如山梨酸钾、苯甲酸钠、焦糖色\n"
-        "- red: 建议规避，如特丁基对苯二酚(TBHQ)、部分人工合成色素\n\n"
         "## 强制规则（两类产品都适用）\n"
         "- product_name **必须中文**，英文产品名翻译成中文或填'该产品'\n"
         "- 所有引用包装的内容（health_claims/suitable_for/usage）**严格按包装原文**，不评价、不推荐、不补全\n"
@@ -224,13 +277,6 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
         "max_tokens": 4096
     }
     try:
-        # 调试：脱敏显示 key 前 4 后 4 字符
-        k = api_key or ""
-        st.warning(
-            f"调试信息：url={url} | model={model_name} | "
-            f"key_len={len(k)} | key_preview={k[:4] + '***' + k[-4:] if len(k) >= 8 else '(too short)'} | "
-            f"auth_header={list(headers.keys())[0]}"
-        )
         resp = requests.post(url, headers=headers, json=payload, timeout=90)
     except requests.exceptions.Timeout:
         st.error("API 请求超时（90秒），请重试。")
@@ -250,8 +296,8 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
         return None
 
 
-def parse_result(raw):
-    """解析模型返回的 JSON 文本."""
+def parse_result(raw, health_groups=None):
+    """解析模型返回的 JSON 文本，并对 type=food 强制按 GB 2760 库覆盖 level 和 score."""
     s = raw.strip()
     if s.startswith("```"):
         s = s.strip("`")
@@ -267,7 +313,110 @@ def parse_result(raw):
     name = str(result.get("product_name", ""))
     if name and re.fullmatch(r"[A-Za-z\s\-\.\&]+", name):
         result["product_name"] = "该产品"
+    # 仅对普通食品做客户端权威判定
+    if result.get("type") == "food":
+        additives = result.get("additives", [])
+        if isinstance(additives, list):
+            for a in additives:
+                if isinstance(a, dict) and a.get("name"):
+                    level, ins, note = normalize_additive(a["name"])
+                    a["level"] = level
+                    if ins and not a.get("code"):
+                        a["code"] = ins
+                    if note and not a.get("note"):
+                        a["note"] = note
+            result["additives"] = additives
+            result["score"] = compute_score_from_additives(
+                additives, health_groups or []
+            )
     return result
+
+
+# ========== 客户端权威判定（GB 2760 库 + 药物冲突）==========
+
+def normalize_additive(name):
+    """查 GB 2760 风险库返回 (level, ins_no, note)，未匹配默认 yellow 兜底."""
+    if not name:
+        return "yellow", "", ""
+    n = str(name).strip()
+    # 保健品辅料豁免
+    if n in SUPPLEMENT_EXCIPIENTS or any(k in n for k in ["胶囊壳", "软胶囊"]):
+        return "A", "", "保健品辅料，不扣分"
+    risk = load_gb2760_risk()
+    # 精确匹配
+    if n in risk:
+        r = risk[n]
+        return r["level"], "", r.get("note", "")
+    # 去括号、空格、INS 号后再匹配
+    n_clean = re.sub(r"[\s()（）\[\]【】]", "", n)
+    n_clean = re.sub(r"[(（][^）)]*[）)]", "", n_clean)
+    for k, v in risk.items():
+        k_clean = re.sub(r"[\s()（）\[\]【】]", "", k)
+        if k_clean == n_clean:
+            return v["level"], "", v.get("note", "")
+    # 模糊匹配（必须长度相近，避免"山梨糖醇"误匹配"山梨糖醇酐单硬脂酸酯"）
+    for k, v in risk.items():
+        if abs(len(k) - len(n)) > 2:
+            continue
+        if k in n or n in k:
+            return v["level"], "", f"模糊匹配：{k}"
+    # 未匹配：默认 B（保守策略，宁严勿宽）
+    return "B", "", "未在 GB 2760 库中，按黄色（注意）兜底"
+
+
+def compute_score_from_additives(additives, health_groups=None):
+    """按添加剂风险等级 + 特殊人群敏感性算分.
+    公式: 100 - 红×25 - 黄×8 + 特殊人群命中额外扣 4."""
+    if not additives:
+        return 100
+    score = 100
+    health_set = set(health_groups or [])
+    risk = load_gb2760_risk()
+    for a in additives:
+        if not isinstance(a, dict):
+            continue
+        name = a.get("name", "")
+        level, _, _ = normalize_additive(name)
+        score -= SCORE_PENALTY.get(level, 0)
+        # 特殊人群敏感性（如糖尿病/高血压 + 命中 warnings）
+        if name in risk:
+            warnings = risk[name].get("warnings", "")
+            if warnings and any(w in health_set for w in warnings.split("/")):
+                score -= 4
+    return max(0, min(100, score))
+
+
+def check_drug_food_conflicts(ingredients_list, user_drugs):
+    """根据用户当前用药和识别到的配料，检测药物-食物冲突.
+    user_drugs: 用户在健康档案中选择的药物列表，每项为 dict 含 id 和 name.
+    返回冲突列表: [{drug, food, severity, description, recommendation, source}]."""
+    if not user_drugs or not ingredients_list:
+        return []
+    user_drug_ids = {d.get("id") for d in user_drugs if d.get("id")}
+    if not user_drug_ids:
+        return []
+    conflicts = []
+    health_data = load_health_data()
+    for c in health_data.get("conflicts", []):
+        if c.get("drug_id") not in user_drug_ids:
+            continue
+        # 检查配料中是否包含冲突食物关键词
+        for ing in ingredients_list:
+            ing_str = str(ing)
+            for fk in c.get("food_keywords", []):
+                if fk in ing_str:
+                    conflicts.append({
+                        "drug": c.get("drug_name", ""),
+                        "food": ing_str,
+                        "matched_keyword": fk,
+                        "severity": c.get("severity", "medium"),
+                        "description": c.get("description", ""),
+                        "recommendation": c.get("recommendation", ""),
+                        "mechanism": c.get("mechanism", ""),
+                        "source": c.get("source", ""),
+                    })
+                    break  # 每个冲突只算一次
+    return conflicts
 
 
 # ========== 历史记录（session_state）==========
@@ -372,9 +521,73 @@ def render_food(result):
         st.markdown("### 全部配料")
         st.write("、".join(ingredients))
 
+    # 个性化警告：药物-食物冲突 + 过敏原匹配
+    render_personal_warnings(result, ingredients)
+
     # 原始 JSON
     with st.expander("查看原始 JSON"):
         st.json(result)
+
+
+def render_personal_warnings(result, ingredients):
+    """根据用户健康档案个性化警告（药物-食物冲突 + 过敏原匹配）."""
+    user_profile = st.session_state.get("user_profile", {})
+    user_drugs = user_profile.get("drugs", [])
+    user_allergens = user_profile.get("allergens", [])
+
+    if not user_drugs and not user_allergens:
+        return  # 没有档案数据，跳过
+
+    has_warning = False
+
+    # 1. 药物-食物冲突
+    if user_drugs:
+        conflicts = check_drug_food_conflicts(ingredients, user_drugs)
+        if conflicts:
+            has_warning = True
+            high_count = sum(1 for c in conflicts if c["severity"] == "high")
+            header = f"⚠️ 您的用药与本食品存在 {len(conflicts)} 个冲突"
+            if high_count:
+                header += f"（{high_count} 个高风险）"
+            st.error(header)
+            # 按药物分组展示
+            grouped = {}
+            for c in conflicts:
+                grouped.setdefault(c["drug"], []).append(c)
+            for drug, items in grouped.items():
+                for c in items:
+                    sev_color = {"high": "🔴", "medium": "🟠", "low": "🟡"}.get(c["severity"], "⚪")
+                    with st.expander(f"{sev_color} {drug} + {c['matched_keyword']}（{c['severity']} 风险）"):
+                        st.markdown(f"**机制**：{c['mechanism']}")
+                        st.markdown(f"**说明**：{c['description']}")
+                        st.info(f"**建议**：{c['recommendation']}")
+                        st.caption(f"来源：{c['source']}")
+
+    # 2. 过敏原匹配
+    if user_allergens:
+        health_data = load_health_data()
+        allergen_warnings = []
+        all_ingredient_text = " ".join(ingredients) + " " + " ".join(
+            a.get("name", "") for a in result.get("additives", [])
+        )
+        for allergen in user_allergens:
+            # allergen 是 dict {code, name, examples}
+            if allergen.get("name") in all_ingredient_text:
+                allergen_warnings.append(allergen)
+                continue
+            for ex in allergen.get("examples", []):
+                if ex in all_ingredient_text:
+                    allergen_warnings.append({**allergen, "matched": ex})
+                    break
+        if allergen_warnings:
+            has_warning = True
+            st.warning(f"⚠️ 检测到 {len(allergen_warnings)} 个过敏原")
+            for a in allergen_warnings:
+                matched = a.get("matched", a.get("name"))
+                st.markdown(f"- **{a.get('name')}**（匹配关键词：{matched}）")
+
+    if not has_warning and (user_drugs or user_allergens):
+        st.success("✅ 您当前用药/过敏原与本食品无冲突")
 
 
 def render_supplement(result):
@@ -585,7 +798,12 @@ def render_onboarding():
                 # 完成引导，把人群保存到 health_profile
                 if "health_profile" not in st.session_state:
                     st.session_state["health_profile"] = {}
-                st.session_state["health_profile"]["groups"] = st.session_state.get("onboarding_groups", [])
+                # 引导时用的是 6 大类 HEALH_GROUPS 简化选项，存到 diseases 列表
+                st.session_state["health_profile"]["diseases"] = st.session_state.get("onboarding_groups", [])
+                st.session_state["health_profile"].setdefault("name", "")
+                st.session_state["health_profile"].setdefault("age", 60)
+                st.session_state["health_profile"].setdefault("allergens", [])
+                st.session_state["health_profile"].setdefault("drugs", [])
                 st.session_state["onboarded"] = True
                 st.session_state["onboarding_step"] = 1
                 st.rerun()
@@ -594,68 +812,155 @@ def render_onboarding():
 # ========== 健康档案页 ==========
 
 def render_health_profile():
-    """健康档案：姓名/年龄/病史/过敏/用药 + 摘要."""
+    """健康档案：基本信息 + 基础疾病 + 过敏原 + 当前用药 + 档案摘要.
+    数据来源：data/common_diseases.json + allergens.json + common_drugs.json（GB 7718 / NMPA 权威）."""
     st.markdown("## 👤 我的健康档案")
-    st.caption("填写档案后，识别结果会按您的健康情况给个性化建议")
+    st.caption("填写档案后，识别结果会按您的健康情况给个性化建议（包括药物-食物冲突）")
 
+    # 初始化 session_state
     if "health_profile" not in st.session_state:
         st.session_state["health_profile"] = {
             "name": "",
             "age": 60,
-            "groups": [],
-            "allergies": "",
-            "medications": "",
+            "diseases": [],   # 改：原 groups → 改用结构化疾病 ID 列表
+            "allergens": [],  # 改：原 allergies 文本 → 改用结构化过敏原
+            "drugs": [],      # 改：原 medications 文本 → 改用结构化药物
+        }
+    if "user_profile" not in st.session_state:
+        # user_profile 是 render_personal_warnings 用的结构化数据
+        st.session_state["user_profile"] = {
+            "drugs": [],     # [{id, name, category}]
+            "allergens": [], # [{code, name, examples}]
         }
     profile = st.session_state["health_profile"]
+    health_data = load_health_data()
+    diseases = health_data.get("diseases", [])
+    allergens = health_data.get("allergens", [])
+    drug_categories = health_data.get("drugs", [])
 
+    # ===== 基本信息 =====
     st.markdown("### 📝 基本信息")
     col1, col2 = st.columns(2)
     with col1:
-        profile["name"] = st.text_input("称呼（可选）", value=profile.get("name", ""), placeholder="如：张奶奶")
+        profile["name"] = st.text_input(
+            "称呼（可选）",
+            value=profile.get("name", ""),
+            placeholder="如：张奶奶"
+        )
     with col2:
-        profile["age"] = st.number_input("年龄", min_value=1, max_value=120, value=profile.get("age", 60), step=1)
+        profile["age"] = st.number_input(
+            "年龄", min_value=1, max_value=120,
+            value=profile.get("age", 60), step=1
+        )
 
-    st.markdown("### 🏥 健康状况（可多选）")
-    profile["groups"] = st.multiselect(
-        "您有以下情况吗？",
-        HEALTH_GROUPS,
-        default=profile.get("groups", []),
-        key="hp_groups",
-    )
+    # ===== 基础疾病（多分类多选）=====
+    st.markdown("### 🏥 基础疾病（可多选）")
+    st.caption("数据来源：ICD-10 + 国家慢病防治指南，按系统分类")
+    if diseases:
+        # 把所有疾病拍平为 (id, name) 列表，便于 multiselect
+        all_disease_options = []
+        for cat in diseases:
+            for d in cat.get("diseases", []):
+                all_disease_options.append(d["name"])
+        profile["diseases"] = st.multiselect(
+            "您有以下疾病吗？",
+            options=all_disease_options,
+            default=profile.get("diseases", []),
+            key="hp_diseases",
+        )
+    else:
+        st.warning("⚠️ 疾病库加载失败")
 
-    st.markdown("### ⚠️ 过敏食物")
-    profile["allergies"] = st.text_input(
-        "如：花生、海鲜、鸡蛋（多个用顿号分隔）",
-        value=profile.get("allergies", ""),
-        placeholder="无则不填",
-    )
+    # ===== 过敏原（GB 7718 8 大类）=====
+    st.markdown("### ⚠️ 过敏原（GB 7718 八大类）")
+    st.caption("数据来源：GB 7718-2025 食品标识（2027-03-16 实施）")
+    if allergens:
+        allergen_options = [a["name"] for a in allergens]
+        selected_allergens = st.multiselect(
+            "您对以下食物过敏吗？",
+            options=allergen_options,
+            default=[a["name"] for a in profile.get("allergens", []) if isinstance(a, dict)],
+            key="hp_allergens",
+        )
+        # 转成结构化
+        profile["allergens"] = [
+            next((a for a in allergens if a["name"] == name), {"name": name, "examples": []})
+            for name in selected_allergens
+        ]
+    else:
+        st.warning("⚠️ 过敏原库加载失败")
 
+    # ===== 当前用药（按系统搜索式选择）=====
     st.markdown("### 💊 当前用药")
-    profile["medications"] = st.text_area(
-        "如：降压药、阿司匹林（可不填）",
-        value=profile.get("medications", ""),
-        placeholder="无则不填",
-        height=80,
-    )
+    st.caption("数据来源：NMPA 老年常用药目录（60+ 药，按系统分类）")
+    if drug_categories:
+        # 拍平为 (id, name_with_category)
+        all_drug_options = []
+        drug_id_map = {}
+        for cat in drug_categories:
+            for d in cat.get("drugs", []):
+                label = f"{d['name']}（{cat['name']}）"
+                all_drug_options.append(label)
+                drug_id_map[label] = {"id": d["id"], "name": d["name"], "category": cat["name"]}
+        selected_drug_labels = st.multiselect(
+            "您目前在吃什么药？",
+            options=all_drug_options,
+            default=[
+                f"{d['name']}（{d['category']}）"
+                for d in profile.get("drugs", []) if isinstance(d, dict) and "category" in d
+            ],
+            key="hp_drugs",
+        )
+        # 转成结构化
+        profile["drugs"] = [drug_id_map[label] for label in selected_drug_labels]
+    else:
+        st.warning("⚠️ 药物库加载失败")
+
+    # ===== 自由补充 =====
+    with st.expander("📝 自由补充（药物/过敏原）"):
+        profile["medications_free"] = st.text_area(
+            "其他用药（库外的）",
+            value=profile.get("medications_free", ""),
+            placeholder="如：自购保健品、中药等",
+            height=60,
+        )
+        profile["allergies_free"] = st.text_input(
+            "其他过敏（库外的）",
+            value=profile.get("allergies_free", ""),
+            placeholder="如：特定添加剂、特殊食物",
+        )
 
     st.divider()
     if st.button("💾 保存档案", type="primary", use_container_width=True):
+        # 同步到 user_profile（供 render_personal_warnings 使用）
+        st.session_state["user_profile"] = {
+            "drugs": profile.get("drugs", []),
+            "allergens": profile.get("allergens", []),
+        }
         st.session_state["health_profile"] = profile
-        st.success("✅ 档案已保存！识别结果会参考此档案给建议")
+        st.success("✅ 档案已保存！下次识别会自动检测药物-食物冲突")
 
     st.divider()
-    # 档案摘要
+    # ===== 档案摘要 =====
     st.markdown("### 📋 当前档案摘要")
     summary = []
     if profile.get("name"):
         summary.append(f"**称呼**：{profile['name']}")
     summary.append(f"**年龄**：{profile.get('age', 60)} 岁")
-    if profile.get("groups"):
-        summary.append(f"**健康状况**：{'、'.join(profile['groups'])}")
-    if profile.get("allergies"):
-        summary.append(f"**过敏食物**：{profile['allergies']}")
-    if profile.get("medications"):
-        summary.append(f"**当前用药**：{profile['medications']}")
+    if profile.get("diseases"):
+        summary.append(f"**基础疾病**：{'、'.join(profile['diseases'])}")
+    if profile.get("allergens"):
+        summary.append(
+            f"**过敏原**：{'、'.join(a['name'] for a in profile['allergens'] if isinstance(a, dict))}"
+        )
+    if profile.get("drugs"):
+        summary.append(
+            f"**当前用药**：{'、'.join(d['name'] for d in profile['drugs'] if isinstance(d, dict))}"
+        )
+    if profile.get("medications_free"):
+        summary.append(f"**其他用药**：{profile['medications_free']}")
+    if profile.get("allergies_free"):
+        summary.append(f"**其他过敏**：{profile['allergies_free']}")
     if len(summary) == 1:
         st.info("档案为空，请填写后保存")
     else:
@@ -710,7 +1015,7 @@ def main():
     # ===== 扫描识别页 =====
     # 从健康档案读取人群（默认空）
     profile = st.session_state.get("health_profile", {})
-    groups = profile.get("groups", [])
+    groups = profile.get("diseases", [])
     if groups:
         st.success(f"✅ 已加载健康档案：{'、'.join(groups)}（建议基于此档案生成）")
     else:
@@ -739,7 +1044,7 @@ def main():
                 sys_prompt = build_system_prompt(groups)
                 raw = call_api(api_key, img_b64, sys_prompt, model)
                 if raw:
-                    result = parse_result(raw)
+                    result = parse_result(raw, health_groups=groups)
                     if result:
                         st.session_state["last_result"] = result
                         add_history(result, uploaded.getvalue())
