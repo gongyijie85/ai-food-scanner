@@ -1,5 +1,5 @@
 """
-AI食品配料表识别工具 - Streamlit Demo 优化版 v0.2.7
+AI食品配料表识别工具 - Streamlit Demo 优化版 v0.2.9
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案
 运行环境：Python 3.10+
