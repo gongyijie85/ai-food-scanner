@@ -147,6 +147,9 @@ ai-food-scanner/
 │   ├── history.html
 │   ├── detail.html
 │   └── onboarding.html
+├── test_images/            # 真实配料表测试图片（gitignore 排除）
+│   └── README.md           # 图片来源说明
+├── download_test_images.py # 测试图片下载脚本
 └── README.md
 ```
 

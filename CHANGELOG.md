@@ -8,7 +8,9 @@
 - **内容**：
   - 统一版本号为 v0.2.9（app.py / README / CHANGELOG）；
   - README 改为优先 `.env` 配置，新增 `.env.example`；
-  - 人工收集淘宝/京东真实配料表图片到 `test_images/`，并记录来源；
+  - 人工收集淘宝/京东真实配料表图片到 `test_images/`，填充 `test_images/README.md` 来源信息；
+  - 清理非最终提交脚本：`collect_test_images.py`、`prototype_mimo.py`；
+  - 更新 `README.md` 项目结构，补充 `test_images/` 与 `download_test_images.py`；
   - 用真实电商图片完成本地业务回归测试，通过率 ≥80%；
   - 推送代码到 GitHub，验证 Streamlit Cloud 部署与公开链接可用；
   - 用最新真实运行截图更新社区 Demo 帖。

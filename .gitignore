@@ -32,6 +32,9 @@ test_label.jpg
 supplement_1.jpg
 supplement_2.jpg
 supplement_3.jpg
+test_images/*.jpg
+test_images/*.jpeg
+test_images/*.png
 
 # 大文件 / 设计稿源码
 *.design
