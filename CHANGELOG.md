@@ -1,5 +1,20 @@
 # 变更日志
 
+## v0.3.1 — 2026-07-02
+
+### 手机浏览器语音播报修复
+
+- **文件**：`app.py`
+- **问题**：
+  1. 手机浏览器（iOS Safari / Android Chrome）对语音合成有严格的自动播放限制，只有用户明确交互才能触发；
+  2. 原 `speak_text` 和 `voice_control_panel` 使用 `st.button` + Python rerun 链路，导致用户手势上下文丢失，播报被拦截；
+  3. 结果页自动播报逻辑在页面渲染时触发，非用户交互，被手机浏览器阻止。
+- **修复**：
+  1. `speak_text` 改为注入纯 HTML `<button>` + 内联 `onclick` JS，点击时直接在浏览器端调用 `speechSynthesis.speak()`，不经过 Python rerun；
+  2. `voice_control_panel` 的 4 个控制按钮（重播/慢速/暂停/继续）全部改为纯 HTML 按钮 + 内联 JS，确保移动端手势同步触发；
+  3. `render_top_nav` 的 voice 分支也改为纯 HTML 按钮；
+  4. 移除结果页自动播报逻辑，仅保存播报内容供按钮使用。
+
 ## v0.3.0 — 2026-07-02
 
 ### 语音播报功能修复

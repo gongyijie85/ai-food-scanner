@@ -1,5 +1,5 @@
 """
-AI食品配料表识别工具 - Streamlit Demo 优化版 v0.3.0
+AI食品配料表识别工具 - Streamlit Demo 优化版 v0.3.1
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案
 运行环境：Python 3.10+
@@ -207,8 +207,24 @@ def render_top_nav(title: str, show_back: bool = True, back_target: str = "home"
         elif right_action == "voice":
             last_speak = st.session_state.get("last_speak_content", "")
             if last_speak:
-                if st.button("🔊 播报", key=f"tn_voice_{title}", help="点击重新播报识别结果"):
-                    speak_text(last_speak, rate=st.session_state.get("tts_rate", 1.0))
+                rate = st.session_state.get("tts_rate", 1.0)
+                safe = last_speak.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace('"', '\\"')
+                st.markdown(
+                    f"""<button onclick="
+                        speechSynthesis.cancel();
+                        var u = new SpeechSynthesisUtterance('{safe}');
+                        u.lang = 'zh-CN'; u.rate = {rate}; u.pitch = 1.0; u.volume = 1.0;
+                        var voices = speechSynthesis.getVoices();
+                        for (var i = 0; i &lt; voices.length; i++) {{
+                            if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao') >= 0) {{ u.voice = voices[i]; break; }}
+                            if (voices[i].lang === 'zh-CN' &amp;&amp; !u.voice) u.voice = voices[i];
+                        }}
+                        speechSynthesis.speak(u);
+                    " style="font-size:20px;height:56px;padding:0 16px;border-radius:12px;
+                        border:2px solid #2E7D32;background:#E8F5E9;color:#1B5E20;
+                        font-weight:bold;cursor:pointer;">🔊 播报</button>""",
+                    unsafe_allow_html=True,
+                )
 
 
 # ========== 适老化样式 ==========
@@ -545,59 +561,40 @@ def speak_text(text: str, rate: float = 1.0):
     参数：
         text: 要播报的文本
         rate: 语速，0.7 慢速 / 1.0 正常 / 1.3 快速 / 0.75 慢速重播
+
+    注意：手机浏览器要求语音播报必须由用户手势同步触发。
+    此函数注入一个纯 HTML 按钮 + 内联 JS，点击时直接在浏览器端
+    调用 speechSynthesis.speak()，不经过 Python rerun，确保
+    用户手势上下文不丢失。
     """
-    # 限制 rate 范围，避免极端值
     rate = max(0.5, min(2.0, float(rate)))
-    # 转义文本中的特殊字符，防止 JS 注入
     safe = text.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace('"', '\\"')
+    # 用纯 HTML 按钮 + 内联 onclick，确保移动端用户手势同步触发播报
     js = f"""
-    <script>
-    (function() {{
-        function pickZhVoice() {{
-            var voices = speechSynthesis.getVoices();
-            if (!voices || voices.length === 0) return null;
-            var pref = voices.find(v => v.name && v.name.indexOf('Yaoyao') >= 0);
-            if (pref) return pref;
-            pref = voices.find(v => v.name && v.name.indexOf('Huihui') >= 0);
-            if (pref) return pref;
-            pref = voices.find(v => v.name && v.name.indexOf('Google') >= 0 && v.lang === 'zh-CN');
-            if (pref) return pref;
-            pref = voices.find(v => v.lang === 'zh-CN');
-            if (pref) return pref;
-            return voices.find(v => v.lang && v.lang.indexOf('zh') === 0);
-        }}
-        function trySpeak(attempt) {{
-            attempt = attempt || 0;
-            if (attempt > 5) return;
-            var voices = speechSynthesis.getVoices();
-            if (!voices || voices.length === 0) {{
-                setTimeout(function() {{ trySpeak(attempt + 1); }}, 300);
-                return;
-            }}
-            var u = new SpeechSynthesisUtterance('{safe}');
+    <div style="text-align:center;margin:12px 0;">
+        <button onclick="
+            var txt = '{safe}';
+            speechSynthesis.cancel();
+            var u = new SpeechSynthesisUtterance(txt);
             u.lang = 'zh-CN';
             u.rate = {rate};
             u.pitch = 1.0;
             u.volume = 1.0;
-            var v = pickZhVoice();
+            var voices = speechSynthesis.getVoices();
+            var v = null;
+            for (var i = 0; i &lt; voices.length; i++) {{
+                if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao') >= 0) {{ v = voices[i]; break; }}
+                if (!v &amp;&amp; voices[i].lang === 'zh-CN') v = voices[i];
+            }}
             if (v) u.voice = v;
-            u.onerror = function(e) {{ console.warn('[tts error]', e); }};
-            speechSynthesis.cancel();
             speechSynthesis.speak(u);
-            console.log('[speak] attempt=' + attempt + ' voice=' + (v ? v.name : 'default'));
-        }}
-        if (speechSynthesis.getVoices().length > 0) {{
-            trySpeak(0);
-        }} else {{
-            speechSynthesis.addEventListener('voiceschanged', function once() {{
-                speechSynthesis.removeEventListener('voiceschanged', once);
-                trySpeak(0);
-            }});
-            setTimeout(function() {{ trySpeak(1); }}, 500);
-            setTimeout(function() {{ trySpeak(2); }}, 1500);
-        }}
-    }})();
-    </script>
+        " style="
+            font-size:20px; height:56px; padding:0 28px;
+            border-radius:12px; border:2px solid #2E7D32;
+            background:#E8F5E9; color:#1B5E20; font-weight:bold;
+            cursor:pointer; min-width:200px;
+        ">🔊 点击播报</button>
+    </div>
     """
     st.markdown(js, unsafe_allow_html=True)
 
@@ -620,7 +617,7 @@ def _js_speech_control(action: str):
 
 
 def voice_control_panel(speak_content: str, key_prefix: str = "tts"):
-    """语音播报控制面板：语速选择 + 暂停/继续/重播/慢速重播按钮.
+    """语音播报控制面板：纯 HTML 按钮 + 内联 JS，确保移动端手势同步触发.
 
     参数：
         speak_content: 要播报的文本
@@ -630,11 +627,14 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts"):
     if "tts_rate" not in st.session_state:
         st.session_state["tts_rate"] = 1.0
 
+    rate = st.session_state["tts_rate"]
+    safe = speak_content.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace('"', '\\"')
+
+    # 语速选择（横排三选一，Streamlit radio 仍可用，不涉及手势触发）
     st.markdown("#### 🔊 语音播报控制")
-    # 语速选择（横排三选一）
     rate_options = ["0.7x 慢速", "1.0x 正常", "1.3x 快速"]
     rate_values = [0.7, 1.0, 1.3]
-    cur_idx = 1  # 默认 1.0x
+    cur_idx = 1
     try:
         cur_idx = rate_values.index(st.session_state["tts_rate"])
     except ValueError:
@@ -647,23 +647,52 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts"):
         key=f"{key_prefix}_rate_radio",
         label_visibility="collapsed",
     )
-    # 同步到 session_state
     st.session_state["tts_rate"] = rate_values[rate_options.index(chosen)]
+    # 更新 rate 为最新选择
+    rate = st.session_state["tts_rate"]
 
-    # 4 个控制按钮，4 列排布（适老化大按钮）
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        if st.button("▶️ 重播", key=f"{key_prefix}_replay", use_container_width=True):
-            speak_text(speak_content, rate=st.session_state["tts_rate"])
-    with c2:
-        if st.button("🐢 慢速重播", key=f"{key_prefix}_slow", use_container_width=True):
-            speak_text(speak_content, rate=0.75)
-    with c3:
-        if st.button("⏸️ 暂停", key=f"{key_prefix}_pause", use_container_width=True):
-            _js_speech_control("pause")
-    with c4:
-        if st.button("▶ 继续播放", key=f"{key_prefix}_resume", use_container_width=True):
-            _js_speech_control("resume")
+    # 4 个纯 HTML 按钮，内联 onclick 直接触发 speechSynthesis（不经过 Python rerun）
+    st.markdown(
+        f"""
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+            <button onclick="
+                speechSynthesis.cancel();
+                var u = new SpeechSynthesisUtterance('{safe}');
+                u.lang='zh-CN'; u.rate={rate}; u.pitch=1.0; u.volume=1.0;
+                var voices = speechSynthesis.getVoices();
+                for (var i=0; i&lt;voices.length; i++) {{
+                    if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao')>=0) {{ u.voice=voices[i]; break; }}
+                    if (voices[i].lang==='zh-CN' &amp;&amp; !u.voice) u.voice=voices[i];
+                }}
+                speechSynthesis.speak(u);
+            " style="flex:1;min-width:80px;font-size:18px;height:56px;border-radius:12px;
+                border:2px solid #2E7D32;background:#E8F5E9;color:#1B5E20;font-weight:bold;cursor:pointer;">
+                ▶️ 重播</button>
+            <button onclick="
+                speechSynthesis.cancel();
+                var u = new SpeechSynthesisUtterance('{safe}');
+                u.lang='zh-CN'; u.rate=0.75; u.pitch=1.0; u.volume=1.0;
+                var voices = speechSynthesis.getVoices();
+                for (var i=0; i&lt;voices.length; i++) {{
+                    if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao')>=0) {{ u.voice=voices[i]; break; }}
+                    if (voices[i].lang==='zh-CN' &amp;&amp; !u.voice) u.voice=voices[i];
+                }}
+                speechSynthesis.speak(u);
+            " style="flex:1;min-width:80px;font-size:18px;height:56px;border-radius:12px;
+                border:2px solid #FF9800;background:#FFF3E0;color:#E65100;font-weight:bold;cursor:pointer;">
+                🐢 慢速</button>
+            <button onclick="try{{speechSynthesis.pause();}}catch(e){{}}" style="flex:1;min-width:80px;
+                font-size:18px;height:56px;border-radius:12px;border:2px solid #9E9E9E;
+                background:#F5F5F5;color:#616161;font-weight:bold;cursor:pointer;">
+                ⏸️ 暂停</button>
+            <button onclick="try{{speechSynthesis.resume();}}catch(e){{}}" style="flex:1;min-width:80px;
+                font-size:18px;height:56px;border-radius:12px;border:2px solid #2E7D32;
+                background:#E8F5E9;color:#1B5E20;font-weight:bold;cursor:pointer;">
+                ▶ 继续</button>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 # ========== 核心函数（API 调用）==========
@@ -1157,13 +1186,9 @@ def render_food(result):
     _render_score_hero(score, product_name)
     st.caption("评分仅供参考，不构成安全判断。")
 
-    # 语音播报：自动播报 + 控制面板
+    # 语音播报：保存内容供顶部按钮使用（移除自动播报，避免手机浏览器阻止）
     speak_content = f"评分{score}分。{advice}本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生/药师/营养师。"
     st.session_state["last_speak_content"] = speak_content
-    result_key = f"result_food_{product_name}_{score}"
-    if st.session_state.get("last_spoken_key") != result_key:
-        st.session_state["last_spoken_key"] = result_key
-        speak_text(speak_content, rate=st.session_state.get("tts_rate", 1.0))
 
     # 添加剂清单卡片
     _render_additive_card(result.get("additives", []))
@@ -1326,7 +1351,7 @@ def render_supplement(result):
     # 评分英雄区（保健食品默认 100 分展示，不实际评分）
     _render_score_hero(score if score else 100, product_name)
 
-    # 语音播报
+    # 语音播报：保存内容供顶部按钮使用（移除自动播报，避免手机浏览器阻止）
     speak_content = (
         f"保健食品：{product_name}。"
         f"{summary}。"
@@ -1334,10 +1359,6 @@ def render_supplement(result):
         f"如需选择，请咨询医生/药师/营养师。"
     )
     st.session_state["last_speak_content"] = speak_content
-    result_key = f"result_supp_{product_name}_{summary}"
-    if st.session_state.get("last_spoken_key") != result_key:
-        st.session_state["last_spoken_key"] = result_key
-        speak_text(speak_content, rate=st.session_state.get("tts_rate", 1.0))
 
     # 产品摘要卡片
     if summary:
