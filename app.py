@@ -1179,9 +1179,10 @@ def render_food(result):
         with st.expander("查看全部配料"):
             st.write("、".join(ingredients))
 
-    # 原始 JSON
-    with st.expander("查看原始 JSON"):
-        st.json(result)
+    # 原始 JSON（仅 DEBUG=1 时展示，Demo 中隐藏）
+    if os.getenv("DEBUG") == "1":
+        with st.expander("查看原始 JSON（调试用）"):
+            st.json(result)
 
     # 底部固定语音按钮
     last_speak = st.session_state.get("last_speak_content", "")
@@ -1396,9 +1397,10 @@ def render_supplement(result):
             unsafe_allow_html=True
         )
 
-    # 原始 JSON
-    with st.expander("查看原始 JSON"):
-        st.json(result)
+    # 原始 JSON（仅 DEBUG=1 时展示，Demo 中隐藏）
+    if os.getenv("DEBUG") == "1":
+        with st.expander("查看原始 JSON（调试用）"):
+            st.json(result)
 
     # 底部固定语音按钮
     last_speak = st.session_state.get("last_speak_content", "")
