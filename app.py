@@ -1,5 +1,5 @@
 """
-AI食品配料表识别工具 - Streamlit Demo 优化版 v0.2.9
+AI食品配料表识别工具 - Streamlit Demo 优化版 v0.3.0
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案
 运行环境：Python 3.10+
@@ -190,7 +190,7 @@ def switch_page(page: str, **kwargs):
 def render_top_nav(title: str, show_back: bool = True, back_target: str = "home", right_action: str | None = None):
     """渲染顶部导航栏（标题 + 返回按钮 + 右侧可选入口）.
 
-    right_action 可选值："profile"（心形入口）、"voice"、"compare"、None。
+    right_action 可选值："profile"（心形入口）、"voice"（语音重播）、"compare"、None。
     """
     cols = st.columns([1, 4, 1])
     with cols[0]:
@@ -204,6 +204,11 @@ def render_top_nav(title: str, show_back: bool = True, back_target: str = "home"
         if right_action == "profile":
             if st.button("档案", key=f"tn_profile_{title}", help="健康档案"):
                 switch_page("profile")
+        elif right_action == "voice":
+            last_speak = st.session_state.get("last_speak_content", "")
+            if last_speak:
+                if st.button("🔊 播报", key=f"tn_voice_{title}", help="点击重新播报识别结果"):
+                    speak_text(last_speak, rate=st.session_state.get("tts_rate", 1.0))
 
 
 # ========== 适老化样式 ==========
@@ -544,26 +549,31 @@ def speak_text(text: str, rate: float = 1.0):
     # 限制 rate 范围，避免极端值
     rate = max(0.5, min(2.0, float(rate)))
     # 转义文本中的特殊字符，防止 JS 注入
-    safe = text.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ")
+    safe = text.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace('"', '\\"')
     js = f"""
     <script>
     (function() {{
         function pickZhVoice() {{
             var voices = speechSynthesis.getVoices();
             if (!voices || voices.length === 0) return null;
-            // 优先级：Microsoft Yaoyao（年轻女声）→ Huihui → Google 普通话 → 任意 zh-CN → 任意 zh
-            var pref = voices.find(v => v.name.indexOf('Yaoyao') >= 0);
+            var pref = voices.find(v => v.name && v.name.indexOf('Yaoyao') >= 0);
             if (pref) return pref;
-            pref = voices.find(v => v.name.indexOf('Huihui') >= 0);
+            pref = voices.find(v => v.name && v.name.indexOf('Huihui') >= 0);
             if (pref) return pref;
-            pref = voices.find(v => v.name.indexOf('Google') >= 0 && v.lang === 'zh-CN');
+            pref = voices.find(v => v.name && v.name.indexOf('Google') >= 0 && v.lang === 'zh-CN');
             if (pref) return pref;
             pref = voices.find(v => v.lang === 'zh-CN');
             if (pref) return pref;
-            return voices.find(v => v.lang.indexOf('zh') === 0);
+            return voices.find(v => v.lang && v.lang.indexOf('zh') === 0);
         }}
         function trySpeak(attempt) {{
             attempt = attempt || 0;
+            if (attempt > 5) return;
+            var voices = speechSynthesis.getVoices();
+            if (!voices || voices.length === 0) {{
+                setTimeout(function() {{ trySpeak(attempt + 1); }}, 300);
+                return;
+            }}
             var u = new SpeechSynthesisUtterance('{safe}');
             u.lang = 'zh-CN';
             u.rate = {rate};
@@ -571,12 +581,11 @@ def speak_text(text: str, rate: float = 1.0):
             u.volume = 1.0;
             var v = pickZhVoice();
             if (v) u.voice = v;
+            u.onerror = function(e) {{ console.warn('[tts error]', e); }};
             speechSynthesis.cancel();
             speechSynthesis.speak(u);
-            // 调试日志（不影响功能）
-            console.log('[speak] attempt=' + attempt + ' voice=' + (v ? v.name : 'default') + ' rate=' + {rate} + ' text=' + '{safe}'.slice(0, 30));
+            console.log('[speak] attempt=' + attempt + ' voice=' + (v ? v.name : 'default'));
         }}
-        // 第一次立刻尝试，voices 没加载完就等
         if (speechSynthesis.getVoices().length > 0) {{
             trySpeak(0);
         }} else {{
@@ -584,13 +593,13 @@ def speak_text(text: str, rate: float = 1.0):
                 speechSynthesis.removeEventListener('voiceschanged', once);
                 trySpeak(0);
             }});
-            // 兜底：500ms 后强制尝试一次
             setTimeout(function() {{ trySpeak(1); }}, 500);
+            setTimeout(function() {{ trySpeak(2); }}, 1500);
         }}
     }})();
     </script>
     """
-    st.components.v1.html(js, height=0)
+    st.markdown(js, unsafe_allow_html=True)
 
 
 def _js_speech_control(action: str):
@@ -607,7 +616,7 @@ def _js_speech_control(action: str):
     }})();
     </script>
     """
-    st.components.v1.html(js, height=0)
+    st.markdown(js, unsafe_allow_html=True)
 
 
 def voice_control_panel(speak_content: str, key_prefix: str = "tts"):

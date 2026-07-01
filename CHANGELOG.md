@@ -1,5 +1,21 @@
 # 变更日志
 
+## v0.3.0 — 2026-07-02
+
+### 语音播报功能修复
+
+- **文件**：`app.py`
+- **问题**：
+  1. `render_top_nav` 传了 `right_action="voice"` 但未实现，结果页/详情页右上角语音按钮缺失；
+  2. `speak_text` 和 `_js_speech_control` 使用 `st.components.v1.html(js, height=0)`，iframe height=0 在部分浏览器不执行 JS；
+  3. voices 异步加载时只有一次 500ms 兜底，不够健壮。
+- **修复**：
+  1. `render_top_nav` 补充 `right_action="voice"` 分支，渲染「🔊 播报」按钮；
+  2. 将 `st.components.v1.html(js, height=0)` 全部替换为 `st.markdown(js, unsafe_allow_html=True)`，在主页面执行 JS；
+  3. `speak_text` 增加 voices 空时递归重试（最多 5 次，每次间隔 300ms）+ 500ms/1500ms 双兜底；
+  4. 增加 `u.onerror` 回调，便于排查播报失败原因；
+  5. voice 属性增加 null 安全检查（`v.name &&`）。
+
 ## v0.2.9 — 2026-07-01
 
 ### 赛前最终打磨与提交
