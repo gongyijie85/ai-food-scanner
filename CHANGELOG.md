@@ -1,5 +1,39 @@
 # 变更日志
 
+## v0.2.9 — 2026-07-01
+
+### 赛前最终打磨与提交
+
+- **文件**：`app.py`、`README.md`、`.env.example`、`CHANGELOG.md`、Demo 帖 ID 51391
+- **内容**：
+  - 统一版本号为 v0.2.9（app.py / README / CHANGELOG）；
+  - README 改为优先 `.env` 配置，新增 `.env.example`；
+  - 人工收集淘宝/京东真实配料表图片到 `test_images/`，并记录来源；
+  - 用真实电商图片完成本地业务回归测试，通过率 ≥80%；
+  - 推送代码到 GitHub，验证 Streamlit Cloud 部署与公开链接可用；
+  - 用最新真实运行截图更新社区 Demo 帖。
+- **待用户操作**：若 Streamlit Cloud 返回 401，需更新 Secrets 中的 `MIMO_API_KEY`。
+
+## v0.2.7 — 2026-07-01
+
+### UI 统一优化与本地回归测试
+
+- `app.py`
+  - 新增 `session_state["page"]` 路由，`switch_page()`、`render_top_nav()` 工具函数。
+  - 新增 `render_home_page()`、`render_scan_page()`、`render_result_page()`、`render_history_page()`、`render_detail_page()`、`render_health_profile_page()` 页面函数。
+  - 重写 `main()` 为页面分发器；侧边栏改为弱化导航。
+  - `inject_elder_css()` 统一注入设计稿变量和页面组件 CSS。
+  - `render_food()` / `render_supplement()` 按设计稿卡片化。
+  - 新增 `_get_level_info()`、`_render_score_hero()`、`_clip_path()`、`_render_additive_card()` 等 helper。
+  - 新增 `data/history_full.json` 读写（`load_history_full()` / `save_history_full()`），最多保存 20 条完整识别快照。
+  - `add_history()` 识别成功后同步保存完整快照。
+- 新增页面
+  - 历史记录页：搜索、筛选、竖向列表。
+  - 产品详情页：评分英雄区、扫描信息、添加剂/营养/建议卡片。
+- 回归测试
+  - 本地 `streamlit run app.py` 跑通上传 → 识别 → 语音播报 → 保存历史 → 详情页流程。
+  - 修复按钮失效、样式错位、session_state 丢失等回归问题。
+
 ## v0.2.6 — 2026-07-01
 
 ### Phase 3：适老化体验补齐（Task 7 / 8 / 9 / 10）
