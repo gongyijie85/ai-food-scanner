@@ -470,6 +470,192 @@ def show_result(result):
         render_food(result)
 
 
+# ========== 首次引导页（4 步）==========
+
+def render_onboarding():
+    """首次访问的 4 步引导：欢迎 → 选人群 → 使用说明 → 开始."""
+    if "onboarding_step" not in st.session_state:
+        st.session_state["onboarding_step"] = 1
+    if "onboarded" not in st.session_state:
+        st.session_state["onboarded"] = False
+
+    step = st.session_state["onboarding_step"]
+
+    # 顶部进度条
+    progress = (step - 1) / 4
+    st.progress(progress, text=f"第 {step} 步 / 共 4 步")
+
+    if step == 1:
+        # 第 1 步：欢迎
+        st.markdown(
+            "<div style='text-align:center;padding:32px 16px;'>"
+            "<div style='font-size:96px;'>🥫</div>"
+            "<h1 style='font-size:36px;margin:16px 0 8px;'>欢迎使用</h1>"
+            "<h2 style='font-size:28px;color:#43A047;margin:0;'>AI 食品配料表识别工具</h2>"
+            "<p style='font-size:20px;color:#666;margin-top:16px;'>拍照配料表，3 秒读懂添加剂风险</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown("### 🎯 这个工具能做什么？")
+        st.markdown("✅ **拍照**食品包装，自动识别**配料表**\n\n✅ 用**红黄绿三色**告诉您添加剂风险\n\n✅ **大字体**、**语音播报**，老人也能轻松用")
+
+    elif step == 2:
+        # 第 2 步：选人群
+        st.markdown("## 👴 第 2 步：请选择您的健康状况")
+        st.caption("我们会根据您的情况给个性化建议（可多选）")
+        selected = st.multiselect(
+            "您有以下情况吗？（可多选）",
+            HEALTH_GROUPS,
+            default=st.session_state.get("onboarding_groups", []),
+            key="onboarding_groups_widget",
+        )
+        st.session_state["onboarding_groups"] = selected
+        if selected:
+            st.info(f"已选：{'、'.join(selected)}")
+
+    elif step == 3:
+        # 第 3 步：使用说明
+        st.markdown("## 📖 第 3 步：使用说明（3 步搞定）")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown(
+                "<div style='text-align:center;padding:20px;background:#E3F2FD;"
+                "border-radius:12px;height:200px;'>"
+                "<div style='font-size:64px;'>📷</div>"
+                "<h3>1. 拍照</h3>"
+                "<p style='font-size:18px;'>拍配料表</p>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+        with col2:
+            st.markdown(
+                "<div style='text-align:center;padding:20px;background:#FFF3E0;"
+                "border-radius:12px;height:200px;'>"
+                "<div style='font-size:64px;'>🤖</div>"
+                "<h3>2. 识别</h3>"
+                "<p style='font-size:18px;'>AI 自动分析</p>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+        with col3:
+            st.markdown(
+                "<div style='text-align:center;padding:20px;background:#E8F5E9;"
+                "border-radius:12px;height:200px;'>"
+                "<div style='font-size:64px;'>📊</div>"
+                "<h3>3. 看结果</h3>"
+                "<p style='font-size:18px;'>红黄绿三色评分</p>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+
+    elif step == 4:
+        # 第 4 步：开始
+        st.markdown(
+            "<div style='text-align:center;padding:48px 16px;'>"
+            "<div style='font-size:96px;'>🎉</div>"
+            "<h1 style='font-size:36px;color:#43A047;'>准备好了！</h1>"
+            "<p style='font-size:20px;color:#666;margin:16px 0;'>现在可以开始识别配料表了</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+    st.divider()
+
+    # 导航按钮
+    col_back, col_next = st.columns(2)
+    with col_back:
+        if step > 1:
+            if st.button("⬅️ 上一步", use_container_width=True, key=f"ob_back_{step}"):
+                st.session_state["onboarding_step"] = step - 1
+                st.rerun()
+    with col_next:
+        if step < 4:
+            if st.button("下一步 ➡️", type="primary", use_container_width=True, key=f"ob_next_{step}"):
+                st.session_state["onboarding_step"] = step + 1
+                st.rerun()
+        else:
+            if st.button("🚀 开始使用", type="primary", use_container_width=True, key="ob_start"):
+                # 完成引导，把人群保存到 health_profile
+                if "health_profile" not in st.session_state:
+                    st.session_state["health_profile"] = {}
+                st.session_state["health_profile"]["groups"] = st.session_state.get("onboarding_groups", [])
+                st.session_state["onboarded"] = True
+                st.session_state["onboarding_step"] = 1
+                st.rerun()
+
+
+# ========== 健康档案页 ==========
+
+def render_health_profile():
+    """健康档案：姓名/年龄/病史/过敏/用药 + 摘要."""
+    st.markdown("## 👤 我的健康档案")
+    st.caption("填写档案后，识别结果会按您的健康情况给个性化建议")
+
+    if "health_profile" not in st.session_state:
+        st.session_state["health_profile"] = {
+            "name": "",
+            "age": 60,
+            "groups": [],
+            "allergies": "",
+            "medications": "",
+        }
+    profile = st.session_state["health_profile"]
+
+    st.markdown("### 📝 基本信息")
+    col1, col2 = st.columns(2)
+    with col1:
+        profile["name"] = st.text_input("称呼（可选）", value=profile.get("name", ""), placeholder="如：张奶奶")
+    with col2:
+        profile["age"] = st.number_input("年龄", min_value=1, max_value=120, value=profile.get("age", 60), step=1)
+
+    st.markdown("### 🏥 健康状况（可多选）")
+    profile["groups"] = st.multiselect(
+        "您有以下情况吗？",
+        HEALTH_GROUPS,
+        default=profile.get("groups", []),
+        key="hp_groups",
+    )
+
+    st.markdown("### ⚠️ 过敏食物")
+    profile["allergies"] = st.text_input(
+        "如：花生、海鲜、鸡蛋（多个用顿号分隔）",
+        value=profile.get("allergies", ""),
+        placeholder="无则不填",
+    )
+
+    st.markdown("### 💊 当前用药")
+    profile["medications"] = st.text_area(
+        "如：降压药、阿司匹林（可不填）",
+        value=profile.get("medications", ""),
+        placeholder="无则不填",
+        height=80,
+    )
+
+    st.divider()
+    if st.button("💾 保存档案", type="primary", use_container_width=True):
+        st.session_state["health_profile"] = profile
+        st.success("✅ 档案已保存！识别结果会参考此档案给建议")
+
+    st.divider()
+    # 档案摘要
+    st.markdown("### 📋 当前档案摘要")
+    summary = []
+    if profile.get("name"):
+        summary.append(f"**称呼**：{profile['name']}")
+    summary.append(f"**年龄**：{profile.get('age', 60)} 岁")
+    if profile.get("groups"):
+        summary.append(f"**健康状况**：{'、'.join(profile['groups'])}")
+    if profile.get("allergies"):
+        summary.append(f"**过敏食物**：{profile['allergies']}")
+    if profile.get("medications"):
+        summary.append(f"**当前用药**：{profile['medications']}")
+    if len(summary) == 1:
+        st.info("档案为空，请填写后保存")
+    else:
+        for s in summary:
+            st.markdown(f"- {s}")
+
+
 # ========== 主程序 ==========
 
 def main():
@@ -477,21 +663,51 @@ def main():
     st.set_page_config(page_title="AI食品配料表识别", page_icon="🥫", layout="centered")
     inject_elder_css()
 
+    # 首次访问：触发 4 步引导
+    if "onboarded" not in st.session_state:
+        st.session_state["onboarded"] = False
+    if not st.session_state["onboarded"]:
+        render_onboarding()
+        return
+
+    # 已完成引导：进入主页
     st.title("🥫 AI食品配料表识别工具")
     st.caption("拍照配料表，3秒读懂添加剂风险")
     st.info("📋 本工具仅翻译包装信息，不构成医疗建议。如有健康问题请咨询医生。")
 
-    # 侧边栏：模型选择 + 健康档案 + 历史
+    # 侧边栏：页面菜单 + 模型选择 + 历史
     with st.sidebar:
+        st.header("📋 功能菜单")
+        page = st.radio(
+            "选择页面",
+            ["🔍 扫描识别", "👤 健康档案"],
+            label_visibility="collapsed",
+        )
+        st.divider()
         st.header("模型选择")
         model_choice = st.radio("选择识别模型", ["MiMo (mimo-v2.5)", "Agnes (agnes-2.0-flash)"])
         model = "agnes" if "Agnes" in model_choice else "mimo"
         st.divider()
-        st.header("健康档案")
-        st.caption("选择你的健康状况，获取个性化建议")
-        groups = st.multiselect("人群标签", HEALTH_GROUPS, default=["脑梗/心血管", "高血压"])
-        st.divider()
         show_history()
+        st.divider()
+        if st.button("🔄 重新查看引导", use_container_width=True, key="replay_ob"):
+            st.session_state["onboarded"] = False
+            st.session_state["onboarding_step"] = 1
+            st.rerun()
+
+    # 健康档案页（不显示扫描界面）
+    if page == "👤 健康档案":
+        render_health_profile()
+        return
+
+    # ===== 扫描识别页 =====
+    # 从健康档案读取人群（默认空）
+    profile = st.session_state.get("health_profile", {})
+    groups = profile.get("groups", [])
+    if groups:
+        st.success(f"✅ 已加载健康档案：{'、'.join(groups)}（建议基于此档案生成）")
+    else:
+        st.warning("⚠️ 未设置健康档案，建议先到左侧'健康档案'填写 → 建议更准确")
 
     # API 密钥（按模型选不同 key）
     api_key = get_api_key(model)
