@@ -224,6 +224,13 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
         "max_tokens": 4096
     }
     try:
+        # 调试：脱敏显示 key 前 4 后 4 字符
+        k = api_key or ""
+        st.warning(
+            f"调试信息：url={url} | model={model_name} | "
+            f"key_len={len(k)} | key_preview={k[:4] + '***' + k[-4:] if len(k) >= 8 else '(too short)'} | "
+            f"auth_header={list(headers.keys())[0]}"
+        )
         resp = requests.post(url, headers=headers, json=payload, timeout=90)
     except requests.exceptions.Timeout:
         st.error("API 请求超时（90秒），请重试。")
