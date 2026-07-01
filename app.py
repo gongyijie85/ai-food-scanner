@@ -2126,9 +2126,16 @@ def main():
             if st.button("历史", use_container_width=True, key="sb_history"):
                 switch_page("history")
         st.divider()
-        st.header("模型选择")
-        model_choice = st.radio("选择识别模型", ["MiMo (mimo-v2.5)", "Agnes (agnes-2.0-flash)"])
-        st.session_state["model_choice"] = model_choice
+        # 默认仅 MiMo，Agnes 放入高级设置，避免 Demo 中干扰老人用户
+        if "model_choice" not in st.session_state:
+            st.session_state["model_choice"] = "MiMo (mimo-v2.5)"
+        with st.expander("高级设置"):
+            model_choice = st.radio(
+                "选择识别模型",
+                ["MiMo (mimo-v2.5)", "Agnes (agnes-2.0-flash)"],
+                index=0 if st.session_state["model_choice"].startswith("MiMo") else 1,
+            )
+            st.session_state["model_choice"] = model_choice
         st.divider()
         # 精简历史展示
         show_history()
