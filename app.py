@@ -1931,16 +1931,6 @@ def render_scan_page():
                         add_history(result)
                         switch_page("result")
 
-    # 页面底部：跨境传输披露
-    st.divider()
-    st.markdown(
-        "<div style='background:#E3F2FD;border-left:8px solid #1976D2;padding:16px 20px;"
-        "border-radius:10px;margin-top:14px;color:#0D47A1;font-size:18px;font-weight:bold;'>"
-        "服务部署于境外服务器，识别过程可能涉及跨境数据传输"
-        "</div>",
-        unsafe_allow_html=True
-    )
-
 
 def render_result_page():
     """结果页：分发食品/保健食品."""
@@ -2061,14 +2051,9 @@ def render_detail_page():
                 unsafe_allow_html=True
             )
 
-    # 底部操作栏
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("重新评分", use_container_width=True, key="detail_rescore"):
-            switch_page("scan")
-    with c2:
-        if st.button("分享给家人", use_container_width=True, key="detail_share"):
-            st.info("分享功能开发中")
+    # 底部操作栏：仅保留已完成的「重新评分」
+    if st.button("重新评分", use_container_width=True, key="detail_rescore"):
+        switch_page("scan")
 
 
 def render_health_profile_page():
@@ -2144,35 +2129,7 @@ def main():
             st.session_state["onboarded"] = False
             st.session_state["onboarding_step"] = 1
             st.rerun()
-        st.divider()
-        # 隐私政策/用户协议入口：随时可重新查看
-        with st.expander("用户协议与隐私政策"):
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            user_agreement = _load_markdown(os.path.join(base_dir, "USER_AGREEMENT.md"))
-            privacy_policy = _load_markdown(os.path.join(base_dir, "PRIVACY_POLICY.md"))
-            with st.expander("《用户协议及免责声明》"):
-                st.markdown(user_agreement)
-            with st.expander("《隐私政策》"):
-                st.markdown(privacy_policy)
 
-        # 法律合规评估入口
-        with st.expander("法律合规评估"):
-            legal_review = _load_markdown(
-                os.path.join(os.path.dirname(os.path.abspath(__file__)), "LEGAL_REVIEW.md")
-            )
-            st.markdown(legal_review)
-
-        st.divider()
-        # 侧边栏常驻：跨境传输披露
-        st.markdown(
-            "<div style='background:#E3F2FD;border-left:6px solid #1976D2;padding:12px 14px;"
-            "border-radius:8px;color:#0D47A1;font-size:16px;font-weight:bold;'>"
-            "服务部署于境外服务器，识别过程可能涉及跨境数据传输"
-            "</div>",
-            unsafe_allow_html=True
-        )
-
-    # 页面分发
     if page == "home":
         render_home_page()
     elif page == "scan":
@@ -2189,6 +2146,24 @@ def main():
         # 异常兜底
         st.session_state["page"] = "home"
         st.rerun()
+
+    # 页面底部：法律文件入口（需要时可查看）+ 跨境传输披露
+    st.divider()
+    c1, c2 = st.columns(2)
+    with c1:
+        with st.expander("用户协议及免责声明"):
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            st.markdown(_load_markdown(os.path.join(base_dir, "USER_AGREEMENT.md")))
+    with c2:
+        with st.expander("隐私政策"):
+            st.markdown(_load_markdown(os.path.join(base_dir, "PRIVACY_POLICY.md")))
+    st.markdown(
+        "<div style='background:#E3F2FD;border-left:6px solid #1976D2;padding:12px 14px;"
+        "border-radius:8px;color:#0D47A1;font-size:16px;font-weight:bold;margin-top:12px;'>"
+        "服务部署于境外服务器，识别过程可能涉及跨境数据传输"
+        "</div>",
+        unsafe_allow_html=True
+    )
 
 
 if __name__ == "__main__":
