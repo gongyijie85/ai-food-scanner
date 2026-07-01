@@ -1,5 +1,5 @@
 """
-AI食品配料表识别工具 - Streamlit Demo 优化版 v2
+AI食品配料表识别工具 - Streamlit Demo 优化版 v0.2.4
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案
 运行环境：Python 3.10+
@@ -56,6 +56,15 @@ def _load_json(path):
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {} if path.endswith(("diseases.json", "allergens.json", "common_drugs.json", "drug_food_conflicts.json")) else {}
+
+
+def _load_markdown(path):
+    """读取 Markdown 文件，失败返回提示文本."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "文件暂未找到，请稍后刷新页面重试。"
 
 
 @st.cache_resource
@@ -116,10 +125,10 @@ def inject_elder_css():
             font-size: 18px !important;
         }
 
-        /* 评分色块 */
+        /* 评分色块：默认深色文字，避免黄底白字对比度不足 */
         .score-box {
             padding: 24px; border-radius: 16px; text-align: center;
-            color: white; margin: 12px 0;
+            color: #333333; margin: 12px 0;
         }
         .score-num { font-size: 56px; font-weight: bold; }
         .score-label { font-size: 22px; }
@@ -252,7 +261,7 @@ def build_system_prompt(groups):
         "- product_name **必须中文**，英文产品名翻译成中文或填'该产品'\n"
         "- 所有引用包装的内容（health_claims/suitable_for/usage）**严格按包装原文**，不评价、不推荐、不补全\n"
         "- 禁止任何医学疗效措辞：'治疗/疗效/降三高/防癌/增强免疫力+治愈'等\n"
-        "- 所有健康相关结论以'建议咨询医生'收尾"
+        "- 所有健康相关结论以'请咨询医生/药师/营养师'收尾"
     )
 
 
@@ -285,14 +294,18 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
         st.error(f"网络请求失败：{e}")
         return None
     if resp.status_code != 200:
-        st.error(f"API 状态码 {resp.status_code}")
-        st.code(resp.text[:500])
+        st.error(f"API 状态码 {resp.status_code}，请检查 API Key 是否有效或已过期。")
+        if os.getenv("DEBUG") == "1":
+            with st.expander("调试：错误响应"):
+                st.code(resp.text[:1000])
         return None
     try:
         return resp.json()["choices"][0]["message"]["content"]
     except (KeyError, IndexError, json.JSONDecodeError) as e:
         st.error(f"解析 API 响应失败：{e}")
-        st.code(resp.text[:500])
+        if os.getenv("DEBUG") == "1":
+            with st.expander("调试：原始响应"):
+                st.code(resp.text[:1000])
         return None
 
 
@@ -421,8 +434,8 @@ def check_drug_food_conflicts(ingredients_list, user_drugs):
 
 # ========== 历史记录（session_state）==========
 
-def add_history(result, image_bytes):
-    """把一次扫描结果存入历史（最多5条）."""
+def add_history(result):
+    """把一次扫描结果摘要存入历史（最多5条），不保存图片."""
     if "history" not in st.session_state:
         st.session_state["history"] = []
     st.session_state["history"].insert(0, {
@@ -430,7 +443,8 @@ def add_history(result, image_bytes):
         "score": result.get("score", 0),
         "additives_count": len(result.get("additives", [])),
         "advice": result.get("advice", ""),
-        "image": image_bytes
+        # Demo 中不保存用户上传图片，仅保留匿名化摘要
+        "image": None
     })
     # 只保留最近5条
     st.session_state["history"] = st.session_state["history"][:5]
@@ -439,6 +453,7 @@ def add_history(result, image_bytes):
 def show_history():
     """在侧边栏展示历史记录（调用时需已在 sidebar 上下文内）."""
     st.header("历史记录")
+    st.caption("历史记录仅保存在当前会话，不存储图片，Demo 结束后自动清空。")
     history = st.session_state.get("history", [])
     if not history:
         st.caption("暂无记录")
@@ -462,19 +477,24 @@ def render_food(result):
     """展示普通食品结果（评分 + 添加剂红绿灯 + 建议）."""
     score = result.get("score", 0)
     if score >= 80:
-        color, label = "#43A047", "安全"
+        color, label = "#43A047", "较常见"
     elif score >= 60:
-        color, label = "#FF9800", "注意"
+        color, label = "#FF9800", "特定人群建议关注"
     else:
-        color, label = "#E53935", "警告"
+        color, label = "#E53935", "建议咨询专业人士"
 
-    # 评分大色块
+    # AI 识别不确定性提示
+    st.warning("AI 识别可能存在错误，请以包装原文为准。")
+
+    # 评分大色块（橙色背景用深色文字保证对比度）
+    text_color = "#333333" if color == "#FF9800" else "white"
     st.markdown(
-        f"<div class='score-box' style='background:{color};'>"
+        f"<div class='score-box' style='background:{color};color:{text_color};'>"
         f"<div class='score-num'>{score}</div>"
         f"<div class='score-label'>{label}</div></div>",
         unsafe_allow_html=True
     )
+    st.caption("评分仅供参考，不构成安全判断。")
 
     # 产品名 + 健康建议
     st.markdown(f"### {result.get('product_name', '未知')}")
@@ -483,7 +503,7 @@ def render_food(result):
         st.info(f"健康建议：{advice}")
 
     # 语音播报按钮
-    speak_content = f"评分{score}分，{label}。{advice}"
+    speak_content = f"评分{score}分，{label}。{advice}本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生/药师/营养师。"
     if st.button("语音播报", key="btn_speak", use_container_width=True):
         speak_text(speak_content)
 
@@ -491,11 +511,15 @@ def render_food(result):
 
     # 添加剂清单
     st.markdown("### 食品添加剂")
+    st.caption("在 GB 2760 合规使用范围内是安全的；以下为科普化展示，仅供参考。")
     additives = result.get("additives", [])
     level_map = {
-        "green": ("安全", "#43A047"),
-        "yellow": ("注意", "#FF9800"),
-        "red": ("规避", "#E53935")
+        "green": ("较常见", "#43A047"),
+        "A": ("较常见", "#43A047"),
+        "yellow": ("特定人群建议关注", "#FF9800"),
+        "B": ("特定人群建议关注", "#FF9800"),
+        "red": ("建议咨询专业人士", "#E53935"),
+        "C": ("建议咨询专业人士", "#E53935"),
     }
     if additives:
         for item in additives:
@@ -505,13 +529,15 @@ def render_food(result):
             lv_label, lv_color = level_map.get(level, (level, "#888"))
             st.markdown(
                 f"<div class='additive-row'>"
-                f"<span><b>{name}</b>{f' ({code})' if code else ''}</span>"
+                f"<span><b>{name}</b>{f' ({code})' if code else ''}<br>"
+                f"<small style='color:#666;'>在 GB 2760 合规使用范围内是安全的。</small></span>"
                 f"<span style='color:{lv_color};font-weight:bold;'>{lv_label}</span>"
                 f"</div>",
                 unsafe_allow_html=True
             )
     else:
         st.success("未识别到食品添加剂")
+    st.caption("数据来源：GB 2760-2024")
 
     st.divider()
 
@@ -545,23 +571,20 @@ def render_personal_warnings(result, ingredients):
         conflicts = check_drug_food_conflicts(ingredients, user_drugs)
         if conflicts:
             has_warning = True
-            high_count = sum(1 for c in conflicts if c["severity"] == "high")
-            header = f"⚠️ 您的用药与本食品存在 {len(conflicts)} 个冲突"
-            if high_count:
-                header += f"（{high_count} 个高风险）"
-            st.error(header)
+            st.warning("检测到您正在服用的药物与配料中某些成分可能存在关联，仅供参考。")
             # 按药物分组展示
             grouped = {}
             for c in conflicts:
                 grouped.setdefault(c["drug"], []).append(c)
             for drug, items in grouped.items():
-                for c in items:
-                    sev_color = {"high": "🔴", "medium": "🟠", "low": "🟡"}.get(c["severity"], "⚪")
-                    with st.expander(f"{sev_color} {drug} + {c['matched_keyword']}（{c['severity']} 风险）"):
-                        st.markdown(f"**机制**：{c['mechanism']}")
-                        st.markdown(f"**说明**：{c['description']}")
-                        st.info(f"**建议**：{c['recommendation']}")
-                        st.caption(f"来源：{c['source']}")
+                food_names = "、".join(sorted({c["matched_keyword"] for c in items}))
+                with st.expander(f"{drug} 与 {food_names}（建议关注）"):
+                    st.markdown(
+                        f"{drug} 与 {food_names} 可能存在相互作用，"
+                        "具体用药方案请咨询医生或药师。"
+                    )
+                    st.caption(f"数据来源：{items[0].get('source', '')}")
+            st.warning("本工具不提供用药建议。")
 
     # 2. 过敏原匹配
     if user_allergens:
@@ -582,6 +605,7 @@ def render_personal_warnings(result, ingredients):
         if allergen_warnings:
             has_warning = True
             st.warning(f"⚠️ 检测到 {len(allergen_warnings)} 个过敏原")
+            st.warning("配料表识别可能遗漏致敏物质，严重过敏者请勿仅依赖本工具。")
             for a in allergen_warnings:
                 matched = a.get("matched", a.get("name"))
                 st.markdown(f"- **{a.get('name')}**（匹配关键词：{matched}）")
@@ -596,7 +620,8 @@ def render_supplement(result):
     st.markdown(
         "<div style='background:#E53935;color:#fff;padding:14px 16px;"
         "border-radius:8px;font-size:18px;font-weight:bold;margin-bottom:14px;'>"
-        "⚠️ 本产品为保健食品<br>保健食品不是药物，不能代替药物治疗疾病"
+        "⚠️ 本产品为保健食品<br>保健食品不是药物，不能代替药物治疗疾病<br>"
+        "内容为包装原文摘录，不代表本工具立场；AI 识别可能存在错误，请以包装原文为准。"
         "</div>",
         unsafe_allow_html=True
     )
@@ -612,7 +637,7 @@ def render_supplement(result):
         f"保健食品：{result.get('product_name', '未知')}。"
         f"{summary}。"
         f"保健食品不是药物，不能代替药物治疗疾病。"
-        f"如需选择，请咨询医生。"
+        f"如需选择，请咨询医生/药师/营养师。"
     )
     if st.button("语音播报", key="btn_speak", use_container_width=True):
         speak_text(speak_content)
@@ -667,13 +692,13 @@ def render_supplement(result):
     with st.expander("查看原始 JSON"):
         st.json(result)
 
-    # 底部固定：再次免责 + 建议咨询医生
+    # 底部固定：再次免责 + 建议咨询医生/药师/营养师
     st.markdown(
         "<div style='background:#FFF3E0;border-left:6px solid #E53935;"
         "padding:12px 16px;border-radius:6px;margin-top:14px;'>"
         "<b>❗ 重要提醒</b><br>"
         "本工具仅翻译包装内容，<b>不评价</b>该产品是否适合您。<br>"
-        "选购或服用前，请<b>咨询医生或营养师</b>。"
+        "选购或服用前，请<b>咨询医生/药师/营养师</b>。"
         "</div>",
         unsafe_allow_html=True
     )
@@ -688,6 +713,45 @@ def show_result(result):
         render_supplement(result)
     else:
         render_food(result)
+
+
+# ========== 首次访问法律同意弹窗 ==========
+
+def render_legal_consent():
+    """首次访问：阅读并同意用户协议及隐私政策."""
+    st.markdown("## 用户协议及隐私政策")
+    st.markdown(
+        "使用本工具前请阅读并同意《用户协议及免责声明》和《隐私政策》。"
+    )
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    user_agreement = _load_markdown(os.path.join(base_dir, "USER_AGREEMENT.md"))
+    privacy_policy = _load_markdown(os.path.join(base_dir, "PRIVACY_POLICY.md"))
+
+    with st.expander("查看《用户协议及免责声明》", expanded=False):
+        st.markdown(user_agreement)
+    with st.expander("查看《隐私政策》", expanded=False):
+        st.markdown(privacy_policy)
+
+    agree_terms = st.checkbox(
+        "我已阅读并同意《用户协议及隐私政策》",
+        key="legal_agree_terms"
+    )
+    agree_sensitive = st.checkbox(
+        "我同意收集我的敏感健康信息（疾病、过敏原、用药）用于个性化科普提示，并知悉数据可能传输至境外 AI 服务",
+        key="legal_agree_sensitive"
+    )
+
+    start_disabled = not (agree_terms and agree_sensitive)
+    if st.button(
+        "开始使用",
+        type="primary",
+        use_container_width=True,
+        disabled=start_disabled,
+        key="legal_start_btn"
+    ):
+        st.session_state["legal_agreed"] = True
+        st.rerun()
 
 
 # ========== 首次引导页（4 步）==========
@@ -816,6 +880,13 @@ def render_health_profile():
     数据来源：data/common_diseases.json + allergens.json + common_drugs.json（GB 7718 / NMPA 权威）."""
     st.markdown("## 👤 我的健康档案")
     st.caption("填写档案后，识别结果会按您的健康情况给个性化建议（包括药物-食物冲突）")
+    st.warning(
+        "疾病、过敏原、用药属于敏感个人信息，填写即表示您同意我们按《隐私政策》处理这些信息。"
+    )
+    st.info(
+        "Demo 提示：本工具为公开技术展示，建议不要输入真实姓名、身份证号、详细病史等真实个人信息；"
+        "健康档案仅在当前浏览器会话中使用，关闭页面后自动清空。"
+    )
 
     # 初始化 session_state
     if "health_profile" not in st.session_state:
@@ -931,7 +1002,17 @@ def render_health_profile():
         )
 
     st.divider()
-    if st.button("💾 保存档案", type="primary", use_container_width=True):
+    health_confirm = st.checkbox(
+        "我确认以上健康信息真实准确，同意用于药物-食物冲突科普提示",
+        key="hp_save_confirm"
+    )
+    if st.button(
+        "💾 保存档案",
+        type="primary",
+        use_container_width=True,
+        disabled=not health_confirm,
+        key="hp_save_btn"
+    ):
         # 同步到 user_profile（供 render_personal_warnings 使用）
         st.session_state["user_profile"] = {
             "drugs": profile.get("drugs", []),
@@ -975,7 +1056,26 @@ def main():
     st.set_page_config(page_title="AI食品配料表识别", page_icon="🥫", layout="centered")
     inject_elder_css()
 
-    # 首次访问：触发 4 步引导
+    # DEBUG 信息块：仅当环境变量 DEBUG=1 时显示，用于部署后排查 API 配置
+    if os.getenv("DEBUG") == "1":
+        with st.expander("🔧 调试信息（DEBUG=1）", expanded=True):
+            mimo_key = get_api_key("mimo")
+            agnes_key = get_api_key("agnes")
+            st.markdown(f"- **MiMo API URL**: `{API_URL}`")
+            st.markdown(f"- **MiMo Model**: `{MODEL_NAME}`")
+            st.markdown(f"- **MiMo API Key 长度**: {len(mimo_key)} / 末4位: `{mimo_key[-4:] if len(mimo_key) >= 4 else 'N/A'}`")
+            st.markdown(f"- **Agnes API URL**: `{AGNES_API_URL}`")
+            st.markdown(f"- **Agnes Model**: `{AGNES_MODEL_NAME}`")
+            st.markdown(f"- **Agnes API Key 长度**: {len(agnes_key)} / 末4位: `{agnes_key[-4:] if len(agnes_key) >= 4 else 'N/A'}`")
+            st.markdown("- **Auth Header 类型**: MiMo=`api-key`, Agnes=`Bearer`")
+
+    # 首次访问：先法律同意，再触发 4 步引导
+    if "legal_agreed" not in st.session_state:
+        st.session_state["legal_agreed"] = False
+    if not st.session_state["legal_agreed"]:
+        render_legal_consent()
+        return
+
     if "onboarded" not in st.session_state:
         st.session_state["onboarded"] = False
     if not st.session_state["onboarded"]:
@@ -985,9 +1085,17 @@ def main():
     # 已完成引导：进入主页
     st.title("🥫 AI食品配料表识别工具")
     st.caption("拍照配料表，3秒读懂添加剂风险")
+    # 首页显著风险提示：高对比度、大字号、醒目色块，确保老人可见
+    st.markdown(
+        "<div style='background:#FFF3E0;border-left:8px solid #FF9800;padding:18px 20px;"
+        "border-radius:10px;margin:14px 0;color:#5D4037;font-size:20px;font-weight:bold;'>"
+        "本 Demo 仅供技术展示，不构成任何医疗或消费建议"
+        "</div>",
+        unsafe_allow_html=True
+    )
     st.info("📋 本工具仅翻译包装信息，不构成医疗建议。如有健康问题请咨询医生。")
 
-    # 侧边栏：页面菜单 + 模型选择 + 历史
+    # 侧边栏：页面菜单 + 模型选择 + 历史 + 法律文件入口
     with st.sidebar:
         st.header("📋 功能菜单")
         page = st.radio(
@@ -1006,6 +1114,33 @@ def main():
             st.session_state["onboarded"] = False
             st.session_state["onboarding_step"] = 1
             st.rerun()
+        st.divider()
+        # 隐私政策/用户协议入口：随时可重新查看
+        with st.expander("📜 用户协议与隐私政策"):
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            user_agreement = _load_markdown(os.path.join(base_dir, "USER_AGREEMENT.md"))
+            privacy_policy = _load_markdown(os.path.join(base_dir, "PRIVACY_POLICY.md"))
+            with st.expander("《用户协议及免责声明》"):
+                st.markdown(user_agreement)
+            with st.expander("《隐私政策》"):
+                st.markdown(privacy_policy)
+
+        # 法律合规评估入口
+        with st.expander("⚖️ 法律合规评估"):
+            legal_review = _load_markdown(
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), "LEGAL_REVIEW.md")
+            )
+            st.markdown(legal_review)
+
+        st.divider()
+        # 侧边栏常驻：跨境传输披露
+        st.markdown(
+            "<div style='background:#E3F2FD;border-left:6px solid #1976D2;padding:12px 14px;"
+            "border-radius:8px;color:#0D47A1;font-size:16px;font-weight:bold;'>"
+            "服务部署于境外服务器，识别过程可能涉及跨境数据传输"
+            "</div>",
+            unsafe_allow_html=True
+        )
 
     # 健康档案页（不显示扫描界面）
     if page == "👤 健康档案":
@@ -1047,12 +1182,22 @@ def main():
                     result = parse_result(raw, health_groups=groups)
                     if result:
                         st.session_state["last_result"] = result
-                        add_history(result, uploaded.getvalue())
+                        add_history(result)
 
         # 移到按钮块外：rerun 时也能渲染上次结果（语音播报不会清空）
         if "last_result" in st.session_state:
             st.divider()
             show_result(st.session_state["last_result"])
+
+    # 页面底部：跨境传输披露（高对比度、醒目样式，常驻展示）
+    st.divider()
+    st.markdown(
+        "<div style='background:#E3F2FD;border-left:8px solid #1976D2;padding:16px 20px;"
+        "border-radius:10px;margin-top:14px;color:#0D47A1;font-size:18px;font-weight:bold;'>"
+        "服务部署于境外服务器，识别过程可能涉及跨境数据传输"
+        "</div>",
+        unsafe_allow_html=True
+    )
 
 
 if __name__ == "__main__":

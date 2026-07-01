@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-2.0.0-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-2.0.3-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 一句话介绍
 
@@ -116,12 +116,25 @@ streamlit run app.py
 
 ---
 
+## 法律合规提示
+
+- **服务定位**：本仓库当前为参赛技术展示 Demo，不构成医疗诊断、治疗建议或消费推荐。
+- **跨境传输**：识别服务部署于境外服务器（Streamlit Cloud / MiMo / Agnes），上传图片及识别结果可能涉及跨境数据传输。
+- **备案评估**：初赛 Demo 阶段通常无需 ICP 备案、算法备案、互联网药品信息服务备案；详见 `LEGAL_REVIEW.md`。
+- **数据保护**：Demo 不保存用户上传图片，健康档案与历史记录仅在当前浏览器会话中使用，关闭页面后自动清空。
+- **正式运营前**：务必聘请专业律师或合规顾问重新评估。
+
+---
+
 ## 项目结构
 
 ```
 ai-food-scanner/
 ├── app.py                  # 主程序（Streamlit）
 ├── requirements.txt        # Python 依赖
+├── LEGAL_REVIEW.md         # 法律合规评估记录
+├── USER_AGREEMENT.md       # 用户协议及免责声明
+├── PRIVACY_POLICY.md       # 隐私政策
 ├── .streamlit/
 │   └── config.toml         # Streamlit 配置
 ├── pages/                  # UI 设计稿（HTML）
@@ -154,6 +167,7 @@ ai-food-scanner/
 - [x] v1.8 适老化样式 + 语音播报
 - [x] v1.9 英文产品名兜底 + 默认健康档案
 - [x] v2.0 双模式（食品 + 保健食品）+ 强制免责
+- [x] v2.0.3 Phase 0.5 合规披露 + 跨境传输 + 数据保护
 - [ ] v2.5 公开链接部署
 - [ ] v3.0 SQLite 历史记录
 - [ ] v3.5 多模态（视频配料表）
