@@ -206,22 +206,25 @@ def switch_page(page: str, **kwargs):
 
 
 def render_top_nav(title: str, show_back: bool = True, back_target: str = "home", right_action: str | None = None):
-    """渲染顶部导航栏（标题 + 返回按钮 + 右侧可选入口）.
+    """渲染顶部导航栏（标题居中 + 返回按钮 + 右侧可选入口）.
 
     right_action 可选值："profile"（心形入口）、None。
     """
+    # 使用 st.columns 前先输出包装 div，让 CSS 桥接生效
+    st.markdown("<div class='top-nav-bar'>", unsafe_allow_html=True)
     cols = st.columns([1, 4, 1])
     with cols[0]:
         if show_back:
-            if st.button("← 返回", key=f"tn_back_{title}", help="返回"):
+            if st.button("←", key=f"tn_back_{title}", help="返回"):
                 target = st.session_state.get("prev_page", back_target)
                 switch_page(target)
     with cols[1]:
-        st.markdown(f"<div style='text-align:center;font-size:22px;font-weight:bold;'>{title}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='top-nav-title'>{_safe(title)}</div>", unsafe_allow_html=True)
     with cols[2]:
         if right_action == "profile":
-            if st.button("👤 档案", key=f"tn_profile_{title}", help="健康档案"):
+            if st.button("♥", key=f"tn_profile_{title}", help="健康档案"):
                 switch_page("profile")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ========== 适老化样式 ==========
@@ -921,18 +924,19 @@ def _render_additive_card(additives):
 # ========== 结果展示 ==========
 
 def render_food(result):
-    """展示普通食品结果（设计稿卡片化）."""
+    """展示普通食品结果（设计稿卡片化：评分英雄区 + 添加剂 + 营养条 + 建议 + 浮动语音）."""
     score = result.get("score", 0)
     product_name = result.get("product_name", "未知")
     advice = result.get("advice", "")
 
+    # 顶部导航带语音入口（设计稿右侧有语音/对比图标，这里保留语音）
     render_top_nav("识别结果", back_target="home")
 
     _render_score_hero(score, product_name)
 
     st.markdown(
         "<div class='disclaimer-text'>评分仅供参考，AI识别可能存在误差，请以包装原文为准</div>",
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     speak_content = f"评分{score}分。{advice}本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生/药师/营养师。"
@@ -945,7 +949,7 @@ def render_food(result):
     if advice:
         st.markdown(
             f"<div class='result-card'><div class='result-card-title'>💡 健康建议</div><p>{_safe(advice)}</p></div>",
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
     ingredients = result.get("ingredients", [])
@@ -959,20 +963,23 @@ def render_food(result):
         with st.expander("查看原始 JSON（调试用）"):
             st.json(result)
 
-    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='voice-control-bar'>", unsafe_allow_html=True)
+    # 底部浮动语音播报按钮
+    st.markdown("<div class='voice-float-bar'>", unsafe_allow_html=True)
     last_speak = st.session_state.get("last_speak_content", "")
     if last_speak:
         voice_control_panel(last_speak, key_prefix="tts_food")
     st.markdown("</div>", unsafe_allow_html=True)
 
+    # 底部操作栏
+    st.markdown("<div class='bottom-action-bar'>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📷 再扫一个", use_container_width=True):
+        if st.button("📷 再扫一个", use_container_width=True, key="food_btn_scan"):
             switch_page("scan")
     with col2:
-        if st.button("🏠 返回首页", use_container_width=True):
+        if st.button("🏠 返回首页", use_container_width=True, key="food_btn_home"):
             switch_page("home")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_personal_warnings(result, ingredients):
@@ -1160,20 +1167,23 @@ def render_supplement(result):
         with st.expander("查看原始 JSON（调试用）"):
             st.json(result)
 
-    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='voice-control-bar'>", unsafe_allow_html=True)
+    # 底部浮动语音播报按钮
+    st.markdown("<div class='voice-float-bar'>", unsafe_allow_html=True)
     last_speak = st.session_state.get("last_speak_content", "")
     if last_speak:
         voice_control_panel(last_speak, key_prefix="tts_supp")
     st.markdown("</div>", unsafe_allow_html=True)
 
+    # 底部操作栏
+    st.markdown("<div class='bottom-action-bar'>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📷 再扫一个", use_container_width=True):
+        if st.button("📷 再扫一个", use_container_width=True, key="supp_btn_scan"):
             switch_page("scan")
     with col2:
-        if st.button("🏠 返回首页", use_container_width=True):
+        if st.button("🏠 返回首页", use_container_width=True, key="supp_btn_home"):
             switch_page("home")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def show_result(result):
@@ -1416,27 +1426,26 @@ def render_health_profile():
         "pregnant": "孕妇",
     }
 
-    st.markdown("### 我的健康状况")
+    st.markdown("<div class='profile-section-title'>我的健康状况</div>")
+    st.markdown("<div class='profile-section-desc'>可多选，帮助我们提供更准确的建议</div>")
     selected = set(profile.get("diseases", []))
     cols = st.columns(2)
     for i, (key, name, icon) in enumerate(CONDITION_ITEMS):
         with cols[i % 2]:
             is_selected = CONDITION_NAME_MAP[key] in selected
-            cls = "profile-condition-card profile-condition-selected" if is_selected else "profile-condition-card"
-            if st.button(f"{icon} {name}", key=f"cond_{key}", use_container_width=True):
+            wrapper_cls = "condition-card-wrapper selected" if is_selected else "condition-card-wrapper"
+            st.markdown(f"<div class='{wrapper_cls}'>", unsafe_allow_html=True)
+            if st.button(f"{icon}\n{name}", key=f"cond_{key}", use_container_width=True):
                 if is_selected:
                     selected.discard(CONDITION_NAME_MAP[key])
                 else:
                     selected.add(CONDITION_NAME_MAP[key])
                 profile["diseases"] = list(selected)
                 st.rerun()
-            st.markdown(
-                f"<div class='{cls}'><span class='profile-condition-icon'>{icon}</span>"
-                f"<span class='profile-condition-name'>{name}</span></div>",
-                unsafe_allow_html=True
-            )
+            st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("### 过敏原")
+    st.markdown("<div class='profile-section-title'>过敏原</div>")
+    st.markdown("<div class='profile-section-desc'>如有过敏请勾选</div>")
     allergen_options = ["花生", "牛奶", "鸡蛋", "鱼类", "甲壳类", "坚果", "小麦", "大豆"]
     allergen_structured_map = {}
     for a in allergens:
@@ -1456,6 +1465,7 @@ def render_health_profile():
         if struct.get("name", "") in current_names:
             selected_alg.add(opt)
 
+    st.markdown("<div class='allergen-grid'>", unsafe_allow_html=True)
     cols = st.columns(2)
     for i, name in enumerate(allergen_options):
         with cols[i % 2]:
@@ -1464,10 +1474,12 @@ def render_health_profile():
                 selected_alg.add(name)
             else:
                 selected_alg.discard(name)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     profile["allergens"] = [allergen_structured_map[name] for name in selected_alg]
 
-    st.markdown("### 💊 当前用药")
+    st.markdown("<div class='profile-section-title'>💊 当前用药</div>")
+    st.markdown("<div class='profile-section-desc'>选填，用于配料交互提醒</div>")
     if drug_categories:
         all_drug_options = []
         drug_id_map = {}
@@ -1500,7 +1512,6 @@ def render_health_profile():
             placeholder="如：特定添加剂、特殊食物",
         )
 
-    st.divider()
     st.markdown("<div class='profile-save-bottom-btn'>", unsafe_allow_html=True)
     if st.button(
         "💾 保存档案",
@@ -1533,7 +1544,7 @@ def render_health_profile():
 # ========== 页面渲染函数 ==========
 
 def render_home_page():
-    """首页：顶部导航 + 健康标签 + 扫描按钮 + 最近扫描."""
+    """首页：顶部导航 + 健康标签 + 大圆形扫描按钮 + 最近扫描."""
     render_top_nav("食品配料表识别", show_back=False, right_action="profile")
 
     profile = st.session_state.get("health_profile", {})
@@ -1541,68 +1552,82 @@ def render_home_page():
     if diseases:
         tags_html = "<div class='health-tags-row'>"
         for d in diseases[:4]:
-            tags_html += f"<span class='health-tag'>{d}</span>"
+            tags_html += f"<span class='health-tag'>{_safe(d)}</span>"
         tags_html += "</div>"
         st.markdown(tags_html, unsafe_allow_html=True)
+    else:
+        # 未设置档案时显示引导标签
+        st.markdown(
+            "<div class='health-tags-row'>"
+            "<span class='health-tag' onclick=\"window.parent.postMessage({action:'goto_profile'},'*')\">"
+            "+ 添加健康状况</span></div>",
+            unsafe_allow_html=True,
+        )
 
-    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
-
-    if st.button("📷 拍照 / 上传配料表", type="primary", use_container_width=True, key="home_goto_scan"):
+    # 大圆形扫描按钮区
+    st.markdown("<div class='home-scan-area'>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='hint-bubble'>点击大按钮开始</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("<div class='scan-button-wrapper'>", unsafe_allow_html=True)
+    if st.button("📷\n扫描配料表", type="primary", key="home_goto_scan"):
         switch_page("scan")
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
-
+    # 最近扫描
     history = load_history()[:6]
     if history:
         st.markdown(
-            "<div style='display:flex;justify-content:space-between;align-items:center;padding:12px 0;'>"
-            "<span style='font-size:20px;font-weight:bold;'>最近扫描</span>"
-            "</div>",
-            unsafe_allow_html=True
+            "<div class='home-history-section'>"
+            "<div class='home-history-heading'>"
+            "<span class='home-history-title'>最近扫描</span>"
+            "</div>"
+            "<div class='history-cards-row'>",
+            unsafe_allow_html=True,
         )
-        cols = st.columns(min(len(history), 3))
         for i, item in enumerate(history[:3]):
-            with cols[i]:
-                score = item.get("score", 0)
-                if score >= 80:
-                    bg, text_c = "#E8F5E9", "#2E7D32"
-                elif score >= 60:
-                    bg, text_c = "#FFF8E1", "#F57F17"
-                else:
-                    bg, text_c = "#FFEBEE", "#C62828"
-                st.markdown(
-                    f"<div style='background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.08);cursor:pointer;'>"
-                    f"<div style='font-size:17px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>{item.get('product_name', '未知')}</div>"
-                    f"<div style='display:inline-block;margin-top:8px;padding:4px 12px;border-radius:9999px;font-size:15px;font-weight:bold;background:{bg};color:{text_c};'>{score}分</div>"
-                    f"<div style='font-size:13px;color:#9E9E9E;margin-top:8px;'>{item.get('timestamp', '')[:10]}</div>"
-                    f"</div>",
-                    unsafe_allow_html=True
-                )
-                if st.button(f"查看", key=f"home_card_{i}", use_container_width=True):
-                    st.session_state["selected_history_index"] = i
-                    st.session_state["detail_fallback_record"] = item
-                    switch_page("detail")
-
-        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+            score = item.get("score", 0)
+            score_class = "score-safe" if score >= 80 else ("score-caution" if score >= 60 else "score-danger")
+            status_text = "安全" if score >= 80 else ("注意" if score >= 60 else "高风险")
+            st.markdown(
+                f"<div class='history-card'>"
+                f"<div class='history-card-name'>{_safe(item.get('product_name', '未知'))}</div>"
+                f"<div class='history-card-score {score_class}'>"
+                f"{status_text} {score}分</div>"
+                f"<div class='history-card-date'>{_safe(item.get('timestamp', '')[:10])}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+            # 卡片整体可点击，使用透明覆盖按钮
+            if st.button("查看", key=f"home_card_{i}", help="查看详情"):
+                st.session_state["selected_history_index"] = i
+                st.session_state["detail_fallback_record"] = item
+                switch_page("detail")
+        st.markdown(
+            "</div></div>",
+            unsafe_allow_html=True,
+        )
         if st.button("查看全部历史记录", use_container_width=True, key="home_goto_history"):
             switch_page("history")
     else:
         st.markdown(
-            "<div style='text-align:center;padding:40px 20px;color:#9E9E9E;'>"
-            "<div style='font-size:64px;margin-bottom:12px;'>🥫</div>"
-            "<p style='font-size:18px;'>点击上方按钮开始扫描配料表</p>"
+            "<div class='empty-state'>"
+            "<div class='empty-state-icon'>🥫</div>"
+            "<p class='empty-state-text'>点击大按钮开始扫描配料表</p>"
             "</div>",
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
     st.markdown(
         "<div class='disclaimer-text'>AI识别仅供参考，请以包装原文为准</div>",
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
 
 def render_scan_page():
-    """扫描上传页：文件上传 + 识别 + 跳转结果页."""
+    """扫描上传页：相机风格取景框 + 文件上传 + 识别."""
     render_top_nav("扫描识别", back_target="home", right_action="profile")
 
     profile = st.session_state.get("health_profile", {})
@@ -1619,33 +1644,70 @@ def render_scan_page():
         st.warning(f"未检测到 {var_name}，请在 .env 或 Secrets 中配置")
         api_key = st.text_input("API 密钥", type="password")
 
-    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+    # 相机风格外壳
+    st.markdown("<div class='camera-page'>", unsafe_allow_html=True)
 
+    # 顶部工具栏（视觉）
     st.markdown(
-        "<div style='text-align:center;padding:20px;'>"
-        "<div style='font-size:72px;margin-bottom:12px;'>📷</div>"
-        "<p style='font-size:20px;color:#333;font-weight:500;'>请选择配料表图片</p>"
-        "<p style='font-size:16px;color:#9E9E9E;'>支持拍照或从相册选择</p>"
+        "<div class='camera-toolbar'>"
+        "<div class='camera-tool-btn'>←</div>"
+        "<div class='camera-status-pill'><div class='recognizing-dot'></div><span>识别中</span></div>"
+        "<div class='camera-tool-btn'>⚡</div>"
         "</div>",
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
+    # 取景区域 + 扫描框
+    st.markdown(
+        "<div class='camera-viewfinder'>"
+        "<div class='scan-frame'>"
+        "<div class='scan-corner-bl'></div>"
+        "<div class='scan-corner-br'></div>"
+        "<div class='scan-line'></div>"
+        "</div>"
+        "<div class='camera-hint-bubble'>"
+        "<span>🔊</span><span>请对准配料表文字</span>"
+        "</div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    # 文件上传器：放在取景区域下方，保留拍照/上传能力
+    st.markdown("<div style='padding:0 var(--spacing-base);'>", unsafe_allow_html=True)
     uploaded = st.file_uploader(
-        "上传配料表图片",
+        "点击选择或拍照上传配料表图片",
         type=["jpg", "jpeg", "png"],
         label_visibility="collapsed",
-        help="支持 jpg/png，大图会自动压缩，通常 5-15 秒出结果",
+        help="支持 jpg/png，大图会自动压缩",
+        key="scan_uploader",
     )
+    st.markdown("</div>", unsafe_allow_html=True)
 
+    # 底部操作栏（相册 / 拍照占位）
+    st.markdown(
+        "<div class='camera-bottom-bar'>"
+        "<div class='album-btn'>🖼</div>"
+        "<div class='capture-btn'><div class='capture-btn-inner'></div></div>"
+        "<div style='width:52px;height:52px;'></div>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # 预览与识别流程
     if uploaded is not None:
-        st.image(uploaded, use_container_width=True)
-        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
-
-        if st.button("🔍 开始识别", type="primary", use_container_width=True):
+        st.markdown("<div class='preview-overlay'>", unsafe_allow_html=True)
+        st.image(uploaded, width=256)
+        st.markdown(
+            "<div class='preview-actions'>"
+            "<div class='preview-btn'><div class='preview-btn-icon retake'>↻</div>"
+            "<span class='preview-btn-text'>重拍</span></div>",
+            unsafe_allow_html=True,
+        )
+        if st.button("✓\n使用照片", type="primary", key="scan_confirm"):
             if not api_key:
                 st.error("API 密钥未配置，请联系管理员")
                 return
-            # 文件大小与格式校验
             if uploaded.size > 5 * 1024 * 1024:
                 st.error("图片超过 5MB，请选择更小的图片或截图后重试")
                 return
@@ -1679,12 +1741,14 @@ def render_scan_page():
                     else:
                         status.update(label="识别失败", state="error")
                         st.error("返回内容不是合法 JSON，请重试或更换图片")
-                        with st.expander("查看原始返回（调试用）"):
-                            st.text(raw)
+                        if os.getenv("DEBUG") == "1":
+                            with st.expander("查看原始返回（调试用）"):
+                                st.text(raw)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown(
         "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
 
@@ -1703,72 +1767,115 @@ def render_result_page():
 
 
 def render_history_page():
-    """历史记录页：搜索 + 筛选 + 竖向列表."""
-    render_top_nav("📋 历史记录", back_target="home")
+    """历史记录页：搜索栏 + 筛选标签 + 竖向列表（对齐设计稿）."""
+    render_top_nav("历史记录", back_target="home")
 
-    search = st.text_input("搜索产品", key="history_search", placeholder="输入产品名搜索")
+    # 搜索栏（图标 + 输入框 + 麦克风）
+    st.markdown(
+        "<div class='history-search-wrap'>"
+        "<div class='history-search-box'>"
+        "<span class='history-search-icon'>🔍</span>",
+        unsafe_allow_html=True,
+    )
+    search = st.text_input(
+        "搜索产品名称",
+        key="history_search",
+        placeholder="搜索产品名称...",
+        label_visibility="collapsed",
+    )
+    st.markdown(
+        "<button class='history-search-mic' title='语音搜索'>🎤</button>"
+        "</div>"
+        "<p class='history-search-tip'>支持语音搜索，点击麦克风图标即可</p>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 
-    filter_col = st.segmented_control(
-        "筛选",
-        ["全部", "食品", "保健食品"],
-        default="全部",
-        key="history_filter",
-        label_visibility="collapsed"
-    ) or "全部"
+    # 筛选标签
+    filter_options = [
+        ("全部", "all", "active"),
+        ("安全", "safe", "safe"),
+        ("注意", "caution", "caution"),
+        ("高风险", "danger", "danger"),
+    ]
+    current_filter = st.session_state.get("history_filter", "全部")
+    st.markdown("<div class='history-filter-row'>", unsafe_allow_html=True)
+    filter_col = current_filter
+    for label, value, css in filter_options:
+        wrapper_cls = f"history-filter-chip-wrapper {css}"
+        if current_filter == label:
+            wrapper_cls += " active"
+        st.markdown(f"<div class='{wrapper_cls}'>", unsafe_allow_html=True)
+        if st.button(label, key=f"hist_filter_{value}"):
+            st.session_state["history_filter"] = label
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     history = load_history()
     filtered = []
     for idx, item in enumerate(history):
         name = item.get("product_name", "")
+        score = item.get("score", 0)
         if search and search.lower() not in name.lower():
             continue
-        if filter_col == "食品" and item.get("type") != "food":
+        if filter_col == "安全" and score < 80:
             continue
-        if filter_col == "保健食品" and item.get("type") != "supplement":
+        if filter_col == "注意" and not (60 <= score < 80):
+            continue
+        if filter_col == "高风险" and score >= 60:
             continue
         filtered.append((idx, item))
 
     if not filtered:
         if not history:
             st.markdown(
-                "<div style='text-align:center;padding:40px 20px;color:#9E9E9E;'>"
-                "<div style='font-size:48px;margin-bottom:12px;'>📭</div>"
-                "<p style='font-size:18px;'>还没有扫描记录</p>"
-                "<p style='font-size:16px;'>去首页拍第一张配料表吧</p>"
+                "<div class='empty-state'>"
+                "<div class='empty-state-icon'>📭</div>"
+                "<p class='empty-state-text'>还没有扫描记录</p>"
+                "<p style='font-size:var(--font-size-body);color:var(--color-text-secondary);'>"
+                "去首页拍第一张配料表吧</p>"
                 "</div>",
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
-            if st.button("📷 开始扫描", type="primary", use_container_width=True):
+            if st.button("📷 开始扫描", type="primary", use_container_width=True, key="hist_empty_scan"):
                 switch_page("scan")
         else:
             st.info("没有匹配的记录")
         return
 
+    st.markdown("<div class='history-list-wrap'>", unsafe_allow_html=True)
     for idx, item in filtered:
         score = item.get("score", 0)
-        color = "#43A047" if score >= 80 else ("#FF9800" if score >= 60 else "#E53935")
-        label = "可食用" if score >= 80 else ("注意" if score >= 60 else "少吃")
-        type_label = "保健食品" if item.get("type") == "supplement" else "食品"
-        with st.container():
-            cols = st.columns([1, 4, 1])
-            with cols[0]:
-                st.markdown(
-                    f"<div class='history-list-score' style='background:{color}22;color:{color};'>{score}</div>",
-                    unsafe_allow_html=True
-                )
-            with cols[1]:
-                st.markdown(f"**{item.get('product_name', '未知')}**")
-                st.caption(f"{label} · {type_label} · {item.get('timestamp', '')[:10]}")
-            with cols[2]:
-                if st.button("查看", key=f"hist_btn_{idx}"):
-                    st.session_state["selected_history_index"] = idx
-                    st.session_state["detail_fallback_record"] = item
-                    switch_page("detail")
-            st.markdown("<hr style='margin:8px 0;border:none;border-top:1px solid #f0f0f0;'>", unsafe_allow_html=True)
+        if score >= 80:
+            color, bg, status = "#2E7D32", "#E8F5E9", "安全"
+        elif score >= 60:
+            color, bg, status = "#F57F17", "#FFF8E1", "需要注意"
+        else:
+            color, bg, status = "#C62828", "#FFEBEE", "高风险"
+        ts = item.get("timestamp", "")[:10]
+        name = item.get("product_name", "未知")
+        st.markdown(
+            f"<div class='history-list-item'>"
+            f"<div class='history-list-score' style='background:{bg};color:{color};'>{score}</div>"
+            f"<div class='history-list-info'>"
+            f"<div class='history-list-name'>{_safe(name)}</div>"
+            f"<div class='history-list-status' style='color:{color};'>{_safe(status)}</div>"
+            f"<div class='history-list-date'>{_safe(ts)}</div>"
+            f"</div>"
+            f"<div class='history-list-chevron'>›</div>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+        if st.button("查看", key=f"hist_btn_{idx}", help="查看详情"):
+            st.session_state["selected_history_index"] = idx
+            st.session_state["detail_fallback_record"] = item
+            switch_page("detail")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_detail_page():
-    """产品详情页：读取 history_full.json 展示完整识别快照."""
+    """产品详情页：读取 history_full.json 展示完整识别快照（对齐设计稿）."""
     idx = st.session_state.get("selected_history_index", -1)
     fallback = st.session_state.get("detail_fallback_record", {})
     full_records = load_history_full()
@@ -1780,7 +1887,6 @@ def render_detail_page():
     else:
         product_name = fallback.get("product_name", "未知")
         score = fallback.get("score", 0)
-        st.info("当时未保存完整配料信息，仅展示摘要。")
 
     render_top_nav("产品详情", back_target=st.session_state.get("prev_page", "home"))
 
@@ -1788,20 +1894,26 @@ def render_detail_page():
     _render_score_hero(score, product_name, show_slow_replay=False)
 
     # 扫描信息卡片
-    ts = fallback.get("timestamp", "") or record.get("timestamp", "")
+    ts = fallback.get("timestamp", "") or (record.get("timestamp", "") if record else "")
     type_label = "保健食品" if fallback.get("type") == "supplement" else "食品"
     st.markdown(
-        f"<div class='result-card'>"
-        f"<div class='result-card-title'>扫描信息</div>"
-        f"<div style='display:flex;gap:16px;'>"
-        f"<div class='detail-image-placeholder' style='flex:1;'>图片未保存</div>"
-        f"<div style='flex:2;display:flex;flex-direction:column;justify-content:center;'>"
-        f"<p><b>扫描时间</b>：{_safe(ts)}</p>"
-        f"<p><b>识别引擎</b>：{MODEL_NAME}</p>"
-        f"<p><b>产品类型</b>：{_safe(type_label)}</p>"
-        f"</div></div></div>",
-        unsafe_allow_html=True
+        "<div class='result-card detail-scan-card'>"
+        "<div class='result-card-title'>扫描信息</div>"
+        "<div class='detail-scan-meta'>"
+        "<div class='detail-image-placeholder'>图片<br>未保存</div>"
+        "<div class='detail-scan-info'>"
+        f"<div class='detail-scan-row'><span class='detail-scan-label'>扫描时间</span>"
+        f"<span class='detail-scan-value'>{_safe(ts)}</span></div>"
+        f"<div class='detail-scan-row'><span class='detail-scan-label'>识别引擎</span>"
+        f"<span class='detail-scan-value'>{MODEL_NAME}</span></div>"
+        f"<div class='detail-scan-row'><span class='detail-scan-label'>产品类型</span>"
+        f"<span class='detail-scan-value'>{_safe(type_label)}</span></div>"
+        "</div></div></div>",
+        unsafe_allow_html=True,
     )
+
+    if not record:
+        st.info("当时未保存完整配料信息，仅展示摘要。")
 
     # 添加剂 / 营养 / 建议（复用 result 组件）
     if record:
@@ -1809,19 +1921,30 @@ def render_detail_page():
         render_nutrition_bars(record)
         advice = record.get("advice", "")
         if advice:
-            st.markdown(f"<div class='result-card'><div class='result-card-title'>健康建议</div><p>{_safe(advice)}</p></div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div class='result-card'><div class='result-card-title'>健康建议</div>"
+                f"<p class='detail-advice-text'>{_safe(advice)}</p></div>",
+                unsafe_allow_html=True,
+            )
         # 全部配料
         ingredients = record.get("ingredients", [])
         if ingredients:
             st.markdown(
-                f"<div class='result-card'><div class='result-card-title'>全部配料</div>"
-                f"<p>{_safe('、'.join(ingredients))}</p></div>",
-                unsafe_allow_html=True
+                "<div class='result-card'><div class='result-card-title'>全部配料</div>"
+                f"<p class='detail-ingredients-text'>{_safe('、'.join(ingredients))}</p></div>",
+                unsafe_allow_html=True,
             )
 
-    # 底部操作栏：仅保留已完成的「重新评分」
-    if st.button("重新评分", use_container_width=True, key="detail_rescore"):
-        switch_page("scan")
+    # 底部操作栏
+    st.markdown("<div class='bottom-action-bar detail-bottom-bar'>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("↻ 重新评分", use_container_width=True, key="detail_rescore"):
+            switch_page("scan")
+    with col2:
+        if st.button("➤ 分享给家人", use_container_width=True, key="detail_share"):
+            st.toast("已复制结果摘要，可直接粘贴给家人")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_health_profile_page():

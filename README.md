@@ -2,12 +2,16 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.3.6-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.4.1-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 一句话介绍
 
 面向 **3.1 亿中国老年人** 和 **8300 万慢病人群** 的食品配料表识别工具。
 拍照 → 自动 OCR → 三色风险标注 → 语音播报。**3 步 3 秒**。
+
+## 最新更新
+
+- **v0.4.1（2026-07-02）**：历史记录页、产品详情页完整对齐 7 页适老化设计稿，新增搜索栏、风险筛选标签、扫描信息卡片与底部操作栏。
 
 ---
 
