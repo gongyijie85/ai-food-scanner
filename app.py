@@ -1,7 +1,7 @@
 """
-AI食品配料表识别工具 - Streamlit Demo 优化版 v0.3.4
+AI食品配料表识别工具 - Streamlit Demo 优化版 v0.4.3
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
-特性：适老化样式 + 语音播报 + 历史记录 + 健康档案
+特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 移动端适配
 运行环境：Python 3.10+
 依赖：pip install streamlit requests pillow
 运行命令：streamlit run app.py
@@ -205,10 +205,11 @@ def switch_page(page: str, **kwargs):
     st.rerun()
 
 
-def render_top_nav(title: str, show_back: bool = True, back_target: str = "home", right_action: str | None = None):
-    """渲染顶部导航栏（标题居中 + 返回按钮 + 右侧可选入口）.
+def render_top_nav(title: str, show_back: bool = True, back_target: str = "home", right_action: str | None = None, align: str = "center"):
+    """渲染顶部导航栏（标题居中/居左 + 返回按钮 + 右侧可选入口）.
 
     right_action 可选值："profile"（心形入口）、None。
+    align 可选值："center"（默认）或 "left"（首页设计稿标题居左）。
     """
     # 使用 st.columns 前先输出包装 div，让 CSS 桥接生效
     st.markdown("<div class='top-nav-bar'>", unsafe_allow_html=True)
@@ -219,7 +220,8 @@ def render_top_nav(title: str, show_back: bool = True, back_target: str = "home"
                 target = st.session_state.get("prev_page", back_target)
                 switch_page(target)
     with cols[1]:
-        st.markdown(f"<div class='top-nav-title'>{_safe(title)}</div>", unsafe_allow_html=True)
+        title_style = "text-align:left;" if align == "left" else "text-align:center;"
+        st.markdown(f"<div class='top-nav-title' style='{title_style}'>{_safe(title)}</div>", unsafe_allow_html=True)
     with cols[2]:
         if right_action == "profile":
             if st.button("♥", key=f"tn_profile_{title}", help="健康档案"):
@@ -327,44 +329,107 @@ def _js_speech_control(action: str):
     st.markdown(js, unsafe_allow_html=True)
 
 
-def voice_control_panel(speak_content: str, key_prefix: str = "tts"):
-    """语音播报控制面板：简洁版，主按钮+折叠的语速控制."""
+def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text: str = "🔊 点击播报"):
+    """语音播报控制面板：简洁版，主按钮+折叠的语速控制.
+
+    使用浏览器原生 Web Speech API，针对 iOS Safari / 微信内置浏览器等
+    移动端环境做了兼容处理：
+    - 点击按钮时立即 cancel 并 speak，保证处于用户手势上下文。
+    - 如果 voices 列表尚未加载，等待 onvoiceschanged 后再重试。
+    - 提供可视化反馈与明确的错误提示。
+    """
     if "tts_rate" not in st.session_state:
         st.session_state["tts_rate"] = 1.0
 
     rate = st.session_state["tts_rate"]
     safe = _js_attr_safe(speak_content)
+    safe_button_text = _js_attr_safe(button_text)
+    # 组件唯一标识，避免多个播报按钮冲突
+    btn_id = f"tts-btn-{key_prefix}"
+    err_id = f"tts-err-{key_prefix}"
 
     st.markdown(
         f"""
-        <div style="display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">
-            <button onclick="
-                var btn = this;
-                var err = this.parentNode.querySelector('.tts-err');
-                if (!window.speechSynthesis) {{
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔇</span> 不支持播报';
-                    if (err) err.textContent = '您的浏览器不支持语音播报功能';
-                    return;
-                }}
-                speechSynthesis.cancel();
-                var u = new SpeechSynthesisUtterance('{safe}');
-                u.lang='zh-CN'; u.rate={rate}; u.pitch=1.0; u.volume=1.0;
-                var voices = speechSynthesis.getVoices();
-                for (var i=0; i&lt;voices.length; i++) {{
-                    if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao') &gt;= 0) {{ u.voice=voices[i]; break; }}
-                    if (voices[i].lang &amp;&amp; voices[i].lang.startsWith('zh') &amp;&amp; !u.voice) u.voice=voices[i];
-                }}
-                u.onerror = function(e) {{ if (err) err.textContent = '播报失败，请尝试刷新页面'; }};
-                u.onend = function() {{ if (err) err.textContent = ''; }};
-                speechSynthesis.speak(u);
-            " class="voice-btn">
-                <span class="voice-btn-icon">🔊</span> 点击播报
+        <div class="voice-control-wrap">
+            <button id="{btn_id}" onclick="
+                (function(btn) {{
+                    var err = document.getElementById('{err_id}');
+                    if (!window.speechSynthesis) {{
+                        btn.disabled = true;
+                        btn.innerHTML = '🔇 不支持播报';
+                        if (err) err.textContent = '您的浏览器不支持语音播报功能';
+                        return;
+                    }}
+                    var originalHtml = btn.innerHTML;
+                    btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…';
+                    if (err) err.textContent = '';
+
+                    var text = '{safe}';
+                    var rate = {rate};
+
+                    function doSpeak() {{
+                        speechSynthesis.cancel();
+                        var u = new SpeechSynthesisUtterance(text);
+                        u.lang = 'zh-CN';
+                        u.rate = rate;
+                        u.pitch = 1.0;
+                        u.volume = 1.0;
+
+                        var voices = speechSynthesis.getVoices();
+                        var selected = null;
+                        for (var i = 0; i < voices.length; i++) {{
+                            var name = voices[i].name || '';
+                            var lang = voices[i].lang || '';
+                            if (name.indexOf('Yaoyao') >= 0 || name.indexOf('yaoyao') >= 0) {{
+                                selected = voices[i];
+                                break;
+                            }}
+                            if (!selected && (lang.indexOf('zh') === 0 || lang.indexOf('cmn') === 0)) {{
+                                selected = voices[i];
+                            }}
+                        }}
+                        if (selected) u.voice = selected;
+
+                        u.onstart = function() {{ btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…'; }};
+                        u.onend = function() {{ btn.innerHTML = originalHtml; if (err) err.textContent = ''; }};
+                        u.onerror = function(e) {{
+                            btn.innerHTML = originalHtml;
+                            if (err) err.textContent = '播报失败，请尝试刷新页面或调高手机音量';
+                            console.warn('[TTS error]', e);
+                        }};
+
+                        // iOS Safari 需要把 speak 放在事件循环中，确保在用户手势内执行
+                        setTimeout(function() {{ speechSynthesis.speak(u); }}, 0);
+                    }}
+
+                    var voices = speechSynthesis.getVoices();
+                    if (voices && voices.length > 0) {{
+                        doSpeak();
+                    }} else if (speechSynthesis.onvoiceschanged !== undefined) {{
+                        // 首次加载 voices 为空时，等待加载完成
+                        var once = function() {{
+                            speechSynthesis.onvoiceschanged = null;
+                            doSpeak();
+                        }};
+                        speechSynthesis.onvoiceschanged = once;
+                        // 部分浏览器不会触发事件，设置兜底超时
+                        setTimeout(function() {{
+                            if (speechSynthesis.getVoices().length === 0) {{
+                                btn.innerHTML = originalHtml;
+                                if (err) err.textContent = '未找到中文语音，请检查系统语言设置';
+                            }}
+                        }}, 2000);
+                    }} else {{
+                        doSpeak();
+                    }}
+                }})(this)
+            " class="voice-float-btn">
+                {safe_button_text}
             </button>
-            <button onclick="try{{speechSynthesis.cancel();}}catch(e){{}}" class="voice-btn-sm" style="border-color:#9E9E9E;background:#F5F5F5;color:#616161;">
-                ⏹ 停止
+            <button onclick="try{{speechSynthesis.cancel();}}catch(e){{}}" class="voice-stop-btn" aria-label="停止播报">
+                ⏹
             </button>
-            <span class="tts-err" style="color:#D32F2F;font-size:14px;width:100%;text-align:center;"></span>
+            <span id="{err_id}" class="tts-err"></span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -396,11 +461,17 @@ def _preload_tts_voices():
         <script>
         (function() {
             if (!window.speechSynthesis) return;
-            function loadVoices() { window.speechSynthesis.getVoices(); }
+            function loadVoices() {
+                try { window.speechSynthesis.getVoices(); } catch(e) {}
+            }
             loadVoices();
             if (window.speechSynthesis.onvoiceschanged !== undefined) {
                 window.speechSynthesis.onvoiceschanged = loadVoices;
             }
+            // iOS 需要一次性的用户交互后才能正常播放，这里只做预加载
+            document.addEventListener('click', function() {
+                try { window.speechSynthesis.getVoices(); } catch(e) {}
+            }, { once: true });
         })();
         </script>
         """,
@@ -867,40 +938,51 @@ def _clip_path(shape: str) -> str:
 
 
 def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = True):
-    """渲染评分英雄区（result/detail 复用）."""
+    """渲染评分英雄区（按画布设计稿：纯色卡片 + 装饰圆点 + 慢速重听）."""
     if score >= 80:
-        color, label, bg_gradient = "#43A047", "可放心食用", "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)"
+        color, label, bg = "#43A047", "可放心食用", "#43A047"
     elif score >= 60:
-        color, label, bg_gradient = "#FF9800", "特定人群注意", "linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%)"
+        color, label, bg = "#FF9800", "特定人群注意", "#FF9800"
     else:
-        color, label, bg_gradient = "#E53935", "建议咨询医生", "linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%)"
-    text_color = "#333333" if score >= 60 else "#333333"
+        color, label, bg = "#E53935", "建议咨询医生", "#E53935"
     shape = "●" if score >= 80 else ("▲" if score >= 60 else "■")
-    shape_bg = color
+    replay_btn = ""
+    if show_slow_replay:
+        replay_id = f"slow-replay-{score}"
+        replay_btn = (
+            f"<button id='{replay_id}' class='score-replay-btn' "
+            f"onclick=\"this.closest('.result-score-hero').querySelector('.voice-float-btn, .voice-btn').click();\" "
+            f"aria-label='慢速重听'>"
+            f"<span>🔁</span> 慢速重听</button>"
+        )
     st.markdown(
-        f"<div class='result-score-hero' style='background:{bg_gradient};border:2px solid {color}44;'>"
-        f"<div class='result-score-hero-product' style='color:{color};'>{_safe(product_name)}</div>"
-        f"<div class='result-score-hero-number' style='color:{color};'>{score}</div>"
-        f"<div class='result-score-hero-label' style='background:{color}22;color:{color};'>"
-        f"<span class='result-score-shape' style='background:{shape_bg};clip-path:{_clip_path(shape)};'></span>"
-        f"{_safe(label)}</div></div>",
+        f"<div class='result-score-hero' style='background:{bg};'>"
+        f"<div class='result-score-hero-deco result-score-hero-deco-tl'></div>"
+        f"<div class='result-score-hero-deco result-score-hero-deco-br'></div>"
+        f"<div class='result-score-hero-product'>{_safe(product_name)}</div>"
+        f"<div class='result-score-hero-number'>{score}</div>"
+        f"<div class='result-score-hero-label'>"
+        f"<span class='result-score-shape' style='background:#FFFFFF;clip-path:{_clip_path(shape)};'></span>"
+        f"{_safe(label)}</div>"
+        f"{replay_btn}"
+        f"</div>",
         unsafe_allow_html=True
     )
 
 
 def _render_additive_card(additives):
-    """渲染添加剂清单卡片（result/detail 复用）."""
+    """渲染添加剂清单卡片（画布设计稿：图标 + 名称/类别 + 标签 + 色盲图例）."""
     if not additives:
-        st.markdown("<div class='result-card'><div class='result-card-title'>📋 添加剂清单</div><p style='color:#666;'>未识别到需要关注的食品添加剂</p></div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='result-card'><div class='result-card-title'>🧪 添加剂清单</div>"
+            "<p style='color:#666;'>未识别到需要关注的食品添加剂</p></div>",
+            unsafe_allow_html=True,
+        )
         return
     html = (
         "<div class='result-card'>"
-        "<div class='result-card-title'>📋 添加剂清单</div>"
-        "<div style='font-size:14px;color:#666;margin-bottom:10px;'>"
-        "<span style='color:#43A047;'>● 可食用（常见）</span> &nbsp;"
-        "<span style='color:#FF9800;'>▲ 特定人群注意</span> &nbsp;"
-        "<span style='color:#E53935;'>■ 建议少吃</span>"
-        "</div>"
+        "<div class='result-card-title'>🧪 添加剂清单</div>"
+        "<div class='result-additive-list'>"
     )
     for item in additives:
         name = _safe(item.get("name", "未知"))
@@ -908,16 +990,26 @@ def _render_additive_card(additives):
         note = _safe(item.get("note", ""))
         label, color, shape = _get_level_info(level)
         label = _safe(label)
-        note_html = f"<div style='font-size:13px;color:#888;margin-top:4px;padding-left:28px;'>{note}</div>" if note else ""
+        note_html = f"<div class='result-additive-note'>{note}</div>" if note else ""
         html += (
             f"<div class='result-additive-item' style='border-left-color:{color};'>"
             f"<span class='result-additive-shape' style='background:{color};clip-path:{_clip_path(shape)};'></span>"
+            f"<div class='result-additive-body'>"
             f"<div class='result-additive-name'>{name}</div>"
-            f"<span class='result-additive-level' style='color:{color};border-color:{color};background:{color}11;'>{label}</span>"
             f"{note_html}"
             f"</div>"
+            f"<span class='result-additive-level' style='color:{color};border-color:{color};background:{color}11;'>{label}</span>"
+            f"</div>"
         )
-    html += "</div>"
+    html += (
+        "</div>"
+        "<div class='result-additive-legend'>"
+        "<div class='legend-item'><span class='legend-shape' style='background:#43A047;clip-path:circle(50%);'></span><span>圆=安全</span></div>"
+        "<div class='legend-item'><span class='legend-shape' style='background:#FF9800;clip-path:polygon(50% 0%,0% 100%,100% 100%);'></span><span>三角=中等</span></div>"
+        "<div class='legend-item'><span class='legend-shape' style='background:#E53935;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);'></span><span>方块=高风险</span></div>"
+        "</div>"
+        "</div>"
+    )
     st.markdown(html, unsafe_allow_html=True)
 
 
@@ -948,7 +1040,15 @@ def render_food(result):
 
     if advice:
         st.markdown(
-            f"<div class='result-card'><div class='result-card-title'>💡 健康建议</div><p>{_safe(advice)}</p></div>",
+            "<div class='result-card'>"
+            "<div class='result-card-title'>💡 健康建议</div>"
+            "<div class='advice-block advice-block-general'>"
+            "<div class='advice-block-icon'>ℹ️</div>"
+            "<div class='advice-block-body'>"
+            "<div class='advice-block-title'>普通人群</div>"
+            f"<p class='advice-block-text'>{_safe(advice)}</p>"
+            "</div></div>"
+            "</div>",
             unsafe_allow_html=True,
         )
 
@@ -967,7 +1067,7 @@ def render_food(result):
     st.markdown("<div class='voice-float-bar'>", unsafe_allow_html=True)
     last_speak = st.session_state.get("last_speak_content", "")
     if last_speak:
-        voice_control_panel(last_speak, key_prefix="tts_food")
+        voice_control_panel(last_speak, key_prefix="tts_food", button_text="🔊 一键播报全部结果")
     st.markdown("</div>", unsafe_allow_html=True)
 
     # 底部操作栏
@@ -1021,21 +1121,35 @@ def render_personal_warnings(result, ingredients):
             warnings.append(f"⚠️ 检测到可能的过敏原：{'、'.join(allergen_warnings)}，请谨慎食用")
 
     if warnings:
+        warning_items = "".join(
+            f"<div class='advice-block advice-block-warning'>"
+            f"<div class='advice-block-icon'>⚠️</div>"
+            f"<div class='advice-block-body'>"
+            f"<div class='advice-block-title'>特定人群注意</div>"
+            f"<p class='advice-block-text'>{_safe(w)}</p>"
+            f"</div></div>"
+            for w in warnings
+        )
         st.markdown(
-            "<div class='result-card' style='border-left:4px solid #E53935;'>"
-            "<div class='result-card-title'>⚠️ 个性化提醒</div>"
-            + "".join(f"<p style='margin:8px 0;'>{_safe(w)}</p>" for w in warnings)
-            + "<p style='font-size:14px;color:#9E9E9E;margin-top:8px;'>本工具不提供医疗建议，如有疑问请咨询专业人士</p>"
+            "<div class='result-card'>"
+            "<div class='result-card-title'>💗 针对您的健康档案</div>"
+            + warning_items
+            + "<p class='result-card-footnote'>本工具不提供医疗建议，如有疑问请咨询专业人士</p>"
             "</div>",
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
     elif user_drugs or user_allergens:
         st.markdown(
-            "<div class='result-card' style='border-left:4px solid #43A047;'>"
-            "<div class='result-card-title'>✅ 健康档案匹配</div>"
-            "<p>根据您的健康档案，未发现需要特别注意的成分</p>"
+            "<div class='result-card'>"
+            "<div class='result-card-title'>💗 针对您的健康档案</div>"
+            "<div class='advice-block advice-block-safe'>"
+            "<div class='advice-block-icon'>✅</div>"
+            "<div class='advice-block-body'>"
+            "<div class='advice-block-title'>暂未发现冲突</div>"
+            "<p class='advice-block-text'>根据您的健康档案，未发现需要特别注意的成分</p>"
+            "</div></div>"
             "</div>",
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
 
@@ -1056,8 +1170,11 @@ def render_nutrition_bars(result):
             items.append((key, float(val)))
     if not items:
         return
-    st.markdown("### 📊 营养成分（NRV% 占比）")
-    st.caption("NRV% = 营养素参考值百分比，每日推荐摄入量占比。数据来自包装原文。")
+    st.markdown(
+        "<div class='result-card'>"
+        "<div class='result-card-title'>📊 营养成分</div>",
+        unsafe_allow_html=True,
+    )
     for name, pct in items:
         pct_clamped = max(0, min(100, pct))
         # 颜色：<5% 绿 / 5-20% 橙 / >20% 红
@@ -1073,14 +1190,17 @@ def render_nutrition_bars(result):
         st.markdown(
             f"<div class='nrv-bar-wrap'>"
             f"<div class='nrv-bar-label'>"
-            f"<span><b>{_safe(name)}</b> <small style='color:#888;'>({level_text})</small></span>"
-            f"<span style='color:{bar_color};font-weight:bold;'>{pct:.0f}%</span>"
+            f"<span class='nrv-bar-name'>{_safe(name)} <small>({level_text})</small></span>"
+            f"<span class='nrv-bar-value' style='color:{bar_color};'>{pct:.0f}%</span>"
             f"</div>"
             f"<div class='nrv-bar-track'>"
             f"<div class='nrv-bar-fill' style='width:{pct_clamped:.0f}%;background:{bar_color};'></div>"
-            f"</div></div>",
-            unsafe_allow_html=True
+            f"</div>"
+            f"<div class='nrv-bar-caption'>占每日推荐摄入量 <strong style='color:{bar_color};'>{pct:.0f}%</strong></div>"
+            f"</div>",
+            unsafe_allow_html=True,
         )
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_supplement(result):
@@ -1545,7 +1665,7 @@ def render_health_profile():
 
 def render_home_page():
     """首页：顶部导航 + 健康标签 + 大圆形扫描按钮 + 最近扫描."""
-    render_top_nav("食品配料表识别", show_back=False, right_action="profile")
+    render_top_nav("食品配料表识别", show_back=False, right_action="profile", align="left")
 
     profile = st.session_state.get("health_profile", {})
     diseases = profile.get("diseases", [])
@@ -1966,6 +2086,11 @@ def main():
             "Report a bug": None,
             "About": None,
         },
+    )
+    # 移动端适配：声明 viewport，禁止缩放，适配手机浏览器
+    st.markdown(
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">',
+        unsafe_allow_html=True,
     )
     inject_elder_css()
     _preload_tts_voices()
