@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-2.4.1-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.3.6-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 一句话介绍
 
@@ -123,6 +123,21 @@ streamlit run app.py
 - **生产环境不要开启 `DEBUG=1`**，否则页面会展示 key 长度与末 4 位等调试信息；
 - **定期检查 GitHub 仓库协作者和 Streamlit Cloud Collaborators**，移除不认识的人员；
 - **建议定期轮换 API key**，若怀疑密钥泄露应立即 revoke 并重新生成。
+
+### 安全部署检查清单
+
+部署到生产环境前，请逐项确认：
+
+- [ ] **Secrets 配置**：API key 通过 Streamlit Cloud Secrets 或环境变量注入，未写入代码
+- [ ] **DEBUG 禁用**：生产环境 `DEBUG` 环境变量未设置或为 `0`
+- [ ] **XSRF/CORS 保护**：`.streamlit/config.toml` 中 `enableXsrfProtection=true`、`enableCORS=true`
+- [ ] **上传限制**：`maxUploadSize` 设置为 `5`（MB），防止大文件攻击
+- [ ] **依赖安全**：运行 `pip-audit` 无 Critical/High 漏洞
+- [ ] **日志级别**：生产环境日志级别为 `INFO`，非 `DEBUG`
+- [ ] **HTTPS**：Streamlit Cloud 默认启用 HTTPS；若自建部署，确保反向代理配置 SSL
+- [ ] **安全头**（自建部署）：通过 Nginx/Cloudflare 添加 `X-Content-Type-Options`、`X-Frame-Options`、`Content-Security-Policy`
+- [ ] **密钥轮换**：每 90 天轮换一次 API key，或怀疑泄露时立即轮换
+- [ ] **访问控制**：GitHub 仓库协作者和 Streamlit Cloud Collaborators 列表已审查
 
 ---
 

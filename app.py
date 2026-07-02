@@ -9,8 +9,10 @@ AI食品配料表识别工具 - Streamlit Demo 优化版 v0.3.4
 
 import base64
 import csv
+import html
 import io
 import json
+import logging
 import os
 import re
 import time
@@ -21,6 +23,16 @@ from dotenv import load_dotenv
 import requests
 import streamlit as st
 from PIL import Image
+
+# ========== 日志配置 ==========
+# 生产环境 INFO，本地 DEBUG=1 时 DEBUG
+_log_level = logging.DEBUG if os.getenv("DEBUG") == "1" else logging.INFO
+logging.basicConfig(
+    level=_log_level,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("ai-food-scanner")
 
 # 加载本地 .env（如果存在），便于本地测试；Streamlit Cloud 仍使用 Secrets
 load_dotenv()
@@ -70,6 +82,11 @@ _HISTORY_FULL_PATH = os.path.join(_DATA_DIR, "history_full.json")
 _HISTORY_FULL_MAX = 20
 
 
+def _safe(text: str) -> str:
+    """对动态文本做 HTML 转义，防止 XSS."""
+    return html.escape(str(text), quote=True)
+
+
 def _load_json(path):
     """读取 JSON 文件，失败返回空 dict/list."""
     try:
@@ -79,6 +96,7 @@ def _load_json(path):
         return {} if path.endswith(("diseases.json", "allergens.json", "common_drugs.json", "drug_food_conflicts.json")) else {}
 
 
+@st.cache_data
 def _load_markdown(path):
     """读取 Markdown 文件，失败返回提示文本."""
     try:
@@ -208,352 +226,31 @@ def render_top_nav(title: str, show_back: bool = True, back_target: str = "home"
 
 # ========== 适老化样式 ==========
 
+@st.cache_data
+def load_css():
+    """加载 CSS 文件，缓存结果."""
+    css_path = os.path.join(os.path.dirname(__file__), ".streamlit", "style.css")
+    try:
+        with open(css_path, encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return ""
+
+
 def inject_elder_css():
     """注入适老化 CSS：大字体、大按钮、高对比度，并按设计稿统一主题."""
-    st.markdown(
-        """
-        <style>
-        /* ── 设计稿变量 ── */
-        :root {
-          --color-primary: #2E7D32;
-          --color-primary-light: #E8F5E9;
-          --color-primary-dark: #1B5E20;
-          --color-secondary: #FF9800;
-          --color-secondary-light: #FFF3E0;
-          --state-success: #43A047;
-          --state-warning: #FDD835;
-          --state-error: #E53935;
-          --color-bg: #FAFAF5;
-          --color-card: #FFFFFF;
-          --color-text-primary: #212121;
-          --color-text-secondary: #616161;
-          --color-text-tertiary: #9E9E9E;
-          --radius-md: 12px;
-          --radius-lg: 16px;
-          --radius-xl: 24px;
-          --shadow-subtle: 0 1px 3px rgba(0,0,0,0.05);
-          --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
-          --shadow-button: 0 4px 12px rgba(46,125,50,0.3);
-        }
-
-        /* 全局字体放大 + 背景 */
-        .stApp { font-size: 18px; background: var(--color-bg) !important; }
-        h1 { font-size: 28px !important; }
-        h2 { font-size: 24px !important; }
-        h3 { font-size: 20px !important; }
-
-        /* 按钮放大 */
-        .stButton > button {
-            font-size: 20px !important;
-            height: 56px !important;
-            border-radius: 12px !important;
-            font-weight: bold !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            gap: 8px !important;
-        }
-
-        /* 输入框放大 */
-        .stTextInput input, .stTextArea textarea {
-            font-size: 18px !important;
-        }
-
-        /* 通用白色卡片 */
-        .card-white {
-            background: var(--color-card);
-            border-radius: var(--radius-lg);
-            padding: 16px;
-            margin: 12px 0;
-            box-shadow: var(--shadow-card);
-        }
-
-        /* 顶部导航栏 */
-        .top-nav {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 12px 16px; background: var(--color-card);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin: -1rem -1rem 1rem -1rem;
-        }
-        .top-nav-title { font-size: 22px; font-weight: bold; color: var(--color-text-primary); }
-        .top-nav-btn {
-            width: 48px; height: 48px; border-radius: 50%;
-            background: var(--color-primary-light); color: var(--color-primary);
-            border: none; cursor: pointer; display: inline-flex;
-            align-items: center; justify-content: center; font-size: 24px;
-        }
-
-        /* 语音按钮统一样式 */
-        .voice-btn {
-            display: inline-flex; align-items: center; justify-content: center;
-            gap: 8px; font-size: 20px; height: 56px; padding: 0 24px;
-            border-radius: 9999px; border: 2px solid #2E7D32;
-            background: #E8F5E9; color: #1B5E20; font-weight: bold;
-            cursor: pointer; min-width: 180px;
-        }
-        .voice-btn-sm {
-            display: inline-flex; align-items: center; justify-content: center;
-            gap: 6px; font-size: 18px; height: 48px; padding: 0 16px;
-            border-radius: 12px; border: 2px solid #2E7D32;
-            background: #E8F5E9; color: #1B5E20; font-weight: bold;
-            cursor: pointer;
-        }
-        .voice-btn-icon { font-size: 24px; line-height: 1; }
-
-        /* 健康标签行 */
-        .health-tags-row {
-            display: flex; gap: 8px; padding: 8px 0;
-            overflow-x: auto; -webkit-overflow-scrolling: touch;
-        }
-        .health-tags-row::-webkit-scrollbar { display: none; }
-        .health-tag {
-            flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;
-            padding: 8px 16px; border-radius: 9999px;
-            font-size: 16px; font-weight: 500;
-            background: var(--color-secondary-light); color: #E65100;
-            cursor: pointer; border: none;
-        }
-
-        /* 评分色块 */
-        .score-box {
-            padding: 20px; border-radius: var(--radius-lg); text-align: center;
-            color: #333333; margin: 12px 0;
-            display: flex; align-items: center; justify-content: center; gap: 16px;
-        }
-        .score-num { font-size: 48px; font-weight: bold; }
-        .score-label { font-size: 20px; }
-        .score-shape {
-            font-size: 48px; line-height: 1; font-weight: bold;
-            display: inline-block; min-width: 56px;
-        }
-
-        /* 评分英雄区（结果页顶部大卡） */
-        .score-hero {
-            border-radius: var(--radius-lg); padding: 24px 20px;
-            text-align: center; position: relative; overflow: hidden;
-            margin: 12px 0;
-        }
-        .score-hero-product { font-size: 20px; font-weight: bold; color: var(--color-text-primary); margin-bottom: 8px; }
-        .score-hero-number { font-size: 56px; font-weight: bold; line-height: 1.1; }
-        .score-hero-label {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 8px 16px; border-radius: 9999px;
-            font-size: 16px; font-weight: 500; margin-top: 12px;
-        }
-
-        /* 添加剂卡片：色盲友好三重编码 */
-        .additive-row {
-            display: flex; justify-content: space-between;
-            align-items: center; padding: 14px 16px;
-            border-radius: 10px; margin: 6px 0;
-            background: var(--color-bg); font-size: 18px;
-        }
-        .additive-shape {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 24px; height: 24px; font-size: 16px;
-            margin-right: 12px; flex-shrink: 0;
-        }
-        .additive-level {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 6px 12px; border-radius: 8px; font-weight: bold;
-            font-size: 16px;
-        }
-
-        /* 添加剂清单项 */
-        .additive-list-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px; border-radius: 12px;
-            background: var(--color-bg); margin: 8px 0;
-        }
-        .additive-list-name { font-size: 18px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
-        .additive-list-note { font-size: 14px; color: var(--color-text-tertiary); }
-
-        /* 健康档案：大复选框 */
-        .stCheckbox {
-            padding: 8px 0;
-        }
-        .stCheckbox > label {
-            font-size: 20px !important;
-        }
-        .stCheckbox > label > div {
-            min-width: 32px !important; min-height: 32px !important;
-        }
-
-        /* 健康档案疾病卡片 */
-        .condition-card {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 8px; min-height: 110px; border-radius: var(--radius-md);
-            border: 2px solid #E0E0E0; background: var(--color-card);
-            cursor: pointer; transition: all 0.2s; padding: 12px;
-        }
-        .condition-card.selected {
-            background: var(--color-primary-light); border-color: var(--color-primary);
-        }
-        .condition-card .condition-icon {
-            width: 44px; height: 44px; border-radius: 50%;
-            background: #E0E0E0; color: var(--color-text-secondary);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px;
-        }
-        .condition-card.selected .condition-icon {
-            background: var(--color-primary); color: #fff;
-        }
-        .condition-card .condition-name {
-            font-size: 18px; font-weight: 500; color: var(--color-text-primary);
-        }
-        .condition-card.selected .condition-name {
-            color: var(--color-primary); font-weight: bold;
-        }
-
-        /* 首页扫描按钮 */
-        .home-main-scan-btn {
-            display: flex; align-items: center; justify-content: center;
-            gap: 12px; width: 100%;
-        }
-        .home-main-scan-btn-icon { font-size: 28px; }
-
-        /* 历史记录卡片 */
-        .history-cards-row {
-            display: flex; gap: 12px; overflow-x: auto;
-            -webkit-overflow-scrolling: touch; padding-bottom: 8px;
-        }
-        .history-cards-row::-webkit-scrollbar { display: none; }
-        .history-card-mini {
-            flex-shrink: 0; width: 150px; background: var(--color-card);
-            border-radius: var(--radius-md); padding: 14px;
-            box-shadow: var(--shadow-card); cursor: pointer;
-        }
-        .history-card-mini-name { font-size: 17px; font-weight: bold; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .history-card-mini-score { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 9999px; font-size: 15px; font-weight: bold; margin-bottom: 8px; }
-        .history-card-mini-date { font-size: 13px; color: var(--color-text-tertiary); }
-
-        /* 历史记录列表项 */
-        .history-list-item {
-            display: flex; align-items: center; gap: 16px;
-            background: var(--color-card); border-radius: var(--radius-lg);
-            padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow-card);
-            cursor: pointer;
-        }
-        .history-list-score {
-            width: 52px; height: 52px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; font-weight: bold; flex-shrink: 0;
-        }
-        .history-list-info { flex: 1; }
-        .history-list-name { font-size: 18px; font-weight: bold; color: var(--color-text-primary); }
-        .history-list-status { font-size: 15px; font-weight: 500; margin-top: 2px; }
-        .history-list-date { font-size: 13px; color: var(--color-text-tertiary); margin-top: 2px; }
-
-        /* 营养成分可视化条 */
-        .nrv-bar-wrap {
-            margin: 10px 0; padding: 8px 0;
-        }
-        .nrv-bar-label {
-            display: flex; justify-content: space-between;
-            font-size: 18px; margin-bottom: 6px; color: #333;
-        }
-        .nrv-bar-track {
-            width: 100%; height: 24px; background: #E0E0E0;
-            border-radius: 12px; overflow: hidden;
-        }
-        .nrv-bar-fill {
-            height: 100%; border-radius: 12px;
-            transition: width 0.3s;
-        }
-
-        /* 底部语音控制条 */
-        .voice-control-bar {
-            position: sticky; bottom: 0; left: 0; right: 0;
-            background: #fff; padding: 12px 16px;
-            border-top: 2px solid #43A047; z-index: 100;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
-            margin-bottom: 20px;
-        }
-
-        /* 结果页样式 */
-        .result-score-hero {
-            border-radius: 16px; padding: 24px 20px; text-align: center;
-            position: relative; overflow: hidden; margin: 12px 0; min-height: 160px;
-        }
-        .result-score-hero-product { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
-        .result-score-hero-number { font-size: 56px; font-weight: bold; line-height: 1.1; }
-        .result-score-hero-label {
-            display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;
-            border-radius: 9999px; font-size: 16px; font-weight: 500; margin-top: 12px;
-        }
-        .result-score-shape {
-            display: inline-block; width: 16px; height: 16px; flex-shrink: 0;
-        }
-        .result-card {
-            background:#FFFFFF; border-radius:16px; padding:16px;
-            margin:12px 0; box-shadow:0 2px 8px rgba(0,0,0,0.08);
-        }
-        .result-card-title {
-            font-size:20px; font-weight:bold; margin-bottom:12px;
-            display:flex; align-items:center; gap:8px;
-        }
-        .result-additive-item {
-            display:flex; align-items:center; gap:12px; padding:12px;
-            border-radius:12px; background:#FAFAF5; border-left:4px solid; margin:8px 0;
-        }
-        .result-additive-shape {
-            width:20px; height:20px; flex-shrink:0;
-            display:inline-flex; align-items:center; justify-content:center;
-        }
-        .result-additive-name { flex:1; font-size:18px; font-weight:500; }
-        .result-additive-level {
-            flex-shrink:0; padding:4px 12px; border-radius:9999px;
-            border:1px solid; font-size:14px; font-weight:500;
-        }
-        .detail-image-placeholder {
-            width:100%; aspect-ratio:1; background:#F0F0EC;
-            border-radius:12px; display:flex; align-items:center;
-            justify-content:center; color:#9E9E9E; font-size:16px;
-        }
-        /* 健康档案页 */
-        .profile-condition-grid {
-            display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;
-        }
-        .profile-condition-card {
-            min-height:110px; background:#FFFFFF; border:2px solid #F0F0F0;
-            border-radius:16px; padding:16px; display:flex; flex-direction:column;
-            align-items:center; justify-content:center; gap:8px;
-            box-shadow:0 2px 8px rgba(0,0,0,0.08);
-        }
-        .profile-condition-selected {
-            background:var(--color-primary-light); border-color:var(--color-primary);
-        }
-        .profile-condition-icon {
-            width:44px; height:44px; border-radius:50%;
-            background:var(--color-primary); color:#fff;
-            display:flex; align-items:center; justify-content:center; font-size:22px;
-        }
-        .profile-condition-name {
-            font-size:18px; font-weight:500; color:var(--color-text-primary);
-        }
-        .profile-allergen-card {
-            background:#FFFFFF; border-radius:16px; padding:16px;
-            box-shadow:0 2px 8px rgba(0,0,0,0.08);
-        }
-        .profile-save-bottom-btn {
-            position:sticky; bottom:0; left:0; right:0;
-            padding:12px 16px; background:#fff; border-top:1px solid #E0E0E0;
-            margin-top:20px; z-index:50;
-        }
-        .profile-save-bottom-btn button {
-            height:56px !important; border-radius:9999px !important;
-        }
-        /* 小字免责提示 */
-        .disclaimer-text {
-            font-size:14px; color:#9E9E9E; text-align:center;
-            padding:8px 0; margin-top:8px;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+    css_content = load_css()
+    if css_content:
+        st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
 
 
 # ========== 语音播报（浏览器原生，零依赖）==========
+
+def _js_attr_safe(text: str) -> str:
+    """先 HTML 转义防 XSS，再做 JS 字符串转义，用于内联 onclick 属性."""
+    s = html.escape(str(text), quote=True)
+    return s.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace("\r", "")
+
 
 def speak_text(text: str, rate: float = 1.0):
     """用浏览器原生 SpeechSynthesis API 播报中文语音.
@@ -568,11 +265,19 @@ def speak_text(text: str, rate: float = 1.0):
     用户手势上下文不丢失。
     """
     rate = max(0.5, min(2.0, float(rate)))
-    safe = text.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace('"', '\\"')
+    safe = _js_attr_safe(text)
     # 用纯 HTML 按钮 + 内联 onclick，确保移动端用户手势同步触发播报
     js = f"""
     <div style="text-align:center;margin:12px 0;">
         <button onclick="
+            var btn = this;
+            var err = this.nextElementSibling;
+            if (!window.speechSynthesis) {{
+                btn.textContent = '当前浏览器不支持语音播报';
+                btn.disabled = true;
+                if (err) err.textContent = '您的浏览器不支持语音播报功能';
+                return;
+            }}
             var txt = '{safe}';
             speechSynthesis.cancel();
             var u = new SpeechSynthesisUtterance(txt);
@@ -583,10 +288,12 @@ def speak_text(text: str, rate: float = 1.0):
             var voices = speechSynthesis.getVoices();
             var v = null;
             for (var i = 0; i &lt; voices.length; i++) {{
-                if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao') >= 0) {{ v = voices[i]; break; }}
-                if (!v &amp;&amp; voices[i].lang === 'zh-CN') v = voices[i];
+                if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao') &gt;= 0) {{ v = voices[i]; break; }}
+                if (!v &amp;&amp; voices[i].lang &amp;&amp; voices[i].lang.startsWith('zh')) v = voices[i];
             }}
             if (v) u.voice = v;
+            u.onerror = function(e) {{ if (err) err.textContent = '播报失败，请尝试刷新页面'; }};
+            u.onend = function() {{ if (err) err.textContent = ''; }};
             speechSynthesis.speak(u);
         " style="
             font-size:20px; height:56px; padding:0 28px;
@@ -594,6 +301,7 @@ def speak_text(text: str, rate: float = 1.0):
             background:#E8F5E9; color:#1B5E20; font-weight:bold;
             cursor:pointer; min-width:200px;
         ">🔊 点击播报</button>
+        <span class="tts-err" style="color:#D32F2F;font-size:14px;margin-left:8px;"></span>
     </div>
     """
     st.markdown(js, unsafe_allow_html=True)
@@ -622,20 +330,30 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts"):
         st.session_state["tts_rate"] = 1.0
 
     rate = st.session_state["tts_rate"]
-    safe = speak_content.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace('"', '\\"')
+    safe = _js_attr_safe(speak_content)
 
     st.markdown(
         f"""
         <div style="display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">
             <button onclick="
+                var btn = this;
+                var err = this.parentNode.querySelector('.tts-err');
+                if (!window.speechSynthesis) {{
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔇</span> 不支持播报';
+                    if (err) err.textContent = '您的浏览器不支持语音播报功能';
+                    return;
+                }}
                 speechSynthesis.cancel();
                 var u = new SpeechSynthesisUtterance('{safe}');
                 u.lang='zh-CN'; u.rate={rate}; u.pitch=1.0; u.volume=1.0;
                 var voices = speechSynthesis.getVoices();
                 for (var i=0; i&lt;voices.length; i++) {{
-                    if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao')>=0) {{ u.voice=voices[i]; break; }}
-                    if (voices[i].lang==='zh-CN' &amp;&amp; !u.voice) u.voice=voices[i];
+                    if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao') &gt;= 0) {{ u.voice=voices[i]; break; }}
+                    if (voices[i].lang &amp;&amp; voices[i].lang.startsWith('zh') &amp;&amp; !u.voice) u.voice=voices[i];
                 }}
+                u.onerror = function(e) {{ if (err) err.textContent = '播报失败，请尝试刷新页面'; }};
+                u.onend = function() {{ if (err) err.textContent = ''; }};
                 speechSynthesis.speak(u);
             " class="voice-btn">
                 <span class="voice-btn-icon">🔊</span> 点击播报
@@ -643,6 +361,7 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts"):
             <button onclick="try{{speechSynthesis.cancel();}}catch(e){{}}" class="voice-btn-sm" style="border-color:#9E9E9E;background:#F5F5F5;color:#616161;">
                 ⏹ 停止
             </button>
+            <span class="tts-err" style="color:#D32F2F;font-size:14px;width:100%;text-align:center;"></span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -667,6 +386,25 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts"):
         st.session_state["tts_rate"] = rate_values[rate_options.index(chosen)]
 
 
+def _preload_tts_voices():
+    """页面加载时预加载浏览器语音列表，提升首次点击播报成功率."""
+    st.markdown(
+        """
+        <script>
+        (function() {
+            if (!window.speechSynthesis) return;
+            function loadVoices() { window.speechSynthesis.getVoices(); }
+            loadVoices();
+            if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                window.speechSynthesis.onvoiceschanged = loadVoices;
+            }
+        })();
+        </script>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 # ========== 核心函数（API 调用）==========
 
 def get_api_key(model="mimo"):
@@ -687,17 +425,17 @@ def get_api_key(model="mimo"):
         return ""
 
 
-def encode_image_to_base64(image_file, max_size=1024):
-    """压缩图片并转 base64."""
+def encode_image_to_base64(image_file, max_size=768):
+    """压缩图片并转 base64：默认 768px、quality 75，兼顾速度与识别率."""
     img = Image.open(image_file)
     if img.mode in ("RGBA", "P"):
         img = img.convert("RGB")
     w, h = img.size
     if max(w, h) > max_size:
         ratio = max_size / max(w, h)
-        img = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
+        img = img.resize((int(w * ratio), int(h * ratio)), Image.BILINEAR)
     buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=85)
+    img.save(buf, format="JPEG", quality=75, optimize=True)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
@@ -771,30 +509,41 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
             ]}
         ],
         "temperature": 0.2,
-        "max_tokens": 4096
+        "max_tokens": 2048
     }
+
+    # 日志：记录请求开始
+    img_size_kb = len(image_b64) / 1024
+    logger.info(f"API调用开始: model={model}, 图片大小={img_size_kb:.1f}KB")
+    start_time = time.time()
 
     # 指数退避重试：1 次初始 + 最多 2 次重试 = 共 3 次
     max_attempts = 3
     for attempt in range(1, max_attempts + 1):
         # ===== 发起请求 =====
         try:
-            resp = requests.post(url, headers=headers, json=payload, timeout=90)
+            resp = requests.post(url, headers=headers, json=payload, timeout=30)
         except requests.exceptions.Timeout:
             # 超时属于网络错误，可重试
+            logger.warning(f"API请求超时: attempt={attempt}, timeout=30s")
             if attempt < max_attempts:
                 time.sleep(2 ** attempt)  # attempt=1→2秒，attempt=2→4秒
                 continue
+            elapsed = time.time() - start_time
+            logger.error(f"API调用失败: 超时, 总耗时={elapsed:.2f}s")
             _show_friendly_error(
                 "识别服务暂时不可用，请稍后重试。",
-                f"Timeout after 90s, attempts={attempt}"
+                f"Timeout after 30s, attempts={attempt}"
             )
             return None
         except requests.exceptions.RequestException as e:
             # 连接错误/网络异常，可重试
+            logger.warning(f"API网络错误: attempt={attempt}, error={str(e)[:200]}")
             if attempt < max_attempts:
                 time.sleep(2 ** attempt)
                 continue
+            elapsed = time.time() - start_time
+            logger.error(f"API调用失败: 网络错误, 总耗时={elapsed:.2f}s")
             _show_friendly_error(
                 "网络连接失败，请检查网络后重试。",
                 str(e)[:1000]
@@ -802,11 +551,15 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
             return None
 
         # ===== 收到 HTTP 响应 =====
+        elapsed = time.time() - start_time
         if resp.status_code == 200:
             try:
-                return resp.json()["choices"][0]["message"]["content"]
+                content = resp.json()["choices"][0]["message"]["content"]
+                logger.info(f"API调用成功: status=200, 耗时={elapsed:.2f}s, 响应长度={len(content)}")
+                return content
             except (KeyError, IndexError, json.JSONDecodeError) as e:
                 # 响应内容解析失败：不重试（重试也不会变好）
+                logger.error(f"API响应解析失败: error={str(e)[:200]}")
                 _show_friendly_error(
                     "识别结果解析失败，请重试。",
                     f"Parse error: {e}\n{resp.text[:1000]}"
@@ -815,6 +568,7 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
 
         # 4xx 客户端错误：不重试（API Key 无效、请求格式错误等）
         if 400 <= resp.status_code < 500:
+            logger.error(f"API客户端错误: status={resp.status_code}, 耗时={elapsed:.2f}s")
             _show_friendly_error(
                 "API 密钥无效或请求被拒绝，请检查密钥后重试。",
                 f"HTTP {resp.status_code}\n{resp.text[:1000]}"
@@ -822,10 +576,12 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
             return None
 
         # 5xx 服务端错误：可重试
+        logger.warning(f"API服务端错误: status={resp.status_code}, attempt={attempt}, 耗时={elapsed:.2f}s")
         if attempt < max_attempts:
             time.sleep(2 ** attempt)
             continue
         # 最后一次仍失败
+        logger.error(f"API调用失败: 服务端错误, 总耗时={elapsed:.2f}s")
         _show_friendly_error(
             "识别服务暂时不可用，请稍后重试。",
             f"HTTP {resp.status_code}\n{resp.text[:1000]}"
@@ -836,7 +592,10 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
 
 
 def parse_result(raw, health_groups=None):
-    """解析模型返回的 JSON 文本，并对 type=food 强制按 GB 2760 库覆盖 level 和 score."""
+    """解析模型返回的 JSON 文本，并对 type=food 强制按 GB 2760 库覆盖 level 和 score.
+
+    返回：解析成功返回 dict，失败返回 None（不直接调用 st.error，由调用方处理）。
+    """
     s = raw.strip()
     if s.startswith("```"):
         s = s.strip("`")
@@ -844,9 +603,7 @@ def parse_result(raw, health_groups=None):
             s = s[4:].strip()
     try:
         result = json.loads(s)
-    except json.JSONDecodeError as e:
-        st.error(f"返回内容不是合法 JSON：{e}")
-        st.text(raw)
+    except json.JSONDecodeError:
         return None
     # 兜底：纯英文 product_name 强制改成"该产品"（适老化）
     name = str(result.get("product_name", ""))
@@ -874,9 +631,9 @@ def parse_result(raw, health_groups=None):
 # ========== 客户端权威判定（GB 2760 库 + 药物冲突）==========
 
 def normalize_additive(name):
-    """查 GB 2760 风险库返回 (level, ins_no, note)，未匹配默认 yellow 兜底."""
+    """查 GB 2760 风险库返回 (level, ins_no, note)，未匹配默认 B 兜底."""
     if not name:
-        return "yellow", "", ""
+        return "B", "", ""
     n = str(name).strip()
     # 保健品辅料豁免
     if n in SUPPLEMENT_EXCIPIENTS or any(k in n for k in ["胶囊壳", "软胶囊"]):
@@ -966,6 +723,7 @@ _HISTORY_PATH = os.path.join(_DATA_DIR, "history.json")
 _HISTORY_MAX = 50
 
 
+@st.cache_data
 def load_history():
     """读取本地历史记录 JSON，返回 list[dict].
 
@@ -1000,6 +758,7 @@ def save_history(record):
         pass
 
 
+@st.cache_data
 def load_history_full():
     """读取完整历史快照."""
     try:
@@ -1067,7 +826,7 @@ def show_history():
         type_tag = "保健食品" if item.get("type") == "supplement" else "食品"
         st.markdown(
             f"<div style='border-left:4px solid {color};padding:8px 12px;margin:6px 0;background:#FAFAF5;border-radius:6px;'>"
-            f"<b>{item.get('product_name', '未知')}</b>"
+            f"<b>{_safe(item.get('product_name', '未知'))}</b>"
             f"<span style='color:#888;font-size:14px;'> [{type_tag}]</span><br>"
             f"<span style='color:{color};font-size:20px;font-weight:bold;'>{score}分</span> "
             f"<span style='color:#888;'>{item.get('additives_count', 0)}种添加剂</span>"
@@ -1087,10 +846,10 @@ def _get_level_info(level: str) -> Tuple[str, str, str]:
     mapping = {
         "A": ("可食用", "#43A047", "●"),
         "green": ("可食用", "#43A047", "●"),
-        "B": ("注意", "#FF9800", "▲"),
-        "yellow": ("注意", "#FF9800", "▲"),
-        "C": ("少吃", "#E53935", "■"),
-        "red": ("少吃", "#E53935", "■"),
+        "B": ("特定人群注意", "#FF9800", "▲"),
+        "yellow": ("特定人群注意", "#FF9800", "▲"),
+        "C": ("建议少吃", "#E53935", "■"),
+        "red": ("建议少吃", "#E53935", "■"),
     }
     return mapping.get(level, ("未知", "#9E9E9E", "●"))
 
@@ -1117,11 +876,11 @@ def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = T
     shape_bg = color
     st.markdown(
         f"<div class='result-score-hero' style='background:{bg_gradient};border:2px solid {color}44;'>"
-        f"<div class='result-score-hero-product' style='color:{color};'>{product_name}</div>"
+        f"<div class='result-score-hero-product' style='color:{color};'>{_safe(product_name)}</div>"
         f"<div class='result-score-hero-number' style='color:{color};'>{score}</div>"
         f"<div class='result-score-hero-label' style='background:{color}22;color:{color};'>"
         f"<span class='result-score-shape' style='background:{shape_bg};clip-path:{_clip_path(shape)};'></span>"
-        f"{label}</div></div>",
+        f"{_safe(label)}</div></div>",
         unsafe_allow_html=True
     )
 
@@ -1131,16 +890,28 @@ def _render_additive_card(additives):
     if not additives:
         st.markdown("<div class='result-card'><div class='result-card-title'>📋 添加剂清单</div><p style='color:#666;'>未识别到需要关注的食品添加剂</p></div>", unsafe_allow_html=True)
         return
-    html = "<div class='result-card'><div class='result-card-title'>📋 添加剂清单</div>"
+    html = (
+        "<div class='result-card'>"
+        "<div class='result-card-title'>📋 添加剂清单</div>"
+        "<div style='font-size:14px;color:#666;margin-bottom:10px;'>"
+        "<span style='color:#43A047;'>● 可食用（常见）</span> &nbsp;"
+        "<span style='color:#FF9800;'>▲ 特定人群注意</span> &nbsp;"
+        "<span style='color:#E53935;'>■ 建议少吃</span>"
+        "</div>"
+    )
     for item in additives:
-        name = item.get("name", "未知")
+        name = _safe(item.get("name", "未知"))
         level = item.get("level", "B")
+        note = _safe(item.get("note", ""))
         label, color, shape = _get_level_info(level)
+        label = _safe(label)
+        note_html = f"<div style='font-size:13px;color:#888;margin-top:4px;padding-left:28px;'>{note}</div>" if note else ""
         html += (
             f"<div class='result-additive-item' style='border-left-color:{color};'>"
             f"<span class='result-additive-shape' style='background:{color};clip-path:{_clip_path(shape)};'></span>"
             f"<div class='result-additive-name'>{name}</div>"
             f"<span class='result-additive-level' style='color:{color};border-color:{color};background:{color}11;'>{label}</span>"
+            f"{note_html}"
             f"</div>"
         )
     html += "</div>"
@@ -1173,7 +944,7 @@ def render_food(result):
 
     if advice:
         st.markdown(
-            f"<div class='result-card'><div class='result-card-title'>💡 健康建议</div><p>{advice}</p></div>",
+            f"<div class='result-card'><div class='result-card-title'>💡 健康建议</div><p>{_safe(advice)}</p></div>",
             unsafe_allow_html=True
         )
 
@@ -1246,7 +1017,7 @@ def render_personal_warnings(result, ingredients):
         st.markdown(
             "<div class='result-card' style='border-left:4px solid #E53935;'>"
             "<div class='result-card-title'>⚠️ 个性化提醒</div>"
-            + "".join(f"<p style='margin:8px 0;'>{w}</p>" for w in warnings)
+            + "".join(f"<p style='margin:8px 0;'>{_safe(w)}</p>" for w in warnings)
             + "<p style='font-size:14px;color:#9E9E9E;margin-top:8px;'>本工具不提供医疗建议，如有疑问请咨询专业人士</p>"
             "</div>",
             unsafe_allow_html=True
@@ -1295,7 +1066,7 @@ def render_nutrition_bars(result):
         st.markdown(
             f"<div class='nrv-bar-wrap'>"
             f"<div class='nrv-bar-label'>"
-            f"<span><b>{name}</b> <small style='color:#888;'>({level_text})</small></span>"
+            f"<span><b>{_safe(name)}</b> <small style='color:#888;'>({level_text})</small></span>"
             f"<span style='color:{bar_color};font-weight:bold;'>{pct:.0f}%</span>"
             f"</div>"
             f"<div class='nrv-bar-track'>"
@@ -1333,7 +1104,7 @@ def render_supplement(result):
 
     if summary:
         st.markdown(
-            f"<div class='result-card'><div class='result-card-title'>📝 产品摘要</div><p>{summary}</p></div>",
+            f"<div class='result-card'><div class='result-card-title'>📝 产品摘要</div><p>{_safe(summary)}</p></div>",
             unsafe_allow_html=True
         )
 
@@ -1341,7 +1112,7 @@ def render_supplement(result):
     if approval_no and approval_no != "未显示":
         st.markdown(
             f"<div class='result-card'><div class='result-card-title'>📋 批准文号</div>"
-            f"<p><code>{approval_no}</code></p></div>",
+            f"<p><code>{_safe(approval_no)}</code></p></div>",
             unsafe_allow_html=True
         )
 
@@ -1349,14 +1120,14 @@ def render_supplement(result):
     if functional:
         html = "<div class='result-card'><div class='result-card-title'>✨ 标志性成分</div><ul style='margin:0;padding-left:20px;'>"
         for item in functional:
-            html += f"<li style='margin:6px 0;'>{item}</li>"
+            html += f"<li style='margin:6px 0;'>{_safe(item)}</li>"
         html += "</ul></div>"
         st.markdown(html, unsafe_allow_html=True)
 
     health_claims = result.get("health_claims", "")
     if health_claims and health_claims != "未显示":
         st.markdown(
-            f"<div class='result-card'><div class='result-card-title'>💪 保健功能（包装原文）</div><p>{health_claims}</p></div>",
+            f"<div class='result-card'><div class='result-card-title'>💪 保健功能（包装原文）</div><p>{_safe(health_claims)}</p></div>",
             unsafe_allow_html=True
         )
 
@@ -1364,19 +1135,19 @@ def render_supplement(result):
     unsuitable = result.get("unsuitable_for", "")
     if suitable and suitable != "未显示":
         st.markdown(
-            f"<div class='result-card'><div class='result-card-title'>👥 适宜人群（包装原文）</div><p>{suitable}</p></div>",
+            f"<div class='result-card'><div class='result-card-title'>👥 适宜人群（包装原文）</div><p>{_safe(suitable)}</p></div>",
             unsafe_allow_html=True
         )
     if unsuitable and unsuitable != "未显示":
         st.markdown(
-            f"<div class='result-card' style='border-left:4px solid #FF9800;'><div class='result-card-title'>⚠️ 不适宜人群（包装原文）</div><p style='color:#E65100;'>{unsuitable}</p></div>",
+            f"<div class='result-card' style='border-left:4px solid #FF9800;'><div class='result-card-title'>⚠️ 不适宜人群（包装原文）</div><p style='color:#E65100;'>{_safe(unsuitable)}</p></div>",
             unsafe_allow_html=True
         )
 
     usage = result.get("usage", "")
     if usage and usage != "未显示":
         st.markdown(
-            f"<div class='result-card'><div class='result-card-title'>💊 食用方法（包装原文）</div><p>{usage}</p></div>",
+            f"<div class='result-card'><div class='result-card-title'>💊 食用方法（包装原文）</div><p>{_safe(usage)}</p></div>",
             unsafe_allow_html=True
         )
 
@@ -1859,7 +1630,12 @@ def render_scan_page():
         unsafe_allow_html=True
     )
 
-    uploaded = st.file_uploader("上传配料表图片", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    uploaded = st.file_uploader(
+        "上传配料表图片",
+        type=["jpg", "jpeg", "png"],
+        label_visibility="collapsed",
+        help="支持 jpg/png，大图会自动压缩，通常 5-15 秒出结果",
+    )
 
     if uploaded is not None:
         st.image(uploaded, use_container_width=True)
@@ -1869,16 +1645,42 @@ def render_scan_page():
             if not api_key:
                 st.error("API 密钥未配置，请联系管理员")
                 return
-            with st.spinner("正在识别配料表..."):
+            # 文件大小与格式校验
+            if uploaded.size > 5 * 1024 * 1024:
+                st.error("图片超过 5MB，请选择更小的图片或截图后重试")
+                return
+            try:
+                uploaded.seek(0)
+                Image.open(uploaded).verify()
+                uploaded.seek(0)
+            except Exception:
+                st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")
+                return
+            with st.status("正在识别配料表...", expanded=True) as status:
+                status.write("① 正在压缩图片...")
                 img_b64 = encode_image_to_base64(uploaded)
+                orig_kb = uploaded.size / 1024
+                b64_kb = len(img_b64) * 0.75 / 1024
+                status.update(
+                    label=f"压缩完成：{orig_kb:.0f}KB → {b64_kb:.0f}KB",
+                    state="running",
+                )
+                status.write("② 正在上传并识别...")
                 sys_prompt = build_system_prompt(groups)
                 raw = call_api(api_key, img_b64, sys_prompt, model)
                 if raw:
+                    status.update(label="③ 正在整理结果...", state="running")
                     result = parse_result(raw, health_groups=groups)
                     if result:
+                        status.update(label="识别完成", state="complete")
                         st.session_state["last_result"] = result
                         add_history(result)
                         switch_page("result")
+                    else:
+                        status.update(label="识别失败", state="error")
+                        st.error("返回内容不是合法 JSON，请重试或更换图片")
+                        with st.expander("查看原始返回（调试用）"):
+                            st.text(raw)
 
     st.markdown(
         "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",
@@ -1994,9 +1796,9 @@ def render_detail_page():
         f"<div style='display:flex;gap:16px;'>"
         f"<div class='detail-image-placeholder' style='flex:1;'>图片未保存</div>"
         f"<div style='flex:2;display:flex;flex-direction:column;justify-content:center;'>"
-        f"<p><b>扫描时间</b>：{ts}</p>"
+        f"<p><b>扫描时间</b>：{_safe(ts)}</p>"
         f"<p><b>识别引擎</b>：{MODEL_NAME}</p>"
-        f"<p><b>产品类型</b>：{type_label}</p>"
+        f"<p><b>产品类型</b>：{_safe(type_label)}</p>"
         f"</div></div></div>",
         unsafe_allow_html=True
     )
@@ -2007,13 +1809,13 @@ def render_detail_page():
         render_nutrition_bars(record)
         advice = record.get("advice", "")
         if advice:
-            st.markdown(f"<div class='result-card'><div class='result-card-title'>健康建议</div><p>{advice}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='result-card'><div class='result-card-title'>健康建议</div><p>{_safe(advice)}</p></div>", unsafe_allow_html=True)
         # 全部配料
         ingredients = record.get("ingredients", [])
         if ingredients:
             st.markdown(
                 f"<div class='result-card'><div class='result-card-title'>全部配料</div>"
-                f"<p>{'、'.join(ingredients)}</p></div>",
+                f"<p>{_safe('、'.join(ingredients))}</p></div>",
                 unsafe_allow_html=True
             )
 
@@ -2043,6 +1845,7 @@ def main():
         },
     )
     inject_elder_css()
+    _preload_tts_voices()
 
     # DEBUG 信息块：仅当环境变量 DEBUG=1 时显示，用于本地排查 API 配置
     # ⚠️ 生产环境（Streamlit Cloud）严禁设置 DEBUG=1，避免泄露 API key 信息
@@ -2052,10 +1855,10 @@ def main():
             agnes_key = get_api_key("agnes")
             st.markdown(f"- **MiMo API URL**: `{API_URL}`")
             st.markdown(f"- **MiMo Model**: `{MODEL_NAME}`")
-            st.markdown(f"- **MiMo API Key 长度**: {len(mimo_key)} / 末4位: `{mimo_key[-4:] if len(mimo_key) >= 4 else 'N/A'}`")
+            st.markdown(f"- **MiMo API Key 已配置**: {'是' if mimo_key else '否'}")
             st.markdown(f"- **Agnes API URL**: `{AGNES_API_URL}`")
             st.markdown(f"- **Agnes Model**: `{AGNES_MODEL_NAME}`")
-            st.markdown(f"- **Agnes API Key 长度**: {len(agnes_key)} / 末4位: `{agnes_key[-4:] if len(agnes_key) >= 4 else 'N/A'}`")
+            st.markdown(f"- **Agnes API Key 已配置**: {'是' if agnes_key else '否'}")
             st.markdown("- **Auth Header 类型**: MiMo=`api-key`, Agnes=`Bearer`")
 
     # 首次访问：先法律同意，再触发 4 步引导
