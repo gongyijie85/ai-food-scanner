@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-2.4.0-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-2.4.1-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 一句话介绍
 
@@ -116,6 +116,14 @@ streamlit run app.py
 
 **公开链接格式**：`https://<你的用户名>-ai-food-scanner.streamlit.app`
 
+### 安全提示（必读）
+
+- **API 密钥必须通过 Streamlit Cloud Secrets 配置**，不要把真实 key 写入代码、README、issue、commit message 或聊天记录；
+- **`.env` 文件仅用于本地开发**，已被 `.gitignore` 排除，提交前务必确认没有误加入仓库；
+- **生产环境不要开启 `DEBUG=1`**，否则页面会展示 key 长度与末 4 位等调试信息；
+- **定期检查 GitHub 仓库协作者和 Streamlit Cloud Collaborators**，移除不认识的人员；
+- **建议定期轮换 API key**，若怀疑密钥泄露应立即 revoke 并重新生成。
+
 ---
 
 ## 法律合规提示
@@ -155,10 +163,24 @@ ai-food-scanner/
 
 ---
 
+## 演示视频
+
+30 秒竖屏演示视频（1080×1920，30fps），用 [HyperFrames](https://hyperframes.heygen.com/) 制作：
+
+- **文件**：`d:\GBT\hyperframes-demo-video\renders\hyperframes-demo-video_2026-07-02_11-05-08.mp4`
+- **内容**：痛点引入 → 产品标题 → App 首页 → 识别结果 → 健康档案 → 扫码体验
+- **优化点**：结尾使用真实二维码，扫码即可打开公开体验链接
+- **重新渲染**：
+  ```bash
+  cd d:\GBT\hyperframes-demo-video
+  npm run render
+  ```
+
 ## 参赛信息
 
 - **赛事**：TRAE AI 创造力大赛 - 附加赛题「智慧助老」
 - **报名帖**：https://forum.trae.cn/t/topic/46161
+- **Demo 帖**：https://forum.trae.cn/t/topic/51391
 - **赛道**：附加赛题 - 智慧助老
 - **报名通道**：专业评审（300 席）
 - **一号用户**：我爸爸（79 岁，10 年以上脑梗）

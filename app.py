@@ -1,5 +1,5 @@
 """
-AI食品配料表识别工具 - Streamlit Demo 优化版 v0.3.1
+AI食品配料表识别工具 - Streamlit Demo 优化版 v0.3.4
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案
 运行环境：Python 3.10+
@@ -190,41 +190,20 @@ def switch_page(page: str, **kwargs):
 def render_top_nav(title: str, show_back: bool = True, back_target: str = "home", right_action: str | None = None):
     """渲染顶部导航栏（标题 + 返回按钮 + 右侧可选入口）.
 
-    right_action 可选值："profile"（心形入口）、"voice"（语音重播）、"compare"、None。
+    right_action 可选值："profile"（心形入口）、None。
     """
     cols = st.columns([1, 4, 1])
     with cols[0]:
         if show_back:
-            if st.button("返回", key=f"tn_back_{title}", help="返回"):
+            if st.button("← 返回", key=f"tn_back_{title}", help="返回"):
                 target = st.session_state.get("prev_page", back_target)
                 switch_page(target)
     with cols[1]:
         st.markdown(f"<div style='text-align:center;font-size:22px;font-weight:bold;'>{title}</div>", unsafe_allow_html=True)
     with cols[2]:
         if right_action == "profile":
-            if st.button("档案", key=f"tn_profile_{title}", help="健康档案"):
+            if st.button("👤 档案", key=f"tn_profile_{title}", help="健康档案"):
                 switch_page("profile")
-        elif right_action == "voice":
-            last_speak = st.session_state.get("last_speak_content", "")
-            if last_speak:
-                rate = st.session_state.get("tts_rate", 1.0)
-                safe = last_speak.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace('"', '\\"')
-                st.markdown(
-                    f"""<button onclick="
-                        speechSynthesis.cancel();
-                        var u = new SpeechSynthesisUtterance('{safe}');
-                        u.lang = 'zh-CN'; u.rate = {rate}; u.pitch = 1.0; u.volume = 1.0;
-                        var voices = speechSynthesis.getVoices();
-                        for (var i = 0; i &lt; voices.length; i++) {{
-                            if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao') >= 0) {{ u.voice = voices[i]; break; }}
-                            if (voices[i].lang === 'zh-CN' &amp;&amp; !u.voice) u.voice = voices[i];
-                        }}
-                        speechSynthesis.speak(u);
-                    " style="font-size:20px;height:56px;padding:0 16px;border-radius:12px;
-                        border:2px solid #2E7D32;background:#E8F5E9;color:#1B5E20;
-                        font-weight:bold;cursor:pointer;">🔊 播报</button>""",
-                    unsafe_allow_html=True,
-                )
 
 
 # ========== 适老化样式 ==========
@@ -259,9 +238,9 @@ def inject_elder_css():
 
         /* 全局字体放大 + 背景 */
         .stApp { font-size: 18px; background: var(--color-bg) !important; }
-        h1 { font-size: 32px !important; }
-        h2 { font-size: 26px !important; }
-        h3 { font-size: 22px !important; }
+        h1 { font-size: 28px !important; }
+        h2 { font-size: 24px !important; }
+        h3 { font-size: 20px !important; }
 
         /* 按钮放大 */
         .stButton > button {
@@ -269,6 +248,10 @@ def inject_elder_css():
             height: 56px !important;
             border-radius: 12px !important;
             font-weight: bold !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
         }
 
         /* 输入框放大 */
@@ -293,11 +276,28 @@ def inject_elder_css():
         }
         .top-nav-title { font-size: 22px; font-weight: bold; color: var(--color-text-primary); }
         .top-nav-btn {
-            width: 44px; height: 44px; border-radius: 50%;
+            width: 48px; height: 48px; border-radius: 50%;
             background: var(--color-primary-light); color: var(--color-primary);
             border: none; cursor: pointer; display: inline-flex;
-            align-items: center; justify-content: center; font-size: 22px;
+            align-items: center; justify-content: center; font-size: 24px;
         }
+
+        /* 语音按钮统一样式 */
+        .voice-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 8px; font-size: 20px; height: 56px; padding: 0 24px;
+            border-radius: 9999px; border: 2px solid #2E7D32;
+            background: #E8F5E9; color: #1B5E20; font-weight: bold;
+            cursor: pointer; min-width: 180px;
+        }
+        .voice-btn-sm {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 6px; font-size: 18px; height: 48px; padding: 0 16px;
+            border-radius: 12px; border: 2px solid #2E7D32;
+            background: #E8F5E9; color: #1B5E20; font-weight: bold;
+            cursor: pointer;
+        }
+        .voice-btn-icon { font-size: 24px; line-height: 1; }
 
         /* 健康标签行 */
         .health-tags-row {
@@ -307,43 +307,40 @@ def inject_elder_css():
         .health-tags-row::-webkit-scrollbar { display: none; }
         .health-tag {
             flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px;
-            padding: 6px 14px; border-radius: 9999px;
+            padding: 8px 16px; border-radius: 9999px;
             font-size: 16px; font-weight: 500;
             background: var(--color-secondary-light); color: #E65100;
             cursor: pointer; border: none;
         }
 
-        /* 评分色块：默认深色文字，避免黄底白字对比度不足 */
+        /* 评分色块 */
         .score-box {
-            padding: 24px; border-radius: var(--radius-lg); text-align: center;
+            padding: 20px; border-radius: var(--radius-lg); text-align: center;
             color: #333333; margin: 12px 0;
             display: flex; align-items: center; justify-content: center; gap: 16px;
         }
-        .score-num { font-size: 56px; font-weight: bold; }
-        .score-label { font-size: 22px; }
-        /* 评分等级形状图标（色盲友好：圆/三角/方块）*/
+        .score-num { font-size: 48px; font-weight: bold; }
+        .score-label { font-size: 20px; }
         .score-shape {
-            font-size: 56px; line-height: 1; font-weight: bold;
-            display: inline-block; min-width: 64px;
+            font-size: 48px; line-height: 1; font-weight: bold;
+            display: inline-block; min-width: 56px;
         }
 
         /* 评分英雄区（结果页顶部大卡） */
         .score-hero {
-            background: linear-gradient(135deg, #FFF8E1 0%, #FFF3E0 100%);
-            border-radius: var(--radius-lg); padding: 32px 24px;
+            border-radius: var(--radius-lg); padding: 24px 20px;
             text-align: center; position: relative; overflow: hidden;
-            border: 2px solid #FFE082; margin: 12px 0;
+            margin: 12px 0;
         }
         .score-hero-product { font-size: 20px; font-weight: bold; color: var(--color-text-primary); margin-bottom: 8px; }
-        .score-hero-number { font-size: 72px; font-weight: bold; color: #F9A825; line-height: 1.1; }
+        .score-hero-number { font-size: 56px; font-weight: bold; line-height: 1.1; }
         .score-hero-label {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 6px 14px; border-radius: 9999px;
-            background: rgba(0,0,0,0.12); color: #fff;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 16px; border-radius: 9999px;
             font-size: 16px; font-weight: 500; margin-top: 12px;
         }
 
-        /* 添加剂卡片：色盲友好三重编码（颜色+形状+文字）*/
+        /* 添加剂卡片：色盲友好三重编码 */
         .additive-row {
             display: flex; justify-content: space-between;
             align-items: center; padding: 14px 16px;
@@ -351,17 +348,17 @@ def inject_elder_css():
             background: var(--color-bg); font-size: 18px;
         }
         .additive-shape {
-            display: inline-block; width: 36px; height: 36px;
-            font-size: 28px; line-height: 36px; text-align: center;
-            margin-right: 10px; vertical-align: middle; font-weight: bold;
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; font-size: 16px;
+            margin-right: 12px; flex-shrink: 0;
         }
         .additive-level {
             display: inline-flex; align-items: center; gap: 8px;
             padding: 6px 12px; border-radius: 8px; font-weight: bold;
-            color: #333333;
+            font-size: 16px;
         }
 
-        /* 添加剂清单项（结果页卡片内） */
+        /* 添加剂清单项 */
         .additive-list-item {
             display: flex; align-items: center; gap: 12px;
             padding: 12px; border-radius: 12px;
@@ -370,7 +367,7 @@ def inject_elder_css():
         .additive-list-name { font-size: 18px; font-weight: 500; color: var(--color-text-primary); flex: 1; }
         .additive-list-note { font-size: 14px; color: var(--color-text-tertiary); }
 
-        /* 健康档案：大复选框 32px + 绿色边框反馈 */
+        /* 健康档案：大复选框 */
         .stCheckbox {
             padding: 8px 0;
         }
@@ -384,7 +381,7 @@ def inject_elder_css():
         /* 健康档案疾病卡片 */
         .condition-card {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 8px; min-height: 120px; border-radius: var(--radius-md);
+            gap: 8px; min-height: 110px; border-radius: var(--radius-md);
             border: 2px solid #E0E0E0; background: var(--color-card);
             cursor: pointer; transition: all 0.2s; padding: 12px;
         }
@@ -392,10 +389,10 @@ def inject_elder_css():
             background: var(--color-primary-light); border-color: var(--color-primary);
         }
         .condition-card .condition-icon {
-            width: 48px; height: 48px; border-radius: 50%;
+            width: 44px; height: 44px; border-radius: 50%;
             background: #E0E0E0; color: var(--color-text-secondary);
             display: flex; align-items: center; justify-content: center;
-            font-size: 24px;
+            font-size: 22px;
         }
         .condition-card.selected .condition-icon {
             background: var(--color-primary); color: #fff;
@@ -407,48 +404,26 @@ def inject_elder_css():
             color: var(--color-primary); font-weight: bold;
         }
 
-        /* 过敏原自定义复选 */
-        .allergen-check {
-            width: 24px; height: 24px; border-radius: 6px;
-            border: 2px solid #E0E0E0; display: inline-flex;
-            align-items: center; justify-content: center; flex-shrink: 0;
+        /* 首页扫描按钮 */
+        .home-main-scan-btn {
+            display: flex; align-items: center; justify-content: center;
+            gap: 12px; width: 100%;
         }
-        .allergen-check.checked {
-            background: var(--color-primary); border-color: var(--color-primary);
-        }
+        .home-main-scan-btn-icon { font-size: 28px; }
 
-        /* 首页大圆形扫描按钮 */
-        .scan-circle-btn {
-            display: block; width: 200px; height: 200px; margin: 24px auto;
-            border-radius: 50%; background: linear-gradient(135deg, #43A047, #2E7D32);
-            color: white; font-size: 24px; font-weight: bold; text-align: center;
-            line-height: 200px; box-shadow: 0 6px 20px rgba(67,160,71,0.4);
-            cursor: pointer; border: none; position: relative;
-        }
-        .scan-circle-btn:hover { transform: scale(1.05); }
-        .scan-circle-btn::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            border-radius: 50%; border: 2px solid rgba(46,125,50,0.3);
-            animation: pulse-ring 2s ease-out infinite;
-        }
-        @keyframes pulse-ring {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(1.3); opacity: 0; }
-        }
-
-        /* 最近扫描横向卡片 */
+        /* 历史记录卡片 */
         .history-cards-row {
             display: flex; gap: 12px; overflow-x: auto;
             -webkit-overflow-scrolling: touch; padding-bottom: 8px;
         }
         .history-cards-row::-webkit-scrollbar { display: none; }
         .history-card-mini {
-            flex-shrink: 0; width: 160px; background: var(--color-card);
-            border-radius: var(--radius-md); padding: 16px;
+            flex-shrink: 0; width: 150px; background: var(--color-card);
+            border-radius: var(--radius-md); padding: 14px;
             box-shadow: var(--shadow-card); cursor: pointer;
         }
-        .history-card-mini-name { font-size: 18px; font-weight: bold; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .history-card-mini-score { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 9999px; font-size: 14px; font-weight: bold; margin-bottom: 8px; }
+        .history-card-mini-name { font-size: 17px; font-weight: bold; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .history-card-mini-score { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 9999px; font-size: 15px; font-weight: bold; margin-bottom: 8px; }
         .history-card-mini-date { font-size: 13px; color: var(--color-text-tertiary); }
 
         /* 历史记录列表项 */
@@ -474,7 +449,7 @@ def inject_elder_css():
         }
         .nrv-bar-label {
             display: flex; justify-content: space-between;
-            font-size: 18px; margin-bottom: 4px; color: #333;
+            font-size: 18px; margin-bottom: 6px; color: #333;
         }
         .nrv-bar-track {
             width: 100%; height: 24px; background: #E0E0E0;
@@ -485,68 +460,93 @@ def inject_elder_css():
             transition: width 0.3s;
         }
 
-        /* 底部固定语音按钮 */
-        .sticky-voice-bar {
+        /* 底部语音控制条 */
+        .voice-control-bar {
             position: sticky; bottom: 0; left: 0; right: 0;
             background: #fff; padding: 12px 16px;
             border-top: 2px solid #43A047; z-index: 100;
             box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
         }
 
-        /* 底部浮动大按钮 */
-        .float-bottom-btn {
-            position: fixed; bottom: 34px; left: 50%; transform: translateX(-50%);
-            width: calc(100% - 40px); max-width: 600px; z-index: 100;
+        /* 结果页样式 */
+        .result-score-hero {
+            border-radius: 16px; padding: 24px 20px; text-align: center;
+            position: relative; overflow: hidden; margin: 12px 0; min-height: 160px;
         }
-        /* 首页 */
-        .home-top-bar { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:var(--color-card); box-shadow:var(--shadow-subtle); margin:-1rem -1rem 1rem -1rem; }
-        .home-top-bar span { font-size:22px; font-weight:bold; color:var(--color-text-primary); }
-        .home-health-tags-row { display:flex; gap:8px; padding:8px 0; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-        .home-health-tags-row::-webkit-scrollbar { display:none; }
-        .home-health-tag { flex-shrink:0; display:inline-flex; align-items:center; gap:4px; padding:6px 14px; border-radius:9999px; font-size:16px; font-weight:500; background:var(--color-secondary-light); color:#E65100; }
-        .home-health-tag-add { background:var(--color-primary-light); color:var(--color-primary); }
-        .home-scan-area { text-align:center; padding:24px 0; position:relative; }
-        .home-hint-bubble { position:absolute; top:-8px; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:8px 14px; border-radius:12px; font-size:14px; z-index:10; animation:hintFade 4s forwards; }
-        @keyframes hintFade { 0%,70% { opacity:1; } 100% { opacity:0; display:none; } }
-        .home-scan-circle-btn { display:block; width:200px; height:200px; margin:0 auto; border-radius:50%; background:linear-gradient(135deg,#43A047,#2E7D32); color:white; font-size:22px; font-weight:bold; border:none; box-shadow:0 6px 20px rgba(67,160,71,0.4); cursor:pointer; }
-        .home-history-heading { display:flex; justify-content:space-between; align-items:center; padding:12px 0; }
-        .home-history-title { font-size:20px; font-weight:bold; }
-        .home-history-more { font-size:16px; color:var(--color-primary); cursor:pointer; }
-        .home-history-cards { display:flex; gap:12px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:8px; }
-        .home-history-cards::-webkit-scrollbar { display:none; }
-        .home-history-card { flex-shrink:0; width:160px; background:var(--color-card); border-radius:12px; padding:16px; box-shadow:var(--shadow-card); cursor:pointer; }
-        .home-history-card-name { font-size:18px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .home-history-card-score { display:inline-block; margin-top:8px; padding:2px 10px; border-radius:9999px; font-size:14px; font-weight:bold; }
-        .home-history-card-safe .home-history-card-score { background:#E8F5E9; color:#2E7D32; }
-        .home-history-card-caution .home-history-card-score { background:#FFF8E1; color:#F57F17; }
-        .home-history-card-danger .home-history-card-score { background:#FFEBEE; color:#C62828; }
-        .home-history-card-date { font-size:13px; color:var(--color-text-tertiary); margin-top:8px; }
-        /* 结果页与详情页 */
-        .result-score-hero { background:linear-gradient(135deg,#FFF8E1,#FFF3E0); border-radius:16px; padding:32px 24px; text-align:center; position:relative; overflow:hidden; border:2px solid #FFE082; margin:12px 0; min-height:200px; }
-        .result-score-hero-product { font-size:20px; font-weight:bold; margin-bottom:8px; }
-        .result-score-hero-number { font-size:72px; font-weight:bold; line-height:1.1; }
-        .result-score-hero-label { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:9999px; background:rgba(0,0,0,0.12); font-size:16px; font-weight:500; margin-top:12px; }
-        .result-score-shape { display:inline-block; width:14px; height:14px; }
-        .result-card { background:#FFFFFF; border-radius:16px; padding:16px; margin:12px 0; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-        .result-card-title { font-size:20px; font-weight:bold; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
-        .result-additive-item { display:flex; align-items:center; gap:10px; padding:12px; border-radius:12px; background:#FAFAF5; border-left:4px solid; margin:8px 0; }
-        .result-additive-shape { width:18px; height:18px; flex-shrink:0; }
-        .result-additive-name { flex:1; font-size:17px; font-weight:500; }
-        .result-additive-level { flex-shrink:0; padding:2px 8px; border-radius:9999px; border:1px solid; font-size:13px; font-weight:500; }
-        .result-voice-float { position:fixed; bottom:0; left:0; right:0; padding:12px 16px; background:#fff; border-top:2px solid var(--color-primary); z-index:100; }
-        .result-voice-float button { height:56px !important; border-radius:9999px !important; }
-        .detail-image-placeholder { width:100%; aspect-ratio:1; background:#F0F0EC; border-radius:12px; display:flex; align-items:center; justify-content:center; color:#9E9E9E; }
-        /* 历史记录页 */
-        .history-list-score { width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:bold; }
+        .result-score-hero-product { font-size: 20px; font-weight: bold; margin-bottom: 8px; }
+        .result-score-hero-number { font-size: 56px; font-weight: bold; line-height: 1.1; }
+        .result-score-hero-label {
+            display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;
+            border-radius: 9999px; font-size: 16px; font-weight: 500; margin-top: 12px;
+        }
+        .result-score-shape {
+            display: inline-block; width: 16px; height: 16px; flex-shrink: 0;
+        }
+        .result-card {
+            background:#FFFFFF; border-radius:16px; padding:16px;
+            margin:12px 0; box-shadow:0 2px 8px rgba(0,0,0,0.08);
+        }
+        .result-card-title {
+            font-size:20px; font-weight:bold; margin-bottom:12px;
+            display:flex; align-items:center; gap:8px;
+        }
+        .result-additive-item {
+            display:flex; align-items:center; gap:12px; padding:12px;
+            border-radius:12px; background:#FAFAF5; border-left:4px solid; margin:8px 0;
+        }
+        .result-additive-shape {
+            width:20px; height:20px; flex-shrink:0;
+            display:inline-flex; align-items:center; justify-content:center;
+        }
+        .result-additive-name { flex:1; font-size:18px; font-weight:500; }
+        .result-additive-level {
+            flex-shrink:0; padding:4px 12px; border-radius:9999px;
+            border:1px solid; font-size:14px; font-weight:500;
+        }
+        .detail-image-placeholder {
+            width:100%; aspect-ratio:1; background:#F0F0EC;
+            border-radius:12px; display:flex; align-items:center;
+            justify-content:center; color:#9E9E9E; font-size:16px;
+        }
         /* 健康档案页 */
-        .profile-condition-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
-        .profile-condition-card { min-height:120px; background:#FFFFFF; border:2px solid #F0F0F0; border-radius:16px; padding:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-        .profile-condition-selected { background:var(--color-primary-light); border-color:var(--color-primary); }
-        .profile-condition-icon { width:48px; height:48px; border-radius:50%; background:var(--color-primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; }
-        .profile-condition-name { font-size:18px; font-weight:500; color:var(--color-text-primary); }
-        .profile-allergen-card { background:#FFFFFF; border-radius:16px; padding:16px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
-        .profile-save-bottom-btn { position:fixed; bottom:0; left:0; right:0; padding:12px 16px; background:#fff; border-top:1px solid #E0E0E0; }
-        .profile-save-bottom-btn button { height:56px !important; border-radius:9999px !important; }
+        .profile-condition-grid {
+            display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;
+        }
+        .profile-condition-card {
+            min-height:110px; background:#FFFFFF; border:2px solid #F0F0F0;
+            border-radius:16px; padding:16px; display:flex; flex-direction:column;
+            align-items:center; justify-content:center; gap:8px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.08);
+        }
+        .profile-condition-selected {
+            background:var(--color-primary-light); border-color:var(--color-primary);
+        }
+        .profile-condition-icon {
+            width:44px; height:44px; border-radius:50%;
+            background:var(--color-primary); color:#fff;
+            display:flex; align-items:center; justify-content:center; font-size:22px;
+        }
+        .profile-condition-name {
+            font-size:18px; font-weight:500; color:var(--color-text-primary);
+        }
+        .profile-allergen-card {
+            background:#FFFFFF; border-radius:16px; padding:16px;
+            box-shadow:0 2px 8px rgba(0,0,0,0.08);
+        }
+        .profile-save-bottom-btn {
+            position:sticky; bottom:0; left:0; right:0;
+            padding:12px 16px; background:#fff; border-top:1px solid #E0E0E0;
+            margin-top:20px; z-index:50;
+        }
+        .profile-save-bottom-btn button {
+            height:56px !important; border-radius:9999px !important;
+        }
+        /* 小字免责提示 */
+        .disclaimer-text {
+            font-size:14px; color:#9E9E9E; text-align:center;
+            padding:8px 0; margin-top:8px;
+        }
         </style>
         """,
         unsafe_allow_html=True
@@ -617,44 +617,16 @@ def _js_speech_control(action: str):
 
 
 def voice_control_panel(speak_content: str, key_prefix: str = "tts"):
-    """语音播报控制面板：纯 HTML 按钮 + 内联 JS，确保移动端手势同步触发.
-
-    参数：
-        speak_content: 要播报的文本
-        key_prefix: 按钮唯一 key 前缀（避免不同结果页冲突）
-    """
-    # 初始化 session_state：记忆语速
+    """语音播报控制面板：简洁版，主按钮+折叠的语速控制."""
     if "tts_rate" not in st.session_state:
         st.session_state["tts_rate"] = 1.0
 
     rate = st.session_state["tts_rate"]
     safe = speak_content.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace('"', '\\"')
 
-    # 语速选择（横排三选一，Streamlit radio 仍可用，不涉及手势触发）
-    st.markdown("#### 🔊 语音播报控制")
-    rate_options = ["0.7x 慢速", "1.0x 正常", "1.3x 快速"]
-    rate_values = [0.7, 1.0, 1.3]
-    cur_idx = 1
-    try:
-        cur_idx = rate_values.index(st.session_state["tts_rate"])
-    except ValueError:
-        cur_idx = 1
-    chosen = st.radio(
-        "语速",
-        rate_options,
-        index=cur_idx,
-        horizontal=True,
-        key=f"{key_prefix}_rate_radio",
-        label_visibility="collapsed",
-    )
-    st.session_state["tts_rate"] = rate_values[rate_options.index(chosen)]
-    # 更新 rate 为最新选择
-    rate = st.session_state["tts_rate"]
-
-    # 4 个纯 HTML 按钮，内联 onclick 直接触发 speechSynthesis（不经过 Python rerun）
     st.markdown(
         f"""
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+        <div style="display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;">
             <button onclick="
                 speechSynthesis.cancel();
                 var u = new SpeechSynthesisUtterance('{safe}');
@@ -665,40 +637,46 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts"):
                     if (voices[i].lang==='zh-CN' &amp;&amp; !u.voice) u.voice=voices[i];
                 }}
                 speechSynthesis.speak(u);
-            " style="flex:1;min-width:80px;font-size:18px;height:56px;border-radius:12px;
-                border:2px solid #2E7D32;background:#E8F5E9;color:#1B5E20;font-weight:bold;cursor:pointer;">
-                ▶️ 重播</button>
-            <button onclick="
-                speechSynthesis.cancel();
-                var u = new SpeechSynthesisUtterance('{safe}');
-                u.lang='zh-CN'; u.rate=0.75; u.pitch=1.0; u.volume=1.0;
-                var voices = speechSynthesis.getVoices();
-                for (var i=0; i&lt;voices.length; i++) {{
-                    if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao')>=0) {{ u.voice=voices[i]; break; }}
-                    if (voices[i].lang==='zh-CN' &amp;&amp; !u.voice) u.voice=voices[i];
-                }}
-                speechSynthesis.speak(u);
-            " style="flex:1;min-width:80px;font-size:18px;height:56px;border-radius:12px;
-                border:2px solid #FF9800;background:#FFF3E0;color:#E65100;font-weight:bold;cursor:pointer;">
-                🐢 慢速</button>
-            <button onclick="try{{speechSynthesis.pause();}}catch(e){{}}" style="flex:1;min-width:80px;
-                font-size:18px;height:56px;border-radius:12px;border:2px solid #9E9E9E;
-                background:#F5F5F5;color:#616161;font-weight:bold;cursor:pointer;">
-                ⏸️ 暂停</button>
-            <button onclick="try{{speechSynthesis.resume();}}catch(e){{}}" style="flex:1;min-width:80px;
-                font-size:18px;height:56px;border-radius:12px;border:2px solid #2E7D32;
-                background:#E8F5E9;color:#1B5E20;font-weight:bold;cursor:pointer;">
-                ▶ 继续</button>
+            " class="voice-btn">
+                <span class="voice-btn-icon">🔊</span> 点击播报
+            </button>
+            <button onclick="try{{speechSynthesis.cancel();}}catch(e){{}}" class="voice-btn-sm" style="border-color:#9E9E9E;background:#F5F5F5;color:#616161;">
+                ⏹ 停止
+            </button>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+    with st.expander("语速调整"):
+        rate_options = ["0.7x 慢速", "1.0x 正常", "1.3x 快速"]
+        rate_values = [0.7, 1.0, 1.3]
+        cur_idx = 1
+        try:
+            cur_idx = rate_values.index(st.session_state["tts_rate"])
+        except ValueError:
+            cur_idx = 1
+        chosen = st.radio(
+            "选择语速",
+            rate_options,
+            index=cur_idx,
+            horizontal=True,
+            key=f"{key_prefix}_rate_radio",
+            label_visibility="collapsed",
+        )
+        st.session_state["tts_rate"] = rate_values[rate_options.index(chosen)]
+
 
 # ========== 核心函数（API 调用）==========
 
 def get_api_key(model="mimo"):
-    """从环境变量或 secrets 读取 API 密钥，按模型选不同变量名."""
+    """从环境变量或 secrets 读取 API 密钥，按模型选不同变量名.
+
+    安全说明：
+    - 本地开发使用 .env（已被 .gitignore 排除，禁止提交）；
+    - 生产环境（Streamlit Cloud）必须使用 Settings → Secrets 配置，禁止在源码中写死 key；
+    - 不要把真实 key 写入 README、issue、commit message 或聊天记录。
+    """
     var = "AGNES_API_KEY" if model == "agnes" else "MIMO_API_KEY"
     key = os.getenv(var, "")
     if key:
@@ -1107,12 +1085,12 @@ from typing import Tuple
 def _get_level_info(level: str) -> Tuple[str, str, str]:
     """统一返回添加剂等级信息：标签、颜色、形状图标."""
     mapping = {
-        "A": ("较常见", "#43A047", "●"),
-        "green": ("较常见", "#43A047", "●"),
-        "B": ("特定人群建议关注", "#FF9800", "▲"),
-        "yellow": ("特定人群建议关注", "#FF9800", "▲"),
-        "C": ("建议咨询专业人士", "#E53935", "■"),
-        "red": ("建议咨询专业人士", "#E53935", "■"),
+        "A": ("可食用", "#43A047", "●"),
+        "green": ("可食用", "#43A047", "●"),
+        "B": ("注意", "#FF9800", "▲"),
+        "yellow": ("注意", "#FF9800", "▲"),
+        "C": ("少吃", "#E53935", "■"),
+        "red": ("少吃", "#E53935", "■"),
     }
     return mapping.get(level, ("未知", "#9E9E9E", "●"))
 
@@ -1129,19 +1107,20 @@ def _clip_path(shape: str) -> str:
 def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = True):
     """渲染评分英雄区（result/detail 复用）."""
     if score >= 80:
-        color, label = "#43A047", "较常见"
+        color, label, bg_gradient = "#43A047", "可放心食用", "linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%)"
     elif score >= 60:
-        color, label = "#FF9800", "特定人群建议关注"
+        color, label, bg_gradient = "#FF9800", "特定人群注意", "linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%)"
     else:
-        color, label = "#E53935", "建议咨询专业人士"
-    text_color = "#333333" if color == "#FF9800" else "white"
+        color, label, bg_gradient = "#E53935", "建议咨询医生", "linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%)"
+    text_color = "#333333" if score >= 60 else "#333333"
     shape = "●" if score >= 80 else ("▲" if score >= 60 else "■")
+    shape_bg = color
     st.markdown(
-        f"<div class='result-score-hero' style='background:{color};color:{text_color};'>"
-        f"<div class='result-score-hero-product'>{product_name}</div>"
-        f"<div class='result-score-hero-number'>{score}</div>"
-        f"<div class='result-score-hero-label'>"
-        f"<span class='result-score-shape' style='background:{text_color};clip-path:{_clip_path(shape)};'></span>"
+        f"<div class='result-score-hero' style='background:{bg_gradient};border:2px solid {color}44;'>"
+        f"<div class='result-score-hero-product' style='color:{color};'>{product_name}</div>"
+        f"<div class='result-score-hero-number' style='color:{color};'>{score}</div>"
+        f"<div class='result-score-hero-label' style='background:{color}22;color:{color};'>"
+        f"<span class='result-score-shape' style='background:{shape_bg};clip-path:{_clip_path(shape)};'></span>"
         f"{label}</div></div>",
         unsafe_allow_html=True
     )
@@ -1150,9 +1129,9 @@ def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = T
 def _render_additive_card(additives):
     """渲染添加剂清单卡片（result/detail 复用）."""
     if not additives:
-        st.markdown("<div class='result-card'><div class='result-card-title'>添加剂清单</div><p>未识别到食品添加剂</p></div>", unsafe_allow_html=True)
+        st.markdown("<div class='result-card'><div class='result-card-title'>📋 添加剂清单</div><p style='color:#666;'>未识别到需要关注的食品添加剂</p></div>", unsafe_allow_html=True)
         return
-    html = "<div class='result-card'><div class='result-card-title'>添加剂清单</div>"
+    html = "<div class='result-card'><div class='result-card-title'>📋 添加剂清单</div>"
     for item in additives:
         name = item.get("name", "未知")
         level = item.get("level", "B")
@@ -1161,7 +1140,7 @@ def _render_additive_card(additives):
             f"<div class='result-additive-item' style='border-left-color:{color};'>"
             f"<span class='result-additive-shape' style='background:{color};clip-path:{_clip_path(shape)};'></span>"
             f"<div class='result-additive-name'>{name}</div>"
-            f"<span class='result-additive-level' style='color:{color};border-color:{color};'>{label}</span>"
+            f"<span class='result-additive-level' style='color:{color};border-color:{color};background:{color}11;'>{label}</span>"
             f"</div>"
         )
     html += "</div>"
@@ -1176,54 +1155,53 @@ def render_food(result):
     product_name = result.get("product_name", "未知")
     advice = result.get("advice", "")
 
-    # 顶部导航
-    render_top_nav("识别结果", back_target="home", right_action="voice")
+    render_top_nav("识别结果", back_target="home")
 
-    # AI 识别不确定性提示
-    st.warning("AI 识别可能存在错误，请以包装原文为准。")
-
-    # 评分英雄区
     _render_score_hero(score, product_name)
-    st.caption("评分仅供参考，不构成安全判断。")
 
-    # 语音播报：保存内容供顶部按钮使用（移除自动播报，避免手机浏览器阻止）
+    st.markdown(
+        "<div class='disclaimer-text'>评分仅供参考，AI识别可能存在误差，请以包装原文为准</div>",
+        unsafe_allow_html=True
+    )
+
     speak_content = f"评分{score}分。{advice}本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生/药师/营养师。"
     st.session_state["last_speak_content"] = speak_content
 
-    # 添加剂清单卡片
     _render_additive_card(result.get("additives", []))
-    st.caption("数据来源：GB 2760-2024；在合规使用范围内是安全的。")
 
-    # 营养成分卡片
     render_nutrition_bars(result)
 
-    # 健康建议卡片
     if advice:
         st.markdown(
-            f"<div class='result-card'><div class='result-card-title'>健康建议</div><p>{advice}</p></div>",
+            f"<div class='result-card'><div class='result-card-title'>💡 健康建议</div><p>{advice}</p></div>",
             unsafe_allow_html=True
         )
 
-    # 个性化警告
     ingredients = result.get("ingredients", [])
     render_personal_warnings(result, ingredients)
 
-    # 全部配料
     if ingredients:
         with st.expander("查看全部配料"):
             st.write("、".join(ingredients))
 
-    # 原始 JSON（仅 DEBUG=1 时展示，Demo 中隐藏）
     if os.getenv("DEBUG") == "1":
         with st.expander("查看原始 JSON（调试用）"):
             st.json(result)
 
-    # 底部固定语音按钮
+    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='voice-control-bar'>", unsafe_allow_html=True)
     last_speak = st.session_state.get("last_speak_content", "")
     if last_speak:
-        st.markdown("<div class='result-voice-float'>", unsafe_allow_html=True)
         voice_control_panel(last_speak, key_prefix="tts_food")
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📷 再扫一个", use_container_width=True):
+            switch_page("scan")
+    with col2:
+        if st.button("🏠 返回首页", use_container_width=True):
+            switch_page("home")
 
 
 def render_personal_warnings(result, ingredients):
@@ -1233,31 +1211,20 @@ def render_personal_warnings(result, ingredients):
     user_allergens = user_profile.get("allergens", [])
 
     if not user_drugs and not user_allergens:
-        return  # 没有档案数据，跳过
+        return
 
-    has_warning = False
+    warnings = []
 
-    # 1. 药物-食物冲突
     if user_drugs:
         conflicts = check_drug_food_conflicts(ingredients, user_drugs)
         if conflicts:
-            has_warning = True
-            st.warning("检测到您正在服用的药物与配料中某些成分可能存在关联，仅供参考。")
-            # 按药物分组展示
             grouped = {}
             for c in conflicts:
                 grouped.setdefault(c["drug"], []).append(c)
             for drug, items in grouped.items():
                 food_names = "、".join(sorted({c["matched_keyword"] for c in items}))
-                with st.expander(f"{drug} 与 {food_names}（建议关注）"):
-                    st.markdown(
-                        f"{drug} 与 {food_names} 可能存在相互作用，"
-                        "具体用药方案请咨询医生或药师。"
-                    )
-                    st.caption(f"数据来源：{items[0].get('source', '')}")
-            st.warning("本工具不提供用药建议。")
+                warnings.append(f"⚠️ {drug} 与 {food_names} 可能存在相互作用，建议咨询医生或药师")
 
-    # 2. 过敏原匹配
     if user_allergens:
         health_data = load_health_data()
         allergen_warnings = []
@@ -1265,24 +1232,33 @@ def render_personal_warnings(result, ingredients):
             a.get("name", "") for a in result.get("additives", [])
         )
         for allergen in user_allergens:
-            # allergen 是 dict {code, name, examples}
             if allergen.get("name") in all_ingredient_text:
-                allergen_warnings.append(allergen)
+                allergen_warnings.append(allergen.get("name"))
                 continue
             for ex in allergen.get("examples", []):
                 if ex in all_ingredient_text:
-                    allergen_warnings.append({**allergen, "matched": ex})
+                    allergen_warnings.append(allergen.get("name"))
                     break
         if allergen_warnings:
-            has_warning = True
-            st.warning(f"⚠️ 检测到 {len(allergen_warnings)} 个过敏原")
-            st.warning("配料表识别可能遗漏致敏物质，严重过敏者请勿仅依赖本工具。")
-            for a in allergen_warnings:
-                matched = a.get("matched", a.get("name"))
-                st.markdown(f"- **{a.get('name')}**（匹配关键词：{matched}）")
+            warnings.append(f"⚠️ 检测到可能的过敏原：{'、'.join(allergen_warnings)}，请谨慎食用")
 
-    if not has_warning and (user_drugs or user_allergens):
-        st.success("✅ 您当前用药/过敏原与本食品无冲突")
+    if warnings:
+        st.markdown(
+            "<div class='result-card' style='border-left:4px solid #E53935;'>"
+            "<div class='result-card-title'>⚠️ 个性化提醒</div>"
+            + "".join(f"<p style='margin:8px 0;'>{w}</p>" for w in warnings)
+            + "<p style='font-size:14px;color:#9E9E9E;margin-top:8px;'>本工具不提供医疗建议，如有疑问请咨询专业人士</p>"
+            "</div>",
+            unsafe_allow_html=True
+        )
+    elif user_drugs or user_allergens:
+        st.markdown(
+            "<div class='result-card' style='border-left:4px solid #43A047;'>"
+            "<div class='result-card-title'>✅ 健康档案匹配</div>"
+            "<p>根据您的健康档案，未发现需要特别注意的成分</p>"
+            "</div>",
+            unsafe_allow_html=True
+        )
 
 
 def render_nutrition_bars(result):
@@ -1335,23 +1311,18 @@ def render_supplement(result):
     summary = result.get("summary", "")
     score = result.get("score", 0) or 0
 
-    # 顶部导航
-    render_top_nav("识别结果", back_target="home", right_action="voice")
+    render_top_nav("识别结果", back_target="home")
 
-    # 顶部固定：红条强制免责
     st.markdown(
-        "<div class='result-card' style='background:#E53935;color:#fff;border-color:#E53935;'>"
-        "<b>本产品为保健食品</b><br>"
-        "保健食品不是药物，不能代替药物治疗疾病。<br>"
-        "内容为包装原文摘录，不代表本工具立场；AI 识别可能存在错误，请以包装原文为准。"
+        "<div class='result-card' style='background:#FFEBEE;border:2px solid #E53935;'>"
+        "<div style='color:#C62828;font-weight:bold;font-size:18px;'>⚠️ 本产品为保健食品</div>"
+        "<p style='color:#C62828;margin:8px 0 0 0;'>保健食品不是药物，不能代替药物治疗疾病</p>"
         "</div>",
         unsafe_allow_html=True
     )
 
-    # 评分英雄区（保健食品默认 100 分展示，不实际评分）
     _render_score_hero(score if score else 100, product_name)
 
-    # 语音播报：保存内容供顶部按钮使用（移除自动播报，避免手机浏览器阻止）
     speak_content = (
         f"保健食品：{product_name}。"
         f"{summary}。"
@@ -1360,84 +1331,78 @@ def render_supplement(result):
     )
     st.session_state["last_speak_content"] = speak_content
 
-    # 产品摘要卡片
     if summary:
         st.markdown(
-            f"<div class='result-card'><div class='result-card-title'>产品摘要</div><p>{summary}</p></div>",
+            f"<div class='result-card'><div class='result-card-title'>📝 产品摘要</div><p>{summary}</p></div>",
             unsafe_allow_html=True
         )
 
-    # 批准文号卡片
     approval_no = result.get("approval_no", "未显示")
-    st.markdown(
-        f"<div class='result-card'><div class='result-card-title'>批准文号/备案号（据包装）</div>"
-        f"<code>{approval_no}</code></div>",
-        unsafe_allow_html=True
-    )
+    if approval_no and approval_no != "未显示":
+        st.markdown(
+            f"<div class='result-card'><div class='result-card-title'>📋 批准文号</div>"
+            f"<p><code>{approval_no}</code></p></div>",
+            unsafe_allow_html=True
+        )
 
-    # 功效成分卡片
     functional = result.get("functional_ingredients", [])
     if functional:
-        html = "<div class='result-card'><div class='result-card-title'>标志性成分及含量（据包装）</div><ul>"
+        html = "<div class='result-card'><div class='result-card-title'>✨ 标志性成分</div><ul style='margin:0;padding-left:20px;'>"
         for item in functional:
-            html += f"<li>{item}</li>"
+            html += f"<li style='margin:6px 0;'>{item}</li>"
         html += "</ul></div>"
         st.markdown(html, unsafe_allow_html=True)
 
-    # 保健功能/适宜/不适宜/用法 卡片
-    st.markdown(
-        f"<div class='result-card'><div class='result-card-title'>保健功能（据包装原文）</div>"
-        f"<p>{result.get('health_claims', '未显示')}</p></div>",
-        unsafe_allow_html=True
-    )
-    st.markdown(
-        f"<div class='result-card'><div class='result-card-title'>适宜人群（据包装原文）</div>"
-        f"<p>{result.get('suitable_for', '未显示')}</p></div>",
-        unsafe_allow_html=True
-    )
-    st.markdown(
-        f"<div class='result-card'><div class='result-card-title'>不适宜人群（据包装原文）</div>"
-        f"<p>{result.get('unsuitable_for', '未显示')}</p></div>",
-        unsafe_allow_html=True
-    )
-    st.markdown(
-        f"<div class='result-card'><div class='result-card-title'>食用方法及食用量（据包装原文）</div>"
-        f"<p>{result.get('usage', '未显示')}</p></div>",
-        unsafe_allow_html=True
-    )
-
-    # 贮藏 + 保质期
-    storage = result.get("storage", "")
-    shelf_life = result.get("shelf_life", "")
-    if storage or shelf_life:
-        html = "<div class='result-card'><div class='result-card-title'>贮藏与保质期（据包装）</div>"
-        if storage:
-            html += f"<p><b>贮藏</b>：{storage}</p>"
-        if shelf_life:
-            html += f"<p><b>保质期</b>：{shelf_life}</p>"
-        html += "</div>"
-        st.markdown(html, unsafe_allow_html=True)
-
-    # 全部配料
-    ingredients = result.get("ingredients", [])
-    if ingredients:
+    health_claims = result.get("health_claims", "")
+    if health_claims and health_claims != "未显示":
         st.markdown(
-            f"<div class='result-card'><div class='result-card-title'>全部原料（据包装）</div>"
-            f"<p>{'、'.join(ingredients)}</p></div>",
+            f"<div class='result-card'><div class='result-card-title'>💪 保健功能（包装原文）</div><p>{health_claims}</p></div>",
             unsafe_allow_html=True
         )
 
-    # 原始 JSON（仅 DEBUG=1 时展示，Demo 中隐藏）
+    suitable = result.get("suitable_for", "")
+    unsuitable = result.get("unsuitable_for", "")
+    if suitable and suitable != "未显示":
+        st.markdown(
+            f"<div class='result-card'><div class='result-card-title'>👥 适宜人群（包装原文）</div><p>{suitable}</p></div>",
+            unsafe_allow_html=True
+        )
+    if unsuitable and unsuitable != "未显示":
+        st.markdown(
+            f"<div class='result-card' style='border-left:4px solid #FF9800;'><div class='result-card-title'>⚠️ 不适宜人群（包装原文）</div><p style='color:#E65100;'>{unsuitable}</p></div>",
+            unsafe_allow_html=True
+        )
+
+    usage = result.get("usage", "")
+    if usage and usage != "未显示":
+        st.markdown(
+            f"<div class='result-card'><div class='result-card-title'>💊 食用方法（包装原文）</div><p>{usage}</p></div>",
+            unsafe_allow_html=True
+        )
+
+    ingredients = result.get("ingredients", [])
+    if ingredients:
+        with st.expander("查看全部原料"):
+            st.write("、".join(ingredients))
+
     if os.getenv("DEBUG") == "1":
         with st.expander("查看原始 JSON（调试用）"):
             st.json(result)
 
-    # 底部固定语音按钮
+    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='voice-control-bar'>", unsafe_allow_html=True)
     last_speak = st.session_state.get("last_speak_content", "")
     if last_speak:
-        st.markdown("<div class='result-voice-float'>", unsafe_allow_html=True)
         voice_control_panel(last_speak, key_prefix="tts_supp")
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📷 再扫一个", use_container_width=True):
+            switch_page("scan")
+    with col2:
+        if st.button("🏠 返回首页", use_container_width=True):
+            switch_page("home")
 
 
 def show_result(result):
@@ -1626,32 +1591,22 @@ def render_onboarding():
 # ========== 健康档案页 ==========
 
 def render_health_profile():
-    """健康档案：基本信息 + 基础疾病 + 过敏原 + 当前用药 + 档案摘要.
-    数据来源：data/common_diseases.json + allergens.json + common_drugs.json（GB 7718 / NMPA 权威）."""
+    """健康档案：基本信息 + 基础疾病 + 过敏原 + 当前用药."""
     st.markdown("## 👤 我的健康档案")
-    st.caption("填写档案后，识别结果会按您的健康情况给个性化建议（包括药物-食物冲突）")
-    st.warning(
-        "疾病、过敏原、用药属于敏感个人信息，填写即表示您同意我们按《隐私政策》处理这些信息。"
-    )
-    st.info(
-        "Demo 提示：本工具为公开技术展示，建议不要输入真实姓名、身份证号、详细病史等真实个人信息；"
-        "健康档案仅在当前浏览器会话中使用，关闭页面后自动清空。"
-    )
+    st.caption("填写档案后，识别结果会根据您的健康情况给出个性化建议")
 
-    # 初始化 session_state
     if "health_profile" not in st.session_state:
         st.session_state["health_profile"] = {
             "name": "",
             "age": 60,
-            "diseases": [],   # 改：原 groups → 改用结构化疾病 ID 列表
-            "allergens": [],  # 改：原 allergies 文本 → 改用结构化过敏原
-            "drugs": [],      # 改：原 medications 文本 → 改用结构化药物
+            "diseases": [],
+            "allergens": [],
+            "drugs": [],
         }
     if "user_profile" not in st.session_state:
-        # user_profile 是 render_personal_warnings 用的结构化数据
         st.session_state["user_profile"] = {
-            "drugs": [],     # [{id, name, category}]
-            "allergens": [], # [{code, name, examples}]
+            "drugs": [],
+            "allergens": [],
         }
     profile = st.session_state["health_profile"]
     health_data = load_health_data()
@@ -1659,7 +1614,6 @@ def render_health_profile():
     allergens = health_data.get("allergens", [])
     drug_categories = health_data.get("drugs", [])
 
-    # ===== 基本信息 =====
     st.markdown("### 📝 基本信息")
     col1, col2 = st.columns(2)
     with col1:
@@ -1674,7 +1628,6 @@ def render_health_profile():
             value=profile.get("age", 60), step=1
         )
 
-    # ===== 基础疾病（2×3 图标卡片）=====
     CONDITION_ITEMS = [
         ("diabetes", "糖尿病", "糖"),
         ("hypertension", "高血压", "压"),
@@ -1683,7 +1636,6 @@ def render_health_profile():
         ("children", "儿童", "儿"),
         ("pregnant", "孕妇", "孕"),
     ]
-    # 6 个固定疾病选项映射到 profile["diseases"] 中的中文名
     CONDITION_NAME_MAP = {
         "diabetes": "糖尿病",
         "hypertension": "高血压",
@@ -1694,8 +1646,6 @@ def render_health_profile():
     }
 
     st.markdown("### 我的健康状况")
-    st.caption("可多选，帮助我们提供更准确的建议")
-
     selected = set(profile.get("diseases", []))
     cols = st.columns(2)
     for i, (key, name, icon) in enumerate(CONDITION_ITEMS):
@@ -1715,11 +1665,8 @@ def render_health_profile():
                 unsafe_allow_html=True
             )
 
-    # ===== 过敏原（勾选框）=====
     st.markdown("### 过敏原")
-    st.caption("如有过敏请勾选")
     allergen_options = ["花生", "牛奶", "鸡蛋", "鱼类", "甲壳类", "坚果", "小麦", "大豆"]
-    # 构建过敏原名称到结构化数据的映射（优先用数据文件）
     allergen_structured_map = {}
     for a in allergens:
         name = a.get("name", "")
@@ -1731,9 +1678,7 @@ def render_health_profile():
         if opt not in allergen_structured_map:
             allergen_structured_map[opt] = {"name": opt, "examples": [opt]}
 
-    # 当前已选过敏原名称集合
     current_names = {a.get("name", "") for a in profile.get("allergens", []) if isinstance(a, dict)}
-    # 通过选项名反推是否已选
     selected_alg = set()
     for opt in allergen_options:
         struct = allergen_structured_map[opt]
@@ -1749,14 +1694,10 @@ def render_health_profile():
             else:
                 selected_alg.discard(name)
 
-    # 同步到 profile（结构化）
     profile["allergens"] = [allergen_structured_map[name] for name in selected_alg]
 
-    # ===== 当前用药（按系统搜索式选择）=====
     st.markdown("### 💊 当前用药")
-    st.caption("数据来源：NMPA 老年常用药目录（60+ 药，按系统分类）")
     if drug_categories:
-        # 拍平为 (id, name_with_category)
         all_drug_options = []
         drug_id_map = {}
         for cat in drug_categories:
@@ -1773,184 +1714,160 @@ def render_health_profile():
             ],
             key="hp_drugs",
         )
-        # 转成结构化
         profile["drugs"] = [drug_id_map[label] for label in selected_drug_labels]
-    else:
-        st.warning("⚠️ 药物库加载失败")
 
-    # ===== 自由补充 =====
-    with st.expander("📝 自由补充（药物/过敏原）"):
+    with st.expander("📝 补充说明（可选）"):
         profile["medications_free"] = st.text_area(
-            "其他用药（库外的）",
+            "其他用药",
             value=profile.get("medications_free", ""),
             placeholder="如：自购保健品、中药等",
             height=60,
         )
         profile["allergies_free"] = st.text_input(
-            "其他过敏（库外的）",
+            "其他过敏",
             value=profile.get("allergies_free", ""),
             placeholder="如：特定添加剂、特殊食物",
         )
 
     st.divider()
-    health_confirm = st.checkbox(
-        "我确认以上健康信息真实准确，同意用于药物-食物冲突科普提示",
-        key="hp_save_confirm"
-    )
     st.markdown("<div class='profile-save-bottom-btn'>", unsafe_allow_html=True)
     if st.button(
-        "保存档案",
+        "💾 保存档案",
         type="primary",
         use_container_width=True,
-        disabled=not health_confirm,
         key="hp_save_btn"
     ):
-        # 同步到 user_profile（供 render_personal_warnings 使用）
         st.session_state["user_profile"] = {
             "drugs": profile.get("drugs", []),
             "allergens": profile.get("allergens", []),
         }
         st.session_state["health_profile"] = profile
-        st.success("档案已保存！下次识别会自动检测药物-食物冲突")
+        st.success("✅ 档案已保存")
     st.markdown("</div>", unsafe_allow_html=True)
 
-    st.divider()
-    # ===== 档案摘要 =====
-    st.markdown("### 📋 当前档案摘要")
-    summary = []
-    if profile.get("name"):
-        summary.append(f"**称呼**：{profile['name']}")
-    summary.append(f"**年龄**：{profile.get('age', 60)} 岁")
-    if profile.get("diseases"):
-        summary.append(f"**基础疾病**：{'、'.join(profile['diseases'])}")
-    if profile.get("allergens"):
-        summary.append(
-            f"**过敏原**：{'、'.join(a['name'] for a in profile['allergens'] if isinstance(a, dict))}"
-        )
-    if profile.get("drugs"):
-        summary.append(
-            f"**当前用药**：{'、'.join(d['name'] for d in profile['drugs'] if isinstance(d, dict))}"
-        )
-    if profile.get("medications_free"):
-        summary.append(f"**其他用药**：{profile['medications_free']}")
-    if profile.get("allergies_free"):
-        summary.append(f"**其他过敏**：{profile['allergies_free']}")
-    if len(summary) == 1:
-        st.info("档案为空，请填写后保存")
-    else:
-        for s in summary:
-            st.markdown(f"- {s}")
+    if profile.get("diseases") or profile.get("allergens") or profile.get("drugs"):
+        st.divider()
+        st.markdown("### 📋 当前档案")
+        if profile.get("name"):
+            st.markdown(f"- **称呼**：{profile['name']}")
+        st.markdown(f"- **年龄**：{profile.get('age', 60)} 岁")
+        if profile.get("diseases"):
+            st.markdown(f"- **健康状况**：{'、'.join(profile['diseases'])}")
+        if profile.get("allergens"):
+            st.markdown(f"- **过敏原**：{'、'.join(a['name'] for a in profile['allergens'] if isinstance(a, dict))}")
+        if profile.get("drugs"):
+            st.markdown(f"- **用药**：{'、'.join(d['name'] for d in profile['drugs'] if isinstance(d, dict))}")
 
 
 # ========== 页面渲染函数 ==========
 
 def render_home_page():
     """首页：顶部导航 + 健康标签 + 扫描按钮 + 最近扫描."""
-    # 顶部导航
     render_top_nav("食品配料表识别", show_back=False, right_action="profile")
 
-    # 健康标签行
     profile = st.session_state.get("health_profile", {})
     diseases = profile.get("diseases", [])
-    tags_html = "<div class='home-health-tags-row'>"
-    for d in diseases[:5]:
-        tags_html += f"<span class='home-health-tag'>{d}</span>"
-    tags_html += "<span class='home-health-tag home-health-tag-add'>+ 添加</span></div>"
-    st.markdown(tags_html, unsafe_allow_html=True)
+    if diseases:
+        tags_html = "<div class='health-tags-row'>"
+        for d in diseases[:4]:
+            tags_html += f"<span class='health-tag'>{d}</span>"
+        tags_html += "</div>"
+        st.markdown(tags_html, unsafe_allow_html=True)
 
-    # 扫描区域
+    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+
+    if st.button("📷 拍照 / 上传配料表", type="primary", use_container_width=True, key="home_goto_scan"):
+        switch_page("scan")
+
+    st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
+
+    history = load_history()[:6]
+    if history:
+        st.markdown(
+            "<div style='display:flex;justify-content:space-between;align-items:center;padding:12px 0;'>"
+            "<span style='font-size:20px;font-weight:bold;'>最近扫描</span>"
+            "</div>",
+            unsafe_allow_html=True
+        )
+        cols = st.columns(min(len(history), 3))
+        for i, item in enumerate(history[:3]):
+            with cols[i]:
+                score = item.get("score", 0)
+                if score >= 80:
+                    bg, text_c = "#E8F5E9", "#2E7D32"
+                elif score >= 60:
+                    bg, text_c = "#FFF8E1", "#F57F17"
+                else:
+                    bg, text_c = "#FFEBEE", "#C62828"
+                st.markdown(
+                    f"<div style='background:#fff;border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(0,0,0,0.08);cursor:pointer;'>"
+                    f"<div style='font-size:17px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>{item.get('product_name', '未知')}</div>"
+                    f"<div style='display:inline-block;margin-top:8px;padding:4px 12px;border-radius:9999px;font-size:15px;font-weight:bold;background:{bg};color:{text_c};'>{score}分</div>"
+                    f"<div style='font-size:13px;color:#9E9E9E;margin-top:8px;'>{item.get('timestamp', '')[:10]}</div>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+                if st.button(f"查看", key=f"home_card_{i}", use_container_width=True):
+                    st.session_state["selected_history_index"] = i
+                    st.session_state["detail_fallback_record"] = item
+                    switch_page("detail")
+
+        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        if st.button("查看全部历史记录", use_container_width=True, key="home_goto_history"):
+            switch_page("history")
+    else:
+        st.markdown(
+            "<div style='text-align:center;padding:40px 20px;color:#9E9E9E;'>"
+            "<div style='font-size:64px;margin-bottom:12px;'>🥫</div>"
+            "<p style='font-size:18px;'>点击上方按钮开始扫描配料表</p>"
+            "</div>",
+            unsafe_allow_html=True
+        )
+
     st.markdown(
-        "<div class='home-scan-area'>"
-        "<div class='home-hint-bubble' id='hintBubble'>点击大按钮开始</div>"
-        "<div class='home-scan-circle-btn'>拍照 / 上传配料表</div>"
-        "<p style='text-align:center;color:#666;'>点击下方按钮选择图片</p>"
+        "<div class='disclaimer-text'>AI识别仅供参考，请以包装原文为准</div>",
+        unsafe_allow_html=True
+    )
+
+
+def render_scan_page():
+    """扫描上传页：文件上传 + 识别 + 跳转结果页."""
+    render_top_nav("扫描识别", back_target="home", right_action="profile")
+
+    profile = st.session_state.get("health_profile", {})
+    groups = profile.get("diseases", [])
+
+    model = "mimo"
+    model_choice = "MiMo (mimo-v2.5)"
+    st.session_state["model_choice"] = model_choice
+
+    api_key = get_api_key(model)
+
+    if not api_key and os.getenv("DEBUG") == "1":
+        var_name = "MIMO_API_KEY"
+        st.warning(f"未检测到 {var_name}，请在 .env 或 Secrets 中配置")
+        api_key = st.text_input("API 密钥", type="password")
+
+    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+
+    st.markdown(
+        "<div style='text-align:center;padding:20px;'>"
+        "<div style='font-size:72px;margin-bottom:12px;'>📷</div>"
+        "<p style='font-size:20px;color:#333;font-weight:500;'>请选择配料表图片</p>"
+        "<p style='font-size:16px;color:#9E9E9E;'>支持拍照或从相册选择</p>"
         "</div>",
         unsafe_allow_html=True
     )
 
-    # 由于 Streamlit 原生按钮无法直接做成 200px 圆形，使用真实上传组件触发扫描页跳转
-    if st.button("开始拍照 / 上传配料表", type="primary", use_container_width=True, key="home_goto_scan"):
-        switch_page("scan")
-
-    # 最近扫描
-    history = load_history()[:10]
-    st.markdown(
-        "<div class='home-history-heading'>"
-        "<span class='home-history-title'>最近扫描</span>"
-        "<span class='home-history-more'>查看全部</span></div>",
-        unsafe_allow_html=True
-    )
-    if history:
-        cards_html = "<div class='home-history-cards'>"
-        for idx, item in enumerate(history):
-            score = item.get("score", 0)
-            cls = "home-history-card-safe" if score >= 80 else ("home-history-card-caution" if score >= 60 else "home-history-card-danger")
-            cards_html += (
-                f"<div class='home-history-card {cls}' data-idx='{idx}'>"
-                f"<div class='home-history-card-name'>{item.get('product_name', '未知')}</div>"
-                f"<div class='home-history-card-score'>{score}分</div>"
-                f"<div class='home-history-card-date'>{item.get('timestamp', '')[:10]}</div>"
-                f"</div>"
-            )
-        cards_html += "</div>"
-        st.markdown(cards_html, unsafe_allow_html=True)
-
-        # 点击事件：使用 st.columns + st.button 实现可点击卡片
-        cols = st.columns(min(len(history), 3))
-        for i, item in enumerate(history[:3]):
-            with cols[i]:
-                if st.button(f"查看: {item.get('product_name', '未知')}", key=f"home_card_{i}"):
-                    st.session_state["selected_history_index"] = i
-                    st.session_state["detail_fallback_record"] = item
-                    switch_page("detail")
-    else:
-        st.caption("暂无扫描记录")
-
-    if st.button("查看全部历史", use_container_width=True, key="home_goto_history"):
-        switch_page("history")
-
-
-def render_scan_page():
-    """扫描上传页：模型选择 + 文件上传 + 识别 + 跳转结果页."""
-    render_top_nav("扫描识别", back_target="home", right_action=None)
-
-    # 从健康档案读取人群（默认空）
-    profile = st.session_state.get("health_profile", {})
-    groups = profile.get("diseases", [])
-    if groups:
-        st.success(f"已加载健康档案：{'、'.join(groups)}（建议基于此档案生成）")
-    else:
-        st.warning("未设置健康档案，建议先到首页右上角'档案'填写 → 建议更准确")
-
-    # 模型选择
-    model_choice = st.session_state.get("model_choice", "MiMo (mimo-v2.5)")
-    model = "agnes" if "Agnes" in model_choice else "mimo"
-
-    # API 密钥（按模型选不同 key）
-    api_key = get_api_key(model)
-    if not api_key:
-        var_name = "AGNES_API_KEY" if model == "agnes" else "MIMO_API_KEY"
-        label = "Agnes API 密钥" if model == "agnes" else "MiMo API 密钥 (tp-xxxxx)"
-        st.warning(f"未检测到环境变量 {var_name}，请在下方输入密钥")
-        api_key = st.text_input(label, type="password")
-
-    # 大圆形扫描按钮（视觉引导）+ 文件上传
-    st.markdown(
-        "<div class='scan-circle-btn' role='img' aria-label='扫描按钮'>"
-        "拍照 / 上传配料表"
-        "</div>"
-        "<p style='text-align:center;color:#666;font-size:16px;margin-top:-8px;'>"
-        "点击下方按钮选择图片</p>",
-        unsafe_allow_html=True
-    )
-    uploaded = st.file_uploader("上传配料表图片", type=["jpg", "jpeg", "png"])
+    uploaded = st.file_uploader("上传配料表图片", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
 
     if uploaded is not None:
-        st.image(uploaded, caption="已上传", use_container_width=True)
+        st.image(uploaded, use_container_width=True)
+        st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
 
-        if st.button("开始识别", type="primary", use_container_width=True):
+        if st.button("🔍 开始识别", type="primary", use_container_width=True):
             if not api_key:
-                st.error("请先输入 API 密钥")
+                st.error("API 密钥未配置，请联系管理员")
                 return
             with st.spinner("正在识别配料表..."):
                 img_b64 = encode_image_to_base64(uploaded)
@@ -1962,6 +1879,11 @@ def render_scan_page():
                         st.session_state["last_result"] = result
                         add_history(result)
                         switch_page("result")
+
+    st.markdown(
+        "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",
+        unsafe_allow_html=True
+    )
 
 
 def render_result_page():
@@ -1980,17 +1902,16 @@ def render_result_page():
 
 def render_history_page():
     """历史记录页：搜索 + 筛选 + 竖向列表."""
-    render_top_nav("历史记录", back_target="home", right_action=None)
+    render_top_nav("📋 历史记录", back_target="home")
 
-    # 搜索栏
-    search = st.text_input("搜索产品名称...", key="history_search", placeholder="输入产品名")
+    search = st.text_input("搜索产品", key="history_search", placeholder="输入产品名搜索")
 
-    # 筛选标签
     filter_col = st.segmented_control(
         "筛选",
         ["全部", "食品", "保健食品"],
         default="全部",
-        key="history_filter"
+        key="history_filter",
+        label_visibility="collapsed"
     ) or "全部"
 
     history = load_history()
@@ -2005,14 +1926,26 @@ def render_history_page():
             continue
         filtered.append((idx, item))
 
-    # 列表
     if not filtered:
-        st.caption("没有匹配的记录")
+        if not history:
+            st.markdown(
+                "<div style='text-align:center;padding:40px 20px;color:#9E9E9E;'>"
+                "<div style='font-size:48px;margin-bottom:12px;'>📭</div>"
+                "<p style='font-size:18px;'>还没有扫描记录</p>"
+                "<p style='font-size:16px;'>去首页拍第一张配料表吧</p>"
+                "</div>",
+                unsafe_allow_html=True
+            )
+            if st.button("📷 开始扫描", type="primary", use_container_width=True):
+                switch_page("scan")
+        else:
+            st.info("没有匹配的记录")
         return
+
     for idx, item in filtered:
         score = item.get("score", 0)
         color = "#43A047" if score >= 80 else ("#FF9800" if score >= 60 else "#E53935")
-        label = "安全" if score >= 80 else ("需要注意" if score >= 60 else "高风险")
+        label = "可食用" if score >= 80 else ("注意" if score >= 60 else "少吃")
         type_label = "保健食品" if item.get("type") == "supplement" else "食品"
         with st.container():
             cols = st.columns([1, 4, 1])
@@ -2029,6 +1962,7 @@ def render_history_page():
                     st.session_state["selected_history_index"] = idx
                     st.session_state["detail_fallback_record"] = item
                     switch_page("detail")
+            st.markdown("<hr style='margin:8px 0;border:none;border-top:1px solid #f0f0f0;'>", unsafe_allow_html=True)
 
 
 def render_detail_page():
@@ -2110,7 +2044,8 @@ def main():
     )
     inject_elder_css()
 
-    # DEBUG 信息块：仅当环境变量 DEBUG=1 时显示，用于部署后排查 API 配置
+    # DEBUG 信息块：仅当环境变量 DEBUG=1 时显示，用于本地排查 API 配置
+    # ⚠️ 生产环境（Streamlit Cloud）严禁设置 DEBUG=1，避免泄露 API key 信息
     if os.getenv("DEBUG") == "1":
         with st.expander("🔧 调试信息（DEBUG=1）", expanded=True):
             mimo_key = get_api_key("mimo")
@@ -2143,33 +2078,42 @@ def main():
 
     # 侧边栏：弱化导航 + 模型选择 + 历史 + 法律文件入口
     with st.sidebar:
-        st.header("功能菜单")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("首页", use_container_width=True, key="sb_home"):
+            if st.button("🏠 首页", use_container_width=True, key="sb_home"):
                 switch_page("home")
         with c2:
-            if st.button("历史", use_container_width=True, key="sb_history"):
+            if st.button("📋 历史", use_container_width=True, key="sb_history"):
                 switch_page("history")
+        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
+        if st.button("👤 健康档案", use_container_width=True, key="sb_profile"):
+            switch_page("profile")
         st.divider()
-        # 默认仅 MiMo，Agnes 放入高级设置，避免 Demo 中干扰老人用户
-        if "model_choice" not in st.session_state:
-            st.session_state["model_choice"] = "MiMo (mimo-v2.5)"
-        with st.expander("高级设置"):
-            model_choice = st.radio(
-                "选择识别模型",
-                ["MiMo (mimo-v2.5)", "Agnes (agnes-2.0-flash)"],
-                index=0 if st.session_state["model_choice"].startswith("MiMo") else 1,
-            )
-            st.session_state["model_choice"] = model_choice
+        if os.getenv("DEBUG") == "1":
+            with st.expander("高级设置"):
+                if st.button("重新查看引导", use_container_width=True, key="replay_ob"):
+                    st.session_state["onboarded"] = False
+                    st.session_state["onboarding_step"] = 1
+                    st.rerun()
+                if "model_choice" not in st.session_state:
+                    st.session_state["model_choice"] = "MiMo (mimo-v2.5)"
+                model_choice = st.radio(
+                    "选择识别模型",
+                    ["MiMo (mimo-v2.5)", "Agnes (agnes-2.0-flash)"],
+                    index=0 if st.session_state["model_choice"].startswith("MiMo") else 1,
+                )
+                st.session_state["model_choice"] = model_choice
+        with st.expander("📄 法律声明"):
+            st.caption("AI识别仅供参考，不构成医疗建议")
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            if st.button("查看用户协议", use_container_width=True, key="sb_ua"):
+                st.session_state["page"] = "legal_ua"
+                st.rerun()
+            if st.button("查看隐私政策", use_container_width=True, key="sb_pp"):
+                st.session_state["page"] = "legal_pp"
+                st.rerun()
         st.divider()
-        # 精简历史展示
         show_history()
-        st.divider()
-        if st.button("重新查看引导", use_container_width=True, key="replay_ob"):
-            st.session_state["onboarded"] = False
-            st.session_state["onboarding_step"] = 1
-            st.rerun()
 
     if page == "home":
         render_home_page()
@@ -2183,26 +2127,20 @@ def main():
         render_detail_page()
     elif page == "profile":
         render_health_profile_page()
+    elif page == "legal_ua":
+        render_top_nav("用户协议", back_target="home")
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        st.markdown(_load_markdown(os.path.join(base_dir, "USER_AGREEMENT.md")))
+    elif page == "legal_pp":
+        render_top_nav("隐私政策", back_target="home")
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        st.markdown(_load_markdown(os.path.join(base_dir, "PRIVACY_POLICY.md")))
     else:
-        # 异常兜底
         st.session_state["page"] = "home"
         st.rerun()
 
-    # 页面底部：法律文件入口（需要时可查看）+ 跨境传输披露
-    st.divider()
-    c1, c2 = st.columns(2)
-    with c1:
-        with st.expander("用户协议及免责声明"):
-            base_dir = os.path.dirname(os.path.abspath(__file__))
-            st.markdown(_load_markdown(os.path.join(base_dir, "USER_AGREEMENT.md")))
-    with c2:
-        with st.expander("隐私政策"):
-            st.markdown(_load_markdown(os.path.join(base_dir, "PRIVACY_POLICY.md")))
     st.markdown(
-        "<div style='background:#E3F2FD;border-left:6px solid #1976D2;padding:12px 14px;"
-        "border-radius:8px;color:#0D47A1;font-size:16px;font-weight:bold;margin-top:12px;'>"
-        "服务部署于境外服务器，识别过程可能涉及跨境数据传输"
-        "</div>",
+        "<div class='disclaimer-text' style='text-align:center;margin-top:24px;'>AI识别仅供参考，请以包装原文为准</div>",
         unsafe_allow_html=True
     )
 
