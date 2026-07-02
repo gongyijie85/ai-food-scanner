@@ -22,7 +22,7 @@ jobs:
       - name: 设置 Python 环境
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.11'
           cache: 'pip'
 
       - name: 安装依赖
@@ -32,18 +32,15 @@ jobs:
           pip install flake8 black isort
 
       - name: 代码格式检查 (black)
-        run: |
-          black --check --diff ai-food-scanner/
+        run: black --check --diff app.py
         continue-on-error: true
 
       - name: 导入排序检查 (isort)
-        run: |
-          isort --check-only --diff ai-food-scanner/
+        run: isort --check-only --diff app.py
         continue-on-error: true
 
       - name: 代码风格检查 (flake8)
-        run: |
-          flake8 ai-food-scanner/ --max-line-length=120 --ignore=E501,W503
+        run: flake8 app.py --max-line-length=120 --ignore=E501,W503
         continue-on-error: true
 
   # Job 2: 单元测试
@@ -58,7 +55,7 @@ jobs:
       - name: 设置 Python 环境
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.11'
           cache: 'pip'
 
       - name: 安装依赖
@@ -67,16 +64,14 @@ jobs:
           pip install -r requirements.txt
 
       - name: 运行单元测试
-        run: |
-          pytest tests/ -v --tb=short
+        run: pytest tests/ -v --tb=short
         env:
           MIMO_API_KEY: ${{ secrets.MIMO_API_KEY }}
           AGNES_API_KEY: ${{ secrets.AGNES_API_KEY }}
 
       - name: 生成测试报告
         if: always()
-        run: |
-          pytest tests/ --junitxml=test-report.xml
+        run: pytest tests/ --junitxml=test-report.xml
         continue-on-error: true
 
       - name: 上传测试报告
@@ -98,7 +93,7 @@ jobs:
       - name: 设置 Python 环境
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.11'
           cache: 'pip'
 
       - name: 安装安全扫描工具
@@ -107,13 +102,11 @@ jobs:
           pip install bandit safety
 
       - name: 依赖漏洞扫描 (safety)
-        run: |
-          safety check -r requirements.txt
+        run: safety check -r requirements.txt
         continue-on-error: true
 
       - name: 代码安全扫描 (bandit)
-        run: |
-          bandit -r ai-food-scanner/ -ll -ii
+        run: bandit -r app.py -ll -ii
         continue-on-error: true
 
   # Job 4: 构建验证
@@ -128,7 +121,7 @@ jobs:
       - name: 设置 Python 环境
         uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.11'
           cache: 'pip'
 
       - name: 安装依赖
@@ -139,13 +132,13 @@ jobs:
       - name: 验证应用启动
         run: |
           # 检查 app.py 语法
-          python -m py_compile ai-food-scanner/app.py
-          
+          python -m py_compile app.py
+
           # 检查关键数据文件存在
-          test -f ai-food-scanner/data/gb2760_risk.csv
-          test -f ai-food-scanner/data/common_diseases.json
-          test -f ai-food-scanner/data/allergens.json
-          test -f ai-food-scanner/data/common_drugs.json
-          test -f ai-food-scanner/data/drug_food_conflicts.json
-          
+          test -f data/gb2760_risk.csv
+          test -f data/common_diseases.json
+          test -f data/allergens.json
+          test -f data/common_drugs.json
+          test -f data/drug_food_conflicts.json
+
           echo "✓ 构建验证通过"
