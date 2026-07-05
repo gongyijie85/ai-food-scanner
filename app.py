@@ -1,5 +1,5 @@
 """
-AI食品配料表识别工具 - Streamlit Demo 优化版 v0.4.3
+AI食品配料表识别工具 - Streamlit Demo 优化版 v0.4.4
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 移动端适配
 运行环境：Python 3.10+
@@ -1747,7 +1747,7 @@ def render_home_page():
 
 
 def render_scan_page():
-    """扫描上传页：相机风格取景框 + 文件上传 + 识别."""
+    """扫描上传页：卡片式上传区 + 内联预览，适配电脑端和手机端."""
     render_top_nav("扫描识别", back_target="home", right_action="profile")
 
     profile = st.session_state.get("health_profile", {})
@@ -1764,107 +1764,100 @@ def render_scan_page():
         st.warning(f"未检测到 {var_name}，请在 .env 或 Secrets 中配置")
         api_key = st.text_input("API 密钥", type="password")
 
-    # 相机风格外壳
-    st.markdown("<div class='camera-page'>", unsafe_allow_html=True)
+    # 用 key 计数器强制重新挂载 file_uploader，实现"重新选择"
+    if "scan_upload_key" not in st.session_state:
+        st.session_state["scan_upload_key"] = 0
+    uploader_key = f"scan_uploader_{st.session_state['scan_upload_key']}"
 
-    # 顶部工具栏（视觉）
-    st.markdown(
-        "<div class='camera-toolbar'>"
-        "<div class='camera-tool-btn'>←</div>"
-        "<div class='camera-status-pill'><div class='recognizing-dot'></div><span>识别中</span></div>"
-        "<div class='camera-tool-btn'>⚡</div>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
+    # 桌面端：上传卡与预览卡并排；手机端：上下堆叠
+    st.markdown("<div class='scan-desktop-row'>", unsafe_allow_html=True)
 
-    # 取景区域 + 扫描框
+    # 上传卡片
     st.markdown(
-        "<div class='camera-viewfinder'>"
+        "<div class='scan-card'>"
+        "<div class='scan-card-header'>"
+        "<div class='scan-card-title'>📷 拍照或上传配料表</div>"
+        "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
+        "</div>"
+        "<div class='scan-card-frame'>"
         "<div class='scan-frame'>"
         "<div class='scan-corner-bl'></div>"
         "<div class='scan-corner-br'></div>"
         "<div class='scan-line'></div>"
         "</div>"
-        "<div class='camera-hint-bubble'>"
-        "<span>🔊</span><span>请对准配料表文字</span>"
-        "</div>"
+        "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>"
         "</div>",
         unsafe_allow_html=True,
     )
 
-    # 文件上传器：放在取景区域下方，保留拍照/上传能力
-    st.markdown("<div style='padding:0 var(--spacing-base);'>", unsafe_allow_html=True)
     uploaded = st.file_uploader(
         "点击选择或拍照上传配料表图片",
         type=["jpg", "jpeg", "png"],
         label_visibility="collapsed",
         help="支持 jpg/png，大图会自动压缩",
-        key="scan_uploader",
+        key=uploader_key,
     )
+
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # 底部操作栏（相册 / 拍照占位）
-    st.markdown(
-        "<div class='camera-bottom-bar'>"
-        "<div class='album-btn'>🖼</div>"
-        "<div class='capture-btn'><div class='capture-btn-inner'></div></div>"
-        "<div style='width:52px;height:52px;'></div>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # 预览与识别流程
+    # 预览与识别流程：内联显示，不再使用全屏黑屏遮罩
     if uploaded is not None:
-        st.markdown("<div class='preview-overlay'>", unsafe_allow_html=True)
-        st.image(uploaded, width=256)
         st.markdown(
-            "<div class='preview-actions'>"
-            "<div class='preview-btn'><div class='preview-btn-icon retake'>↻</div>"
-            "<span class='preview-btn-text'>重拍</span></div>",
+            "<div class='preview-card'>"
+            "<div class='preview-card-title'>已选择图片</div>",
             unsafe_allow_html=True,
         )
-        if st.button("✓\n使用照片", type="primary", key="scan_confirm"):
-            if not api_key:
-                st.error("API 密钥未配置，请联系管理员")
-                return
-            if uploaded.size > 5 * 1024 * 1024:
-                st.error("图片超过 5MB，请选择更小的图片或截图后重试")
-                return
-            try:
-                uploaded.seek(0)
-                Image.open(uploaded).verify()
-                uploaded.seek(0)
-            except Exception:
-                st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")
-                return
-            with st.status("正在识别配料表...", expanded=True) as status:
-                status.write("① 正在压缩图片...")
-                img_b64 = encode_image_to_base64(uploaded)
-                orig_kb = uploaded.size / 1024
-                b64_kb = len(img_b64) * 0.75 / 1024
-                status.update(
-                    label=f"压缩完成：{orig_kb:.0f}KB → {b64_kb:.0f}KB",
-                    state="running",
-                )
-                status.write("② 正在上传并识别...")
-                sys_prompt = build_system_prompt(groups)
-                raw = call_api(api_key, img_b64, sys_prompt, model)
-                if raw:
-                    status.update(label="③ 正在整理结果...", state="running")
-                    result = parse_result(raw, health_groups=groups)
-                    if result:
-                        status.update(label="识别完成", state="complete")
-                        st.session_state["last_result"] = result
-                        add_history(result)
-                        switch_page("result")
-                    else:
-                        status.update(label="识别失败", state="error")
-                        st.error("返回内容不是合法 JSON，请重试或更换图片")
-                        if os.getenv("DEBUG") == "1":
-                            with st.expander("查看原始返回（调试用）"):
-                                st.text(raw)
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.image(uploaded, use_container_width=True)
+        st.markdown("<div class='preview-actions'>", unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("↻ 重新选择", use_container_width=True, key="scan_retake"):
+                st.session_state["scan_upload_key"] += 1
+                st.rerun()
+        with col2:
+            if st.button("✓ 使用照片", type="primary", use_container_width=True, key="scan_confirm"):
+                if not api_key:
+                    st.error("API 密钥未配置，请联系管理员")
+                    st.stop()
+                if uploaded.size > 5 * 1024 * 1024:
+                    st.error("图片超过 5MB，请选择更小的图片或截图后重试")
+                    st.stop()
+                try:
+                    uploaded.seek(0)
+                    Image.open(uploaded).verify()
+                    uploaded.seek(0)
+                except Exception:
+                    st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")
+                    st.stop()
+                with st.status("正在识别配料表...", expanded=True) as status:
+                    status.write("① 正在压缩图片...")
+                    img_b64 = encode_image_to_base64(uploaded)
+                    orig_kb = uploaded.size / 1024
+                    b64_kb = len(img_b64) * 0.75 / 1024
+                    status.update(
+                        label=f"压缩完成：{orig_kb:.0f}KB → {b64_kb:.0f}KB",
+                        state="running",
+                    )
+                    status.write("② 正在上传并识别...")
+                    sys_prompt = build_system_prompt(groups)
+                    raw = call_api(api_key, img_b64, sys_prompt, model)
+                    if raw:
+                        status.update(label="③ 正在整理结果...", state="running")
+                        result = parse_result(raw, health_groups=groups)
+                        if result:
+                            status.update(label="识别完成", state="complete")
+                            st.session_state["last_result"] = result
+                            add_history(result)
+                            switch_page("result")
+                        else:
+                            status.update(label="识别失败", state="error")
+                            st.error("返回内容不是合法 JSON，请重试或更换图片")
+                            if os.getenv("DEBUG") == "1":
+                                with st.expander("查看原始返回（调试用）"):
+                                    st.text(raw)
+        st.markdown("</div></div>", unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)  # scan-desktop-row
 
     st.markdown(
         "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",

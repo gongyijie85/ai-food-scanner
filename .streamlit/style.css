@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.4.3 | 更新时间: 2026-07-02 */
+/* 版本: v0.4.4 | 更新时间: 2026-07-05 */
 /* 设计稿：7页移动端适老化设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -99,7 +99,7 @@
   --status-bar-height: 44px;
   --min-touch-target: 48px;
   --min-list-item-height: 56px;
-  --max-content-width: 430px;
+  --max-content-width: 100%;
 }
 
 /* 适老模式（大字） */
@@ -263,34 +263,40 @@ p, li, .stMarkdown p {
   position: relative;
 }
 
-.scan-button {
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  background: var(--color-primary-gradient);
-  border: none;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-sm);
-  box-shadow: var(--shadow-button), 0 0 0 6px rgba(46, 125, 50, 0.1);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-  color: var(--color-text-inverse);
-  position: relative;
+/* 通过 .scan-button-wrapper 把 Streamlit 按钮渲染成大圆形 */
+.scan-button-wrapper .stButton {
+  width: auto !important;
 }
 
-.scan-button:hover {
+.scan-button-wrapper .stButton > button {
+  width: 200px !important;
+  height: 200px !important;
+  border-radius: 50% !important;
+  background: var(--color-primary-gradient) !important;
+  border: none !important;
+  box-shadow: var(--shadow-button), 0 0 0 6px rgba(46, 125, 50, 0.1) !important;
+  color: var(--color-text-inverse) !important;
+  font-size: 24px !important;
+  font-weight: var(--font-weight-bold) !important;
+  letter-spacing: 2px !important;
+  line-height: 1.3 !important;
+  white-space: pre-line !important;
+  padding: 0 !important;
+  position: relative;
+  overflow: visible;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.scan-button-wrapper .stButton > button:hover {
   transform: scale(1.02);
 }
 
-.scan-button:active {
+.scan-button-wrapper .stButton > button:active {
   transform: scale(0.95);
-  box-shadow: var(--shadow-card), 0 0 0 3px rgba(46, 125, 50, 0.15);
+  box-shadow: var(--shadow-card), 0 0 0 3px rgba(46, 125, 50, 0.15) !important;
 }
 
-.scan-button::before {
+.scan-button-wrapper .stButton > button::before {
   content: '';
   position: absolute;
   width: 100%;
@@ -298,17 +304,7 @@ p, li, .stMarkdown p {
   border-radius: 50%;
   border: 2px solid rgba(46, 125, 50, 0.3);
   animation: pulse-ring 2s ease-out infinite;
-}
-
-.scan-button-icon {
-  font-size: 56px;
-  line-height: 1;
-}
-
-.scan-button-text {
-  font-size: 24px;
-  font-weight: var(--font-weight-bold);
-  letter-spacing: 2px;
+  pointer-events: none;
 }
 
 @keyframes pulse-ring {
@@ -1021,11 +1017,53 @@ p, li, .stMarkdown p {
   border-color: var(--color-primary);
 }
 
-/* ========== 扫描页 ========== */
+/* ========== 扫描上传页（卡片式，适配桌面与手机）========== */
+.scan-card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--card-padding);
+  margin: var(--card-gap) 0;
+}
+
+.scan-card-header {
+  margin-bottom: var(--spacing-base);
+}
+
+.scan-card-title {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.scan-card-desc {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
+.scan-card-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-base);
+  padding: var(--spacing-xl);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-base);
+}
+
+.scan-card-hint {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-tertiary);
+}
+
 .scan-frame {
   position: relative;
-  width: 280px;
-  height: 180px;
+  width: 220px;
+  height: 140px;
   margin: 0 auto;
 }
 
@@ -1106,45 +1144,32 @@ p, li, .stMarkdown p {
   100% { top: calc(100% - 10px); opacity: 0; }
 }
 
-/* 识别中遮罩 */
-.recognizing-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(26, 26, 26, 0.85);
-  backdrop-filter: blur(16px);
+/* 已选择图片预览卡片（内联显示，避免全屏黑屏） */
+.preview-card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--card-padding);
+  margin: var(--card-gap) 0;
+}
+
+.preview-card-title {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--spacing-base);
+}
+
+.preview-card img {
+  border-radius: var(--radius-md);
+  max-height: 360px;
+  object-fit: contain;
+}
+
+.preview-actions {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.progress-ring {
-  width: 80px;
-  height: 80px;
-  animation: ring-rotate 1.5s linear infinite;
-}
-
-.progress-ring circle {
-  fill: none;
-  stroke-width: 5;
-  stroke-linecap: round;
-}
-
-.progress-ring .ring-bg {
-  stroke: rgba(255, 255, 255, 0.15);
-}
-
-.progress-ring .ring-fg {
-  stroke: var(--state-success);
-  stroke-dasharray: 220;
-  stroke-dashoffset: 110;
-  transform: rotate(-90deg);
-  transform-origin: center;
-}
-
-@keyframes ring-rotate {
-  to { transform: rotate(360deg); }
+  gap: var(--spacing-base);
+  margin-top: var(--spacing-base);
 }
 
 /* ========== 详情页 ========== */
@@ -1257,6 +1282,13 @@ p, li, .stMarkdown p {
 }
 
 /* ========== 响应式布局 ========== */
+/* 手机优先：默认全宽，桌面端逐步放宽容器 */
+@media (min-width: 480px) {
+  :root {
+    --max-content-width: 480px;
+  }
+}
+
 @media (max-width: 480px) {
   :root {
     --page-padding: 16px;
@@ -1266,23 +1298,11 @@ p, li, .stMarkdown p {
   .stMainBlockContainer {
     padding: 0 var(--page-padding) var(--spacing-2xl) !important;
   }
-
-  .scan-button {
-    width: 180px;
-    height: 180px;
-  }
-
-  .scan-button-icon {
-    font-size: 48px;
-  }
-
-  .scan-button-text {
-    font-size: 22px;
-  }
 }
 
 @media (min-width: 768px) {
   :root {
+    --max-content-width: 720px;
     --font-size-display: 64px;
   }
 
@@ -1298,9 +1318,37 @@ p, li, .stMarkdown p {
   .scan-button-wrapper {
     min-height: 360px;
   }
+
+  /* 桌面端扫描页：预览区与上传卡并排 */
+  .scan-desktop-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    align-items: start;
+  }
+
+  /* 未选择图片时，上传卡占满整行 */
+  .scan-desktop-row > :only-child {
+    grid-column: 1 / -1;
+  }
+
+  .scan-card-frame {
+    flex-direction: row;
+    justify-content: center;
+    gap: var(--spacing-2xl);
+  }
+
+  .scan-frame {
+    width: 280px;
+    height: 180px;
+  }
 }
 
 @media (min-width: 1024px) {
+  :root {
+    --max-content-width: 900px;
+  }
+
   .stMainBlockContainer {
     background: var(--color-bg-card);
     border-radius: var(--radius-lg);
@@ -1308,6 +1356,17 @@ p, li, .stMarkdown p {
     min-height: calc(100vh - var(--spacing-2xl));
     margin-top: var(--spacing-lg) !important;
     margin-bottom: var(--spacing-lg) !important;
+  }
+
+  /* 桌面端首页扫描按钮更大 */
+  .scan-button-wrapper .stButton > button {
+    width: 240px !important;
+    height: 240px !important;
+    font-size: 28px !important;
+  }
+
+  .result-score-hero-number {
+    font-size: 96px;
   }
 }
 
@@ -1401,228 +1460,6 @@ p, li, .stMarkdown p {
 .score-safe { background: #E8F5E9; color: #2E7D32; }
 .score-caution { background: #FFF8E1; color: #F57F17; }
 .score-danger { background: #FFEBEE; color: #C62828; }
-
-/* ========== 相机/扫描页 ========== */
-.camera-page {
-  background: #1A1A1A;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  color: var(--color-text-inverse);
-}
-
-.camera-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-lg) var(--spacing-base) var(--spacing-md);
-  background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
-  position: relative;
-  z-index: 10;
-}
-
-.camera-tool-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-full);
-  background: rgba(0,0,0,0.3);
-  backdrop-filter: blur(8px);
-  border: none;
-  color: var(--color-text-inverse);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-}
-
-.camera-status-pill {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-xs) var(--spacing-base);
-  border-radius: var(--radius-full);
-  background: rgba(67, 160, 71, 0.2);
-  border: 1px solid rgba(67, 160, 71, 0.4);
-  font-size: var(--font-size-body-sm);
-  color: var(--color-text-inverse);
-}
-
-.recognizing-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--state-success);
-  animation: dot-blink 1.2s ease-in-out infinite;
-}
-
-.camera-viewfinder {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  background-image:
-    radial-gradient(ellipse at 20% 50%, rgba(40, 40, 40, 0.4) 0%, transparent 70%),
-    radial-gradient(ellipse at 80% 30%, rgba(30, 30, 30, 0.3) 0%, transparent 60%);
-}
-
-.camera-hint-bubble {
-  margin-top: var(--spacing-xl);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--radius-xl);
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(12px);
-  color: var(--color-text-inverse);
-  font-size: var(--font-size-body-lg);
-}
-
-.camera-bottom-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-2xl);
-  padding: var(--spacing-sm) var(--spacing-base) calc(var(--spacing-lg) + var(--safe-area-bottom));
-  background: linear-gradient(0deg, rgba(0,0,0,0.7) 0%, transparent 100%);
-  position: relative;
-  z-index: 10;
-}
-
-.album-btn {
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-md);
-  border: 2px solid rgba(255,255,255,0.6);
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(8px);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-inverse);
-  font-size: 26px;
-  transition: background var(--transition-fast);
-}
-
-.album-btn:hover {
-  background: rgba(255,255,255,0.25);
-}
-
-.capture-btn {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 4px solid #FFFFFF;
-  background: transparent;
-  position: relative;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform var(--transition-fast);
-}
-
-.capture-btn:active {
-  transform: scale(0.92);
-}
-
-.capture-btn-inner {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--state-success);
-  transition: background var(--transition-fast);
-}
-
-.capture-btn:active .capture-btn-inner {
-  background: var(--color-primary);
-}
-
-/* 识别中遮罩增强 */
-.recognizing-text {
-  color: var(--color-text-inverse);
-  font-size: var(--font-size-h2);
-  font-weight: var(--font-weight-medium);
-  margin-top: var(--spacing-xl);
-}
-
-.recognizing-subtext {
-  color: rgba(255,255,255,0.5);
-  font-size: var(--font-size-body-sm);
-  margin-top: var(--spacing-sm);
-}
-
-.preview-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(26, 26, 26, 0.9);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-}
-
-.preview-frame {
-  width: 256px;
-  height: 320px;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 2px solid rgba(255,255,255,0.2);
-  margin-bottom: var(--spacing-2xl);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255,255,255,0.05);
-  color: rgba(255,255,255,0.3);
-  font-size: 64px;
-}
-
-.preview-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-2xl);
-}
-
-.preview-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-sm);
-  background: none;
-  border: none;
-  color: var(--color-text-inverse);
-  cursor: pointer;
-}
-
-.preview-btn-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-}
-
-.preview-btn-icon.retake {
-  background: rgba(255,255,255,0.15);
-  border: 2px solid rgba(255,255,255,0.3);
-}
-
-.preview-btn-icon.confirm {
-  background: var(--state-success);
-  box-shadow: 0 4px 16px rgba(67,160,71,0.4);
-}
-
-.preview-btn-text {
-  font-size: var(--font-size-body-sm);
-}
 
 /* ========== 结果页浮动语音按钮 ========== */
 .voice-float-bar {
