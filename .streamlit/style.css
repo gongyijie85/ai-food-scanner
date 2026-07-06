@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.4.4 | 更新时间: 2026-07-05 */
+/* 版本: v0.4.5 | 更新时间: 2026-07-06 */
 /* 设计稿：7页移动端适老化设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -135,6 +135,35 @@ html, body, .stApp {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* 修复：允许内容垂直滚动，防止上传图片后内容被截断 */
+/* 根因：Streamlit layout=centered 下 .stApp/.stAppViewContainer 被设为 position:absolute + height:100vh，导致内容超出视口被截断 */
+html, body {
+  height: auto !important;
+  overflow-y: auto !important;
+}
+.stApp,
+.stAppViewContainer {
+  position: relative !important;
+  height: auto !important;
+  min-height: 100vh !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+}
+/* 中间层 emotion-cache 容器（stAppViewContainer 直接子元素）也需解除高度限制 */
+.stAppViewContainer > div,
+div[class*="eqt0gmo10"] {
+  position: relative !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+section[data-testid="stMain"],
+.stMainBlockContainer {
+  overflow-y: visible !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
 /* 主内容区居中，模拟移动端卡片 */
 .stApp > header { display: none !important; }
 
@@ -175,6 +204,23 @@ p, li, .stMarkdown p {
 }
 
 /* ========== 顶部导航栏 ========== */
+/* 原方案用 st.markdown div 包裹 st.columns，但 Streamlit 组件平级渲染导致 div 为空 */
+/* 改用 st.container() 分组，通过 :has(.top-nav-title) 选择器定位 stHorizontalBlock 应用 sticky */
+div[data-testid="stHorizontalBlock"]:has(.top-nav-title) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--nav-height);
+  padding: var(--spacing-sm) var(--spacing-base);
+  background: var(--color-bg-card);
+  box-shadow: var(--shadow-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  margin: 0 calc(-1 * var(--page-padding)) var(--spacing-lg);
+}
+
+/* 兼容旧浏览器：保留 .top-nav-bar 样式（若存在） */
 .top-nav-bar {
   display: flex;
   align-items: center;

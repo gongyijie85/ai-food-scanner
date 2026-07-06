@@ -1,5 +1,5 @@
 """
-AI食品配料表识别工具 - Streamlit Demo 优化版 v0.4.4
+AI食品配料表识别工具 - Streamlit Demo 优化版 v0.4.5
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 移动端适配
 运行环境：Python 3.10+
@@ -210,30 +210,29 @@ def render_top_nav(title: str, show_back: bool = True, back_target: str = "home"
 
     right_action 可选值："profile"（心形入口）、None。
     align 可选值："center"（默认）或 "left"（首页设计稿标题居左）。
+
+    注意：用 st.container() 分组，CSS :has(.top-nav-title) 选择器应用 sticky 样式。
     """
-    # 使用 st.columns 前先输出包装 div，让 CSS 桥接生效
-    st.markdown("<div class='top-nav-bar'>", unsafe_allow_html=True)
-    cols = st.columns([1, 4, 1])
-    with cols[0]:
-        if show_back:
-            if st.button("←", key=f"tn_back_{title}", help="返回"):
-                target = st.session_state.get("prev_page", back_target)
-                switch_page(target)
-    with cols[1]:
-        title_style = "text-align:left;" if align == "left" else "text-align:center;"
-        st.markdown(f"<div class='top-nav-title' style='{title_style}'>{_safe(title)}</div>", unsafe_allow_html=True)
-    with cols[2]:
-        if right_action == "profile":
-            if st.button("♥", key=f"tn_profile_{title}", help="健康档案"):
-                switch_page("profile")
-    st.markdown("</div>", unsafe_allow_html=True)
+    with st.container():
+        cols = st.columns([1, 4, 1])
+        with cols[0]:
+            if show_back:
+                if st.button("←", key=f"tn_back_{title}", help="返回"):
+                    target = st.session_state.get("prev_page", back_target)
+                    switch_page(target)
+        with cols[1]:
+            title_style = "text-align:left;" if align == "left" else "text-align:center;"
+            st.markdown(f"<div class='top-nav-title' style='{title_style}'>{_safe(title)}</div>", unsafe_allow_html=True)
+        with cols[2]:
+            if right_action == "profile":
+                if st.button("♥", key=f"tn_profile_{title}", help="健康档案"):
+                    switch_page("profile")
 
 
 # ========== 适老化样式 ==========
 
-@st.cache_data
 def load_css():
-    """加载 CSS 文件，缓存结果."""
+    """加载 CSS 文件（不缓存，确保修改后立即生效）."""
     css_path = os.path.join(os.path.dirname(__file__), ".streamlit", "style.css")
     try:
         with open(css_path, encoding="utf-8") as f:
@@ -329,7 +328,7 @@ def _js_speech_control(action: str):
     st.markdown(js, unsafe_allow_html=True)
 
 
-def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text: str = "🔊 点击播报"):
+def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text: str = "🔊 点击播报", wrapper_class: str = "voice-control-wrap"):
     """语音播报控制面板：简洁版，主按钮+折叠的语速控制.
 
     使用浏览器原生 Web Speech API，针对 iOS Safari / 微信内置浏览器等
@@ -337,6 +336,9 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text
     - 点击按钮时立即 cancel 并 speak，保证处于用户手势上下文。
     - 如果 voices 列表尚未加载，等待 onvoiceschanged 后再重试。
     - 提供可视化反馈与明确的错误提示。
+
+    wrapper_class: 外层 div 的 class，默认 voice-control-wrap；
+    结果页可传 'voice-float-bar voice-control-wrap' 实现 sticky 浮动效果。
     """
     if "tts_rate" not in st.session_state:
         st.session_state["tts_rate"] = 1.0
@@ -350,7 +352,7 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text
 
     st.markdown(
         f"""
-        <div class="voice-control-wrap">
+        <div class="{wrapper_class}">
             <button id="{btn_id}" onclick="
                 (function(btn) {{
                     var err = document.getElementById('{err_id}');
@@ -1063,23 +1065,25 @@ def render_food(result):
         with st.expander("查看原始 JSON（调试用）"):
             st.json(result)
 
-    # 底部浮动语音播报按钮
-    st.markdown("<div class='voice-float-bar'>", unsafe_allow_html=True)
+    # 底部浮动语音播报按钮（wrapper_class 直接加到 voice_control_panel 外层 div）
     last_speak = st.session_state.get("last_speak_content", "")
     if last_speak:
-        voice_control_panel(last_speak, key_prefix="tts_food", button_text="🔊 一键播报全部结果")
-    st.markdown("</div>", unsafe_allow_html=True)
+        voice_control_panel(
+            last_speak,
+            key_prefix="tts_food",
+            button_text="🔊 一键播报全部结果",
+            wrapper_class="voice-float-bar voice-control-wrap",
+        )
 
-    # 底部操作栏
-    st.markdown("<div class='bottom-action-bar'>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("📷 再扫一个", use_container_width=True, key="food_btn_scan"):
-            switch_page("scan")
-    with col2:
-        if st.button("🏠 返回首页", use_container_width=True, key="food_btn_home"):
-            switch_page("home")
-    st.markdown("</div>", unsafe_allow_html=True)
+    # 底部操作栏（用 st.container 分组，CSS :has 选择器应用样式）
+    with st.container():
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📷 再扫一个", use_container_width=True, key="food_btn_scan"):
+                switch_page("scan")
+        with col2:
+            if st.button("🏠 返回首页", use_container_width=True, key="food_btn_home"):
+                switch_page("home")
 
 
 def render_personal_warnings(result, ingredients):
@@ -1288,22 +1292,23 @@ def render_supplement(result):
             st.json(result)
 
     # 底部浮动语音播报按钮
-    st.markdown("<div class='voice-float-bar'>", unsafe_allow_html=True)
     last_speak = st.session_state.get("last_speak_content", "")
     if last_speak:
-        voice_control_panel(last_speak, key_prefix="tts_supp")
-    st.markdown("</div>", unsafe_allow_html=True)
+        voice_control_panel(
+            last_speak,
+            key_prefix="tts_supp",
+            wrapper_class="voice-float-bar voice-control-wrap",
+        )
 
     # 底部操作栏
-    st.markdown("<div class='bottom-action-bar'>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("📷 再扫一个", use_container_width=True, key="supp_btn_scan"):
-            switch_page("scan")
-    with col2:
-        if st.button("🏠 返回首页", use_container_width=True, key="supp_btn_home"):
-            switch_page("home")
-    st.markdown("</div>", unsafe_allow_html=True)
+    with st.container():
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📷 再扫一个", use_container_width=True, key="supp_btn_scan"):
+                switch_page("scan")
+        with col2:
+            if st.button("🏠 返回首页", use_container_width=True, key="supp_btn_home"):
+                switch_page("home")
 
 
 def show_result(result):
@@ -1769,46 +1774,30 @@ def render_scan_page():
         st.session_state["scan_upload_key"] = 0
     uploader_key = f"scan_uploader_{st.session_state['scan_upload_key']}"
 
-    # 桌面端：上传卡与预览卡并排；手机端：上下堆叠
-    st.markdown("<div class='scan-desktop-row'>", unsafe_allow_html=True)
-
-    # 上传卡片
-    st.markdown(
-        "<div class='scan-card'>"
-        "<div class='scan-card-header'>"
-        "<div class='scan-card-title'>📷 拍照或上传配料表</div>"
-        "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
-        "</div>"
-        "<div class='scan-card-frame'>"
-        "<div class='scan-frame'>"
-        "<div class='scan-corner-bl'></div>"
-        "<div class='scan-corner-br'></div>"
-        "<div class='scan-line'></div>"
-        "</div>"
-        "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-    uploaded = st.file_uploader(
-        "点击选择或拍照上传配料表图片",
-        type=["jpg", "jpeg", "png"],
-        label_visibility="collapsed",
-        help="支持 jpg/png，大图会自动压缩",
-        key=uploader_key,
-    )
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # 预览与识别流程：内联显示，不再使用全屏黑屏遮罩
-    if uploaded is not None:
+    # 上传卡片（用 container 分组，CSS 通过 :has 选择器应用样式）
+    with st.container():
         st.markdown(
-            "<div class='preview-card'>"
-            "<div class='preview-card-title'>已选择图片</div>",
+            "<div class='scan-card'>"
+            "<div class='scan-card-header'>"
+            "<div class='scan-card-title'>📷 拍照或上传配料表</div>"
+            "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
+            "</div>"
+            "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>"
+            "</div>",
             unsafe_allow_html=True,
         )
+        uploaded = st.file_uploader(
+            "点击选择或拍照上传配料表图片",
+            type=["jpg", "jpeg", "png"],
+            label_visibility="collapsed",
+            help="支持 jpg/png，大图会自动压缩",
+            key=uploader_key,
+        )
+
+    # 预览与识别流程：内联显示，用 container 确保组件正确嵌套
+    if uploaded is not None:
+        st.markdown("<div class='preview-card-title'>已选择图片</div>", unsafe_allow_html=True)
         st.image(uploaded, use_container_width=True)
-        st.markdown("<div class='preview-actions'>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
         with col1:
             if st.button("↻ 重新选择", use_container_width=True, key="scan_retake"):
@@ -1855,9 +1844,6 @@ def render_scan_page():
                             if os.getenv("DEBUG") == "1":
                                 with st.expander("查看原始返回（调试用）"):
                                     st.text(raw)
-        st.markdown("</div></div>", unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)  # scan-desktop-row
 
     st.markdown(
         "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",
@@ -2049,15 +2035,14 @@ def render_detail_page():
             )
 
     # 底部操作栏
-    st.markdown("<div class='bottom-action-bar detail-bottom-bar'>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("↻ 重新评分", use_container_width=True, key="detail_rescore"):
-            switch_page("scan")
-    with col2:
-        if st.button("➤ 分享给家人", use_container_width=True, key="detail_share"):
-            st.toast("已复制结果摘要，可直接粘贴给家人")
-    st.markdown("</div>", unsafe_allow_html=True)
+    with st.container():
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("↻ 重新评分", use_container_width=True, key="detail_rescore"):
+                switch_page("scan")
+        with col2:
+            if st.button("➤ 分享给家人", use_container_width=True, key="detail_share"):
+                st.toast("已复制结果摘要，可直接粘贴给家人")
 
 
 def render_health_profile_page():
@@ -2101,6 +2086,13 @@ def main():
             st.markdown(f"- **Agnes Model**: `{AGNES_MODEL_NAME}`")
             st.markdown(f"- **Agnes API Key 已配置**: {'是' if agnes_key else '否'}")
             st.markdown("- **Auth Header 类型**: MiMo=`api-key`, Agnes=`Bearer`")
+
+    # 临时测试模式：URL 加 ?test=1 跳过法律和引导（仅本地诊断用）
+    if st.query_params.get("test") == "1":
+        st.session_state["legal_agreed"] = True
+        st.session_state["onboarded"] = True
+        if "page" not in st.session_state:
+            st.session_state["page"] = st.query_params.get("page", "home")
 
     # 首次访问：先法律同意，再触发 4 步引导
     if "legal_agreed" not in st.session_state:

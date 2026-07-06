@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.4.4-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.4.5-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 一句话介绍
 
@@ -11,6 +11,7 @@
 
 ## 最新更新
 
+- **v0.4.5（2026-07-06）**：修复扫描页上传图片后无法滚动的严重问题（根因：Streamlit `layout=centered` 下 `.stApp` 被设为 `position:absolute;height:100vh`，CSS 覆盖后内容可正常滚动）；修复结果页 `voice-float-bar` 和 `bottom-action-bar` 的 div 无法包裹 Streamlit 组件导致样式失效的问题，改用 `st.container()` + CSS `:has` 选择器；修复顶部导航栏 sticky 失效；移除 `load_css()` 的 `@st.cache_data` 缓存，确保 CSS 修改即时生效。
 - **v0.4.4（2026-07-05）**：重构扫描页为卡片式布局，移除全屏黑屏遮罩，改为内联预览与「重新选择 / 使用照片」操作；优化响应式布局，桌面端与手机端分别适配。
 - **v0.4.3（2026-07-02）**：结果页字体进一步放大、语音播报移动端兼容修复、按画布设计稿优化结果页与首页布局，完成手机端适配。
 - **v0.4.1（2026-07-02）**：历史记录页、产品详情页完整对齐 7 页适老化设计稿，新增搜索栏、风险筛选标签、扫描信息卡片与底部操作栏。
