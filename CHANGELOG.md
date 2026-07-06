@@ -1,5 +1,29 @@
 # 变更日志
 
+## v0.5.1 - 2026-07-06
+
+### 修复电脑端布局畸变与语音播报无声音
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\README.md`、`d:\GBT\ai-food-scanner\CHANGELOG.md`
+- **版本统一**：
+  - `app.py` 顶部注释版本更新为 `v0.5.1`
+  - `style.css` 顶部注释版本更新为 `v0.5.1`
+  - `README.md` 版本徽章与最新更新说明更新为 `v0.5.1`
+- **电脑端扫描页布局修复**：
+  - 桌面端最大内容宽度从 900px 放宽至 1200px，减少两侧大面积留白
+  - 移除桌面端 `.stMainBlockContainer` 的白色卡片背景、圆角与阴影，避免扫描卡片出现“卡片套卡片”的视觉畸变
+  - 改进扫描页网格逻辑：使用 `:has(.preview-card-marker)` 判断是否存在预览卡，无预览卡时上传卡单列占满整行，有预览卡时上传卡与预览卡双列并排
+  - 强化 `!important` 与 `width: 100%` 规则，防止 Streamlit 默认 flex 布局覆盖网格
+- **文字竖排修复**：
+  - 新增全局 `[data-testid="stStatusWidget"]` 规则，强制 `st.status` 组件内所有文本横排显示，解决“压缩完成”等文字被挤压成竖排的问题
+- **语音播报无声音修复**：
+  - 根因：桌面 Chrome/Edge 的 autoplay 策略会在页面加载后挂起 `speechSynthesis`，导致点击播报按钮时没有声音
+  - 修复：在 `_render_tts_namespace()` 的 `speak()` 函数中，用户点击按钮时同步调用 `window.speechSynthesis.resume()`，确保在用户手势内解除挂起状态
+  - 增强健壮性：为 `speechSynthesis.speak(u)` 增加 try/catch，捕获同步抛出的安全异常并给出明确错误提示
+- **验证**：
+  - `python -m py_compile app.py` 通过
+  - `pytest tests/` 17 项通过
+
 ## v0.5.0 - 2026-07-06
 
 ### 三端前端彻底重构

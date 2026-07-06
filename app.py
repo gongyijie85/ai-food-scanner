@@ -1,5 +1,4 @@
-"""
-AI食品配料表识别工具 - Streamlit Demo 优化版 v0.5.0
+"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.5.1
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 三端适配
 运行环境：Python 3.10+
@@ -275,6 +274,9 @@ def _render_tts_namespace():
                     if (err) err.textContent = '您的浏览器不支持语音播报功能';
                     return;
                 }
+                // 桌面 Chrome/Edge  autoplay 策略会挂起 speechSynthesis，
+                // 必须在用户手势（点击）内先 resume，否则无声音。
+                try { window.speechSynthesis.resume(); } catch(e) { console.warn('[TTS resume]', e); }
                 var originalHtml = btn ? btn.innerHTML : '';
                 if (btn) btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…';
                 if (err) err.textContent = '';
@@ -315,7 +317,14 @@ def _render_tts_namespace():
                     };
 
                     // iOS Safari 需要把 speak 放在事件循环中，确保在用户手势内执行
-                    setTimeout(function() { speechSynthesis.speak(u); }, 0);
+                    setTimeout(function() {
+                        try { speechSynthesis.speak(u); }
+                        catch(e) {
+                            if (btn) btn.innerHTML = originalHtml;
+                            if (err) err.textContent = '播报失败，请刷新页面后重试';
+                            console.warn('[TTS speak]', e);
+                        }
+                    }, 0);
 
                     // 兜底：部分浏览器 onstart 触发不及时，100ms 后若仍未触发则强制刷新按钮文字
                     setTimeout(function() {

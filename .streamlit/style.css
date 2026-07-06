@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.5.0 | 更新时间: 2026-07-06 */
+/* 版本: v0.5.1 | 更新时间: 2026-07-06 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -203,6 +203,20 @@ section[data-testid="stMain"],
   white-space: normal !important;
   word-break: normal !important;
   overflow-wrap: break-word !important;
+}
+
+/* 修复 st.status 组件文字竖排：强制横排 + 正常换行 */
+[data-testid="stStatusWidget"],
+[data-testid="stStatusWidget"] *,
+[data-testid="stStatusWidget"] p,
+[data-testid="stStatusWidget"] span,
+[data-testid="stStatusWidget"] label,
+[data-testid="stStatusWidget"] div {
+  writing-mode: horizontal-tb !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+  text-orientation: mixed !important;
 }
 
 /* 文件上传组件全宽 */
@@ -1594,19 +1608,22 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
     min-height: 360px;
   }
 
-  /* 桌面端扫描页：预览区与上传卡并排 */
+  /* 桌面端扫描页：有预览卡时双列并排，无预览卡时单列占满 */
   .scan-desktop-row,
-  div[data-testid="stVerticalBlock"]:has(.scan-desktop-row-marker) {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-lg);
-    align-items: start;
+  div[data-testid="stVerticalBlock"]:has(.scan-desktop-row-marker):has(.preview-card-marker) {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: var(--spacing-lg) !important;
+    align-items: start !important;
   }
 
-  /* 未选择图片时，上传卡占满整行 */
-  .scan-desktop-row > :only-child,
-  div[data-testid="stVerticalBlock"]:has(.scan-desktop-row-marker) > div:only-child {
-    grid-column: 1 / -1;
+  /* 未选择图片时（只有上传卡、无预览卡），上传卡占满整行 */
+  .scan-desktop-row:only-child,
+  div[data-testid="stVerticalBlock"]:has(.scan-desktop-row-marker):not(:has(.preview-card-marker)) {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: var(--spacing-lg) !important;
+    align-items: start !important;
   }
 
   .scan-card-frame {
@@ -1685,16 +1702,43 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
 
 @media (min-width: 1024px) {
   :root {
-    --max-content-width: 900px;
+    --max-content-width: 1200px;
   }
 
+  /* 桌面端不再把整个主内容区做成白色卡片，避免扫描卡片出现“卡片套卡片”的畸变 */
   .stMainBlockContainer {
-    background: var(--color-bg-card);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-elevated);
-    min-height: calc(100vh - var(--spacing-2xl));
-    margin-top: var(--spacing-lg) !important;
-    margin-bottom: var(--spacing-lg) !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    min-height: auto !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: var(--spacing-lg) !important;
+  }
+
+  /* 桌面端扫描页：有预览卡时双列并排，无预览卡时单列占满 */
+  .scan-desktop-row,
+  div[data-testid="stVerticalBlock"]:has(.scan-desktop-row-marker):has(.preview-card-marker) {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: var(--spacing-lg) !important;
+    align-items: start !important;
+    width: 100% !important;
+  }
+
+  /* 未选择图片时（只有上传卡、无预览卡），上传卡占满整行 */
+  div[data-testid="stVerticalBlock"]:has(.scan-desktop-row-marker):not(:has(.preview-card-marker)) {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: var(--spacing-lg) !important;
+    align-items: start !important;
+    width: 100% !important;
+  }
+
+  /* 桌面端扫描卡片与预览卡片填满各自列，避免窄列导致文字竖排 */
+  div[data-testid="stVerticalBlock"]:has(.scan-desktop-row-marker) > div {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 
   /* 桌面端首页扫描按钮更大 */
