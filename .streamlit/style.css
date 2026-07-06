@@ -1,6 +1,6 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.4.7 | 更新时间: 2026-07-06 */
-/* 设计稿：7页移动端适老化设计系统 */
+/* 版本: v0.5.0 | 更新时间: 2026-07-06 */
+/* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
 :root {
@@ -171,6 +171,55 @@ section[data-testid="stMain"],
   max-width: var(--max-content-width) !important;
   padding: 0 var(--page-padding) var(--spacing-3xl) !important;
   margin: 0 auto !important;
+}
+
+/* ========== 全局文字横排修复（防止竖排问题） ========== */
+/* 强制所有文本元素横排，解决 Streamlit 容器窄导致的文字竖排 */
+.stMarkdown,
+.stMarkdown p,
+.stMarkdown span,
+.stMarkdown div,
+.stFileUploader,
+.stFileUploader *,
+.stFileUploader span,
+.stFileUploader button,
+.stFileUploader p,
+.stFileUploader small,
+.stFileUploader label,
+.stButton,
+.stButton > button {
+  writing-mode: horizontal-tb !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+/* 扫描卡片相关元素强制横排 */
+.scan-card-title,
+.scan-card-desc,
+.scan-card-hint,
+.preview-card-title {
+  writing-mode: horizontal-tb !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word !important;
+}
+
+/* 文件上传组件全宽 */
+.stFileUploader {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+}
+
+.stFileUploader > div,
+.stFileUploader > div > div {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 
 /* 标题层级 */
@@ -1135,6 +1184,52 @@ div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader {
   color: var(--color-text-tertiary);
 }
 
+/* 防止窄屏下文字被压缩成竖排 */
+div[data-testid="stVerticalBlock"]:has(.scan-card-marker),
+div[data-testid="stVerticalBlock"]:has(.preview-card-marker) {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  writing-mode: horizontal-tb !important;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.scan-card-title,
+.scan-card-desc,
+.scan-card-hint,
+.preview-card-title {
+  writing-mode: horizontal-tb !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: break-word;
+}
+
+/* 扫描页上传组件强制撑满容器，避免文字竖排 */
+div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader,
+div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader *,
+div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader > div,
+div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader > div > div,
+div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader [data-testid="stWidgetLabel"] {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+  writing-mode: horizontal-tb !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+/* 单独覆盖说明文字，防止被截断为省略号 */
+div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader small,
+div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader p,
+div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader span,
+div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader [data-testid="stFileUploader"] {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
 .scan-frame {
   position: relative;
   width: 220px;
@@ -1257,6 +1352,24 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) img {
   margin-top: var(--spacing-base);
 }
 
+/* 预览卡片内按钮：防止文字竖排，移动端上下堆叠 */
+div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="stHorizontalBlock"] {
+  width: 100% !important;
+  min-width: 100% !important;
+}
+
+div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="stHorizontalBlock"] > div {
+  min-width: 0 !important;
+}
+
+div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="stHorizontalBlock"] .stButton > button {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
 /* ========== 详情页 ========== */
 .detail-image-placeholder {
   width: 72px;
@@ -1318,6 +1431,33 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) img {
   font-size: var(--font-size-body-lg) !important;
 }
 
+/* 修复单选按钮选中态可能出现的黑方块：使用标准圆圈 */
+.stRadio > div[role="radiogroup"] > label > div:first-child {
+  border-radius: 50% !important;
+}
+
+/* ========== 折叠面板（语速调整等） ========== */
+/* 移除 expander 默认 marker 可能渲染成的黑方块 */
+[data-testid="stExpander"] details > summary {
+  list-style: none !important;
+}
+
+[data-testid="stExpander"] details > summary::-webkit-details-marker {
+  display: none !important;
+}
+
+[data-testid="stExpander"] details > summary::before,
+[data-testid="stExpander"] details > summary::marker {
+  content: "" !important;
+  display: none !important;
+}
+
+/* 展开/收起图标统一用边框三角，避免字体缺失导致黑方块 */
+[data-testid="stExpander"] details > summary svg {
+  fill: var(--color-text-secondary) !important;
+  stroke: var(--color-text-secondary) !important;
+}
+
 /* ========== 进度条与状态 ========== */
 .stProgress > div > div {
   background-color: var(--color-primary) !important;
@@ -1374,7 +1514,7 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) img {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 767px) {
   :root {
     --page-padding: 16px;
     --font-size-display: 56px;
@@ -1382,6 +1522,56 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) img {
 
   .stMainBlockContainer {
     padding: 0 var(--page-padding) var(--spacing-2xl) !important;
+  }
+
+  /* 手机端：扫描卡片标题/说明强制横排，禁止字符竖排 */
+  .scan-card-title,
+  .scan-card-desc,
+  .scan-card-hint {
+    writing-mode: horizontal-tb !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
+    overflow-wrap: break-word;
+  }
+
+  /* 手机端：预览卡片按钮上下堆叠，防止文字竖排 */
+  div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="stHorizontalBlock"],
+  .preview-card-actions {
+    flex-direction: column !important;
+    gap: var(--spacing-md) !important;
+  }
+
+  div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="stHorizontalBlock"] > div,
+  .preview-card-actions > div {
+    width: 100% !important;
+    flex: 0 0 auto !important;
+  }
+
+  /* 手机端：扫描页按钮强制上下堆叠 */
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) div[data-testid="stHorizontalBlock"] {
+    flex-direction: column !important;
+    gap: var(--spacing-md) !important;
+  }
+
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) div[data-testid="stHorizontalBlock"] > div {
+    width: 100% !important;
+    flex: 0 0 auto !important;
+  }
+
+  /* 手机端：所有 st.columns 在窄容器中堆叠 */
+  div[data-testid="stHorizontalBlock"] {
+    flex-wrap: wrap !important;
+  }
+
+  div[data-testid="stHorizontalBlock"] > div {
+    min-width: 100% !important;
+  }
+
+  /* 手机端：首页大按钮防止超出 */
+  div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton > button {
+    width: 180px !important;
+    height: 180px !important;
+    font-size: 22px !important;
   }
 }
 
@@ -1428,6 +1618,68 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) img {
   .scan-frame {
     width: 280px;
     height: 180px;
+  }
+}
+
+/* 平板端：上传区说明不被截断，卡片宽度足够 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root {
+    --max-content-width: 100%;
+  }
+
+  .stApp,
+  .stAppViewContainer,
+  section[data-testid="stMain"],
+  .stMainBlockContainer {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .stMainBlockContainer {
+    padding: 0 var(--spacing-lg) var(--spacing-2xl) !important;
+  }
+
+  /* 平板端竖屏宽度有限，扫描页卡片改为单列占满 */
+  .scan-desktop-row,
+  div[data-testid="stVerticalBlock"]:has(.scan-desktop-row-marker) {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: var(--spacing-lg) !important;
+    width: 100% !important;
+  }
+
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker),
+  div[data-testid="stVerticalBlock"]:has(.preview-card-marker) {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* 平板端：上传卡片内部容器强制全宽，为说明文字留出足够空间 */
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader,
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader > div,
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader > div > div {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader > div > div {
+    min-height: 180px !important;
+    padding: var(--spacing-2xl) var(--spacing-lg) !important;
+  }
+
+  /* 平板端上传区说明文字不截断、不竖排 */
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader span,
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader button,
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader p,
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader small,
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader label {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    writing-mode: horizontal-tb !important;
+    word-break: keep-all !important;
   }
 }
 

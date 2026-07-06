@@ -1,7 +1,7 @@
 """
-AI食品配料表识别工具 - Streamlit Demo 优化版 v0.4.7
+AI食品配料表识别工具 - Streamlit Demo 优化版 v0.5.0
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
-特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 移动端适配
+特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 三端适配
 运行环境：Python 3.10+
 依赖：pip install streamlit requests pillow
 运行命令：streamlit run app.py
@@ -302,7 +302,11 @@ def _render_tts_namespace():
                     }
                     if (selected) u.voice = selected;
 
-                    u.onstart = function() { if (btn) btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…'; };
+                    var hasStarted = false;
+                    u.onstart = function() {
+                        hasStarted = true;
+                        if (btn) btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…';
+                    };
                     u.onend = function() { if (btn) btn.innerHTML = originalHtml; if (err) err.textContent = ''; };
                     u.onerror = function(e) {
                         if (btn) btn.innerHTML = originalHtml;
@@ -312,6 +316,13 @@ def _render_tts_namespace():
 
                     // iOS Safari 需要把 speak 放在事件循环中，确保在用户手势内执行
                     setTimeout(function() { speechSynthesis.speak(u); }, 0);
+
+                    // 兜底：部分浏览器 onstart 触发不及时，100ms 后若仍未触发则强制刷新按钮文字
+                    setTimeout(function() {
+                        if (!hasStarted && btn) {
+                            btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…';
+                        }
+                    }, 100);
                 }
 
                 var voices = speechSynthesis.getVoices();
@@ -425,7 +436,7 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text
                 {safe_button_text}
             </button>
             <button onclick="window.foodScannerTts.stop()" class="voice-stop-btn" aria-label="停止播报">
-                ⏹
+                停止
             </button>
             <span id="{err_id}" class="tts-err"></span>
         </div>
@@ -1767,11 +1778,6 @@ def render_home_page():
             "</div>",
             unsafe_allow_html=True,
         )
-
-    st.markdown(
-        "<div class='disclaimer-text'>AI识别仅供参考，请以包装原文为准</div>",
-        unsafe_allow_html=True,
-    )
 
 
 def render_scan_page():
