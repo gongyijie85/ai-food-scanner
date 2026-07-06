@@ -1,5 +1,5 @@
 """
-AI食品配料表识别工具 - Streamlit Demo 优化版 v0.4.5
+AI食品配料表识别工具 - Streamlit Demo 优化版 v0.4.7
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 移动端适配
 运行环境：Python 3.10+
@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import re
+import textwrap
 import time
 from datetime import datetime
 
@@ -256,6 +257,94 @@ def _js_attr_safe(text: str) -> str:
     return s.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace("\r", "")
 
 
+def _render_tts_namespace():
+    """注入全局语音播报命名空间（幂等，可被多次调用）.
+
+    把多行 JS 逻辑放到 <script> 标签中，避免内联 onclick 被 Streamlit
+    Markdown 解析器误识别为可见的 <pre>/<code> 代码块。
+    """
+    st.markdown(
+        """
+        <script>
+        window.foodScannerTts = window.foodScannerTts || {
+            speak: function(btnId, errId, text, rate) {
+                var btn = document.getElementById(btnId);
+                var err = document.getElementById(errId);
+                if (!window.speechSynthesis) {
+                    if (btn) { btn.disabled = true; btn.innerHTML = '🔇 不支持播报'; }
+                    if (err) err.textContent = '您的浏览器不支持语音播报功能';
+                    return;
+                }
+                var originalHtml = btn ? btn.innerHTML : '';
+                if (btn) btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…';
+                if (err) err.textContent = '';
+
+                function doSpeak() {
+                    speechSynthesis.cancel();
+                    var u = new SpeechSynthesisUtterance(text);
+                    u.lang = 'zh-CN';
+                    u.rate = rate;
+                    u.pitch = 1.0;
+                    u.volume = 1.0;
+
+                    var voices = speechSynthesis.getVoices();
+                    var selected = null;
+                    for (var i = 0; i < voices.length; i++) {
+                        var name = voices[i].name || '';
+                        var lang = voices[i].lang || '';
+                        if (name.indexOf('Yaoyao') >= 0 || name.indexOf('yaoyao') >= 0) {
+                            selected = voices[i];
+                            break;
+                        }
+                        if (!selected && (lang.indexOf('zh') === 0 || lang.indexOf('cmn') === 0)) {
+                            selected = voices[i];
+                        }
+                    }
+                    if (selected) u.voice = selected;
+
+                    u.onstart = function() { if (btn) btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…'; };
+                    u.onend = function() { if (btn) btn.innerHTML = originalHtml; if (err) err.textContent = ''; };
+                    u.onerror = function(e) {
+                        if (btn) btn.innerHTML = originalHtml;
+                        if (err) err.textContent = '播报失败，请尝试刷新页面或调高手机音量';
+                        console.warn('[TTS error]', e);
+                    };
+
+                    // iOS Safari 需要把 speak 放在事件循环中，确保在用户手势内执行
+                    setTimeout(function() { speechSynthesis.speak(u); }, 0);
+                }
+
+                var voices = speechSynthesis.getVoices();
+                if (voices && voices.length > 0) {
+                    doSpeak();
+                } else if (speechSynthesis.onvoiceschanged !== undefined) {
+                    // 首次加载 voices 为空时，等待加载完成
+                    var once = function() {
+                        speechSynthesis.onvoiceschanged = null;
+                        doSpeak();
+                    };
+                    speechSynthesis.onvoiceschanged = once;
+                    // 部分浏览器不会触发事件，设置兜底超时
+                    setTimeout(function() {
+                        if (speechSynthesis.getVoices().length === 0) {
+                            if (btn) btn.innerHTML = originalHtml;
+                            if (err) err.textContent = '未找到中文语音，请检查系统语言设置';
+                        }
+                    }, 2000);
+                } else {
+                    doSpeak();
+                }
+            },
+            stop: function() {
+                try { speechSynthesis.cancel(); } catch(e) {}
+            }
+        };
+        </script>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def speak_text(text: str, rate: float = 1.0):
     """用浏览器原生 SpeechSynthesis API 播报中文语音.
 
@@ -264,48 +353,26 @@ def speak_text(text: str, rate: float = 1.0):
         rate: 语速，0.7 慢速 / 1.0 正常 / 1.3 快速 / 0.75 慢速重播
 
     注意：手机浏览器要求语音播报必须由用户手势同步触发。
-    此函数注入一个纯 HTML 按钮 + 内联 JS，点击时直接在浏览器端
+    此函数注入一个纯 HTML 按钮 + 全局 JS 函数调用，点击时直接在浏览器端
     调用 speechSynthesis.speak()，不经过 Python rerun，确保
     用户手势上下文不丢失。
     """
     rate = max(0.5, min(2.0, float(rate)))
     safe = _js_attr_safe(text)
-    # 用纯 HTML 按钮 + 内联 onclick，确保移动端用户手势同步触发播报
+    # 生成唯一 ID，避免多个简单播报按钮冲突
+    uid = int(time.time() * 1000) % 1000000
+    btn_id = f"tts-simple-btn-{uid}"
+    err_id = f"tts-simple-err-{uid}"
+    _render_tts_namespace()
     js = f"""
     <div style="text-align:center;margin:12px 0;">
-        <button onclick="
-            var btn = this;
-            var err = this.nextElementSibling;
-            if (!window.speechSynthesis) {{
-                btn.textContent = '当前浏览器不支持语音播报';
-                btn.disabled = true;
-                if (err) err.textContent = '您的浏览器不支持语音播报功能';
-                return;
-            }}
-            var txt = '{safe}';
-            speechSynthesis.cancel();
-            var u = new SpeechSynthesisUtterance(txt);
-            u.lang = 'zh-CN';
-            u.rate = {rate};
-            u.pitch = 1.0;
-            u.volume = 1.0;
-            var voices = speechSynthesis.getVoices();
-            var v = null;
-            for (var i = 0; i &lt; voices.length; i++) {{
-                if (voices[i].name &amp;&amp; voices[i].name.indexOf('Yaoyao') &gt;= 0) {{ v = voices[i]; break; }}
-                if (!v &amp;&amp; voices[i].lang &amp;&amp; voices[i].lang.startsWith('zh')) v = voices[i];
-            }}
-            if (v) u.voice = v;
-            u.onerror = function(e) {{ if (err) err.textContent = '播报失败，请尝试刷新页面'; }};
-            u.onend = function() {{ if (err) err.textContent = ''; }};
-            speechSynthesis.speak(u);
-        " style="
+        <button id="{btn_id}" onclick="window.foodScannerTts.speak('{btn_id}', '{err_id}', '{safe}', {rate})" style="
             font-size:20px; height:56px; padding:0 28px;
             border-radius:12px; border:2px solid #2E7D32;
             background:#E8F5E9; color:#1B5E20; font-weight:bold;
             cursor:pointer; min-width:200px;
         ">🔊 点击播报</button>
-        <span class="tts-err" style="color:#D32F2F;font-size:14px;margin-left:8px;"></span>
+        <span id="{err_id}" class="tts-err" style="color:#D32F2F;font-size:14px;margin-left:8px;"></span>
     </div>
     """
     st.markdown(js, unsafe_allow_html=True)
@@ -350,92 +417,21 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text
     btn_id = f"tts-btn-{key_prefix}"
     err_id = f"tts-err-{key_prefix}"
 
-    st.markdown(
+    _render_tts_namespace()
+    html_block = textwrap.dedent(
         f"""
         <div class="{wrapper_class}">
-            <button id="{btn_id}" onclick="
-                (function(btn) {{
-                    var err = document.getElementById('{err_id}');
-                    if (!window.speechSynthesis) {{
-                        btn.disabled = true;
-                        btn.innerHTML = '🔇 不支持播报';
-                        if (err) err.textContent = '您的浏览器不支持语音播报功能';
-                        return;
-                    }}
-                    var originalHtml = btn.innerHTML;
-                    btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…';
-                    if (err) err.textContent = '';
-
-                    var text = '{safe}';
-                    var rate = {rate};
-
-                    function doSpeak() {{
-                        speechSynthesis.cancel();
-                        var u = new SpeechSynthesisUtterance(text);
-                        u.lang = 'zh-CN';
-                        u.rate = rate;
-                        u.pitch = 1.0;
-                        u.volume = 1.0;
-
-                        var voices = speechSynthesis.getVoices();
-                        var selected = null;
-                        for (var i = 0; i < voices.length; i++) {{
-                            var name = voices[i].name || '';
-                            var lang = voices[i].lang || '';
-                            if (name.indexOf('Yaoyao') >= 0 || name.indexOf('yaoyao') >= 0) {{
-                                selected = voices[i];
-                                break;
-                            }}
-                            if (!selected && (lang.indexOf('zh') === 0 || lang.indexOf('cmn') === 0)) {{
-                                selected = voices[i];
-                            }}
-                        }}
-                        if (selected) u.voice = selected;
-
-                        u.onstart = function() {{ btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…'; }};
-                        u.onend = function() {{ btn.innerHTML = originalHtml; if (err) err.textContent = ''; }};
-                        u.onerror = function(e) {{
-                            btn.innerHTML = originalHtml;
-                            if (err) err.textContent = '播报失败，请尝试刷新页面或调高手机音量';
-                            console.warn('[TTS error]', e);
-                        }};
-
-                        // iOS Safari 需要把 speak 放在事件循环中，确保在用户手势内执行
-                        setTimeout(function() {{ speechSynthesis.speak(u); }}, 0);
-                    }}
-
-                    var voices = speechSynthesis.getVoices();
-                    if (voices && voices.length > 0) {{
-                        doSpeak();
-                    }} else if (speechSynthesis.onvoiceschanged !== undefined) {{
-                        // 首次加载 voices 为空时，等待加载完成
-                        var once = function() {{
-                            speechSynthesis.onvoiceschanged = null;
-                            doSpeak();
-                        }};
-                        speechSynthesis.onvoiceschanged = once;
-                        // 部分浏览器不会触发事件，设置兜底超时
-                        setTimeout(function() {{
-                            if (speechSynthesis.getVoices().length === 0) {{
-                                btn.innerHTML = originalHtml;
-                                if (err) err.textContent = '未找到中文语音，请检查系统语言设置';
-                            }}
-                        }}, 2000);
-                    }} else {{
-                        doSpeak();
-                    }}
-                }})(this)
-            " class="voice-float-btn">
+            <button id="{btn_id}" onclick="window.foodScannerTts.speak('{btn_id}', '{err_id}', '{safe}', {rate})" class="voice-float-btn">
                 {safe_button_text}
             </button>
-            <button onclick="try{{speechSynthesis.cancel();}}catch(e){{}}" class="voice-stop-btn" aria-label="停止播报">
+            <button onclick="window.foodScannerTts.stop()" class="voice-stop-btn" aria-label="停止播报">
                 ⏹
             </button>
             <span id="{err_id}" class="tts-err"></span>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        """
+    ).strip()
+    st.markdown(html_block, unsafe_allow_html=True)
 
     with st.expander("语速调整"):
         rate_options = ["0.7x 慢速", "1.0x 正常", "1.3x 快速"]
@@ -1065,18 +1061,17 @@ def render_food(result):
         with st.expander("查看原始 JSON（调试用）"):
             st.json(result)
 
-    # 底部浮动语音播报按钮（wrapper_class 直接加到 voice_control_panel 外层 div）
-    last_speak = st.session_state.get("last_speak_content", "")
-    if last_speak:
-        voice_control_panel(
-            last_speak,
-            key_prefix="tts_food",
-            button_text="🔊 一键播报全部结果",
-            wrapper_class="voice-float-bar voice-control-wrap",
-        )
+    # 底部浮动语音播报按钮（直接从 result 生成，避免 last_speak_content 丢失导致按钮消失）
+    voice_control_panel(
+        speak_content,
+        key_prefix="tts_food",
+        button_text="🔊 一键播报全部结果",
+        wrapper_class="voice-float-bar voice-control-wrap",
+    )
 
-    # 底部操作栏（用 st.container 分组，CSS :has 选择器应用样式）
+    # 底部操作栏（用 st.container + marker 分组，CSS :has 选择器应用样式）
     with st.container():
+        st.markdown("<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
         with col1:
             if st.button("📷 再扫一个", use_container_width=True, key="food_btn_scan"):
@@ -1291,17 +1286,16 @@ def render_supplement(result):
         with st.expander("查看原始 JSON（调试用）"):
             st.json(result)
 
-    # 底部浮动语音播报按钮
-    last_speak = st.session_state.get("last_speak_content", "")
-    if last_speak:
-        voice_control_panel(
-            last_speak,
-            key_prefix="tts_supp",
-            wrapper_class="voice-float-bar voice-control-wrap",
-        )
+    # 底部浮动语音播报按钮（直接从 result 生成，避免 last_speak_content 丢失导致按钮消失）
+    voice_control_panel(
+        speak_content,
+        key_prefix="tts_supp",
+        wrapper_class="voice-float-bar voice-control-wrap",
+    )
 
-    # 底部操作栏
+    # 底部操作栏（用 st.container + marker 分组，CSS :has 选择器应用样式）
     with st.container():
+        st.markdown("<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
         with col1:
             if st.button("📷 再扫一个", use_container_width=True, key="supp_btn_scan"):
@@ -1320,6 +1314,37 @@ def show_result(result):
         render_supplement(result)
     else:
         render_food(result)
+
+
+def _inject_mock_result(mock_type: str = "food"):
+    """测试模式用：注入模拟识别结果，方便 Playwright 验证结果页 DOM."""
+    if mock_type == "supplement":
+        st.session_state["last_result"] = {
+            "type": "supplement",
+            "product_name": "测试牌鱼油软胶囊",
+            "score": 90,
+            "summary": "本品为保健食品，主要原料为鱼油、明胶、甘油，适合血脂偏高者。",
+            "approval_no": "国食健注 G20250001",
+            "functional_ingredients": ["鱼油（EPA+DHA）"],
+            "health_claims": "辅助降血脂",
+            "suitable_for": "血脂偏高者",
+            "unsuitable_for": "少年儿童、孕妇、乳母；出血倾向者和出血性疾病患者",
+            "usage": "每日 2 次，每次 1 粒，口服",
+            "ingredients": ["鱼油", "明胶", "甘油", "纯化水"],
+        }
+    else:
+        st.session_state["last_result"] = {
+            "type": "food",
+            "product_name": "测试牌苏打饼干",
+            "score": 72,
+            "advice": "含有少量食用盐和植物油，普通人群可适量食用；高血压人群建议控制单次摄入量。",
+            "additives": [
+                {"name": "碳酸氢钠", "level": "A", "note": "常见膨松剂，按标准使用较安全"},
+                {"name": "焦亚硫酸钠", "level": "B", "note": "漂白剂/防腐剂，敏感人群需注意"},
+            ],
+            "ingredients": ["小麦粉", "植物油", "食用盐", "碳酸氢钠", "焦亚硫酸钠"],
+            "nutrition_nrv": {"钠": 18, "糖": 6, "脂肪": 15},
+        }
 
 
 # ========== 首次访问法律同意弹窗 ==========
@@ -1689,17 +1714,15 @@ def render_home_page():
             unsafe_allow_html=True,
         )
 
-    # 大圆形扫描按钮区
-    st.markdown("<div class='home-scan-area'>", unsafe_allow_html=True)
-    st.markdown(
-        "<div class='hint-bubble'>点击大按钮开始</div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown("<div class='scan-button-wrapper'>", unsafe_allow_html=True)
-    if st.button("📷\n扫描配料表", type="primary", key="home_goto_scan"):
-        switch_page("scan")
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    # 大圆形扫描按钮区（改用 st.container 分组，CSS 通过 marker 定位）
+    with st.container():
+        st.markdown(
+            "<div class='home-scan-area-marker'></div>"
+            "<div class='hint-bubble'>点击大按钮开始</div>",
+            unsafe_allow_html=True,
+        )
+        if st.button("📷\n扫描配料表", type="primary", key="home_goto_scan"):
+            switch_page("scan")
 
     # 最近扫描
     history = load_history()[:6]
@@ -1774,76 +1797,81 @@ def render_scan_page():
         st.session_state["scan_upload_key"] = 0
     uploader_key = f"scan_uploader_{st.session_state['scan_upload_key']}"
 
-    # 上传卡片（用 container 分组，CSS 通过 :has 选择器应用样式）
+    # 桌面端并排容器 marker（手机端默认堆叠，桌面端通过 CSS grid 并排）
     with st.container():
-        st.markdown(
-            "<div class='scan-card'>"
-            "<div class='scan-card-header'>"
-            "<div class='scan-card-title'>📷 拍照或上传配料表</div>"
-            "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
-            "</div>"
-            "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>"
-            "</div>",
-            unsafe_allow_html=True,
-        )
-        uploaded = st.file_uploader(
-            "点击选择或拍照上传配料表图片",
-            type=["jpg", "jpeg", "png"],
-            label_visibility="collapsed",
-            help="支持 jpg/png，大图会自动压缩",
-            key=uploader_key,
-        )
+        st.markdown("<div class='scan-desktop-row-marker'></div>", unsafe_allow_html=True)
 
-    # 预览与识别流程：内联显示，用 container 确保组件正确嵌套
-    if uploaded is not None:
-        st.markdown("<div class='preview-card-title'>已选择图片</div>", unsafe_allow_html=True)
-        st.image(uploaded, use_container_width=True)
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("↻ 重新选择", use_container_width=True, key="scan_retake"):
-                st.session_state["scan_upload_key"] += 1
-                st.rerun()
-        with col2:
-            if st.button("✓ 使用照片", type="primary", use_container_width=True, key="scan_confirm"):
-                if not api_key:
-                    st.error("API 密钥未配置，请联系管理员")
-                    st.stop()
-                if uploaded.size > 5 * 1024 * 1024:
-                    st.error("图片超过 5MB，请选择更小的图片或截图后重试")
-                    st.stop()
-                try:
-                    uploaded.seek(0)
-                    Image.open(uploaded).verify()
-                    uploaded.seek(0)
-                except Exception:
-                    st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")
-                    st.stop()
-                with st.status("正在识别配料表...", expanded=True) as status:
-                    status.write("① 正在压缩图片...")
-                    img_b64 = encode_image_to_base64(uploaded)
-                    orig_kb = uploaded.size / 1024
-                    b64_kb = len(img_b64) * 0.75 / 1024
-                    status.update(
-                        label=f"压缩完成：{orig_kb:.0f}KB → {b64_kb:.0f}KB",
-                        state="running",
-                    )
-                    status.write("② 正在上传并识别...")
-                    sys_prompt = build_system_prompt(groups)
-                    raw = call_api(api_key, img_b64, sys_prompt, model)
-                    if raw:
-                        status.update(label="③ 正在整理结果...", state="running")
-                        result = parse_result(raw, health_groups=groups)
-                        if result:
-                            status.update(label="识别完成", state="complete")
-                            st.session_state["last_result"] = result
-                            add_history(result)
-                            switch_page("result")
-                        else:
-                            status.update(label="识别失败", state="error")
-                            st.error("返回内容不是合法 JSON，请重试或更换图片")
-                            if os.getenv("DEBUG") == "1":
-                                with st.expander("查看原始返回（调试用）"):
-                                    st.text(raw)
+        # 上传卡片（用 container + marker 分组，CSS 通过 :has 选择器给整个卡片加背景）
+        with st.container():
+            st.markdown(
+                "<div class='scan-card-marker'></div>"
+                "<div class='scan-card-header'>"
+                "<div class='scan-card-title'>📷 拍照或上传配料表</div>"
+                "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
+                "</div>"
+                "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>",
+                unsafe_allow_html=True,
+            )
+            uploaded = st.file_uploader(
+                "点击选择或拍照上传配料表图片",
+                type=["jpg", "jpeg", "png"],
+                label_visibility="collapsed",
+                help="支持 jpg/png，大图会自动压缩",
+                key=uploader_key,
+            )
+
+        # 预览与识别流程：内联显示，用 container + marker 确保组件被卡片包裹
+        if uploaded is not None:
+            with st.container():
+                st.markdown("<div class='preview-card-marker'></div>", unsafe_allow_html=True)
+                st.markdown("<div class='preview-card-title'>已选择图片</div>", unsafe_allow_html=True)
+                st.image(uploaded, use_container_width=True)
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("↻ 重新选择", use_container_width=True, key="scan_retake"):
+                        st.session_state["scan_upload_key"] += 1
+                        st.rerun()
+                with col2:
+                    if st.button("✓ 使用照片", type="primary", use_container_width=True, key="scan_confirm"):
+                        if not api_key:
+                            st.error("API 密钥未配置，请联系管理员")
+                            st.stop()
+                        if uploaded.size > 5 * 1024 * 1024:
+                            st.error("图片超过 5MB，请选择更小的图片或截图后重试")
+                            st.stop()
+                        try:
+                            uploaded.seek(0)
+                            Image.open(uploaded).verify()
+                            uploaded.seek(0)
+                        except Exception:
+                            st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")
+                            st.stop()
+                        with st.status("正在识别配料表...", expanded=True) as status:
+                            status.write("① 正在压缩图片...")
+                            img_b64 = encode_image_to_base64(uploaded)
+                            orig_kb = uploaded.size / 1024
+                            b64_kb = len(img_b64) * 0.75 / 1024
+                            status.update(
+                                label=f"压缩完成：{orig_kb:.0f}KB → {b64_kb:.0f}KB",
+                                state="running",
+                            )
+                            status.write("② 正在上传并识别...")
+                            sys_prompt = build_system_prompt(groups)
+                            raw = call_api(api_key, img_b64, sys_prompt, model)
+                            if raw:
+                                status.update(label="③ 正在整理结果...", state="running")
+                                result = parse_result(raw, health_groups=groups)
+                                if result:
+                                    status.update(label="识别完成", state="complete")
+                                    st.session_state["last_result"] = result
+                                    add_history(result)
+                                    switch_page("result")
+                                else:
+                                    status.update(label="识别失败", state="error")
+                                    st.error("返回内容不是合法 JSON，请重试或更换图片")
+                                    if os.getenv("DEBUG") == "1":
+                                        with st.expander("查看原始返回（调试用）"):
+                                            st.text(raw)
 
     st.markdown(
         "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",
@@ -2093,6 +2121,9 @@ def main():
         st.session_state["onboarded"] = True
         if "page" not in st.session_state:
             st.session_state["page"] = st.query_params.get("page", "home")
+        # 若同时带 mock=1，注入模拟结果，便于 Playwright 验证结果页
+        if st.query_params.get("mock") == "1" and "last_result" not in st.session_state:
+            _inject_mock_result(st.query_params.get("mock_type", "food"))
 
     # 首次访问：先法律同意，再触发 4 步引导
     if "legal_agreed" not in st.session_state:

@@ -1,571 +1,636 @@
 # 变更日志
 
-## v0.4.1 — 2026-07-02
-
-### 适老化字体审计修复
-
-**修复 13 处字号不满足 >= 18px/14px 适老标准的问题：**
-
-home.html：
-- `.header-action` 健康档案按钮 14px -> 16px
-- `.example-label` 示例标签 16px -> 18px，颜色提升对比度
-- `.tab-item-label` 底部导航文字 12px -> 13px
-
-result.html：
-- `.additive-category` 添加剂分类 14px -> 16px
-- `.additive-reason` 原因说明文字 14px -> 18px（关键修复）
-- `.nutrition-detail` 营养说明 14px -> 16px
-- `.advice-text` 健康建议正文 16px -> 18px
-- `.legend-item` 色盲图例 14px -> 16px
-
-health-profile.html：
-- `.tab-label` 底部导航文字 14px -> 13px（统一所有页面）
-
-history.html：
-- `.search-hint` 搜索提示 12px -> 14px
-- `.filter-tab` 筛选标签 16px -> 18px
-- `.record-risk` 风险标签 16px -> 18px
-- `.tab-item span` 底部导航文字 12px -> 13px
-
-**图形比例审计结论：** 所有关键图形元素尺寸合规（按钮 >= 56px、触摸目标 >= 48px、评分圆圈 52px、图标圆圈 48px、分数徽章 48x32px、示例卡片 140x100px、声波条 3-22px），无需调整。
-
----
-
-## v0.4.0 — 2026-07-02
-
-### 适老化 UI 全面重设计（pages-redesign/）
-
-**设计系统**
-- `colors_and_type-draft.css` -- 全新品牌设计变量：健康绿主色 #2E7D32、状态色（安全/注意/危险）、适老化字号体系（正文 18px 起）、56px 按钮高度、8px 基础间距单位
-
-**5 个高保真移动端页面（375px）**
-
-1. **首页/上传页** (`home.html`)
-   - Hero 标语「拍一下配料表，吃得更明白」
-   - 大按钮拍照/上传（72px 高，绿色圆角）
-   - 3 张示例缩略图引导老年用户认识配料表
-   - 上传进度条 + AI 识别动画（3 态切换）
-   - 最近扫描横向卡片 + 底部 Tab 栏
-
-2. **识别结果页** (`result.html`)
-   - 65/100 分评分卡（橙色中等风险）+ 一行总结
-   - 添加剂清单：每种添加剂带 **原因说明**（如「高血压人群建议控制摄入量」）
-   - 营养成分进度条（钠/糖/脂肪）
-   - 健康建议卡片（高血压人群/普通人群分组）
-   - 语音播报按钮 3 态（默认/加载中/播放中含声波动画）
-
-3. **健康档案页** (`health-profile.html`)
-   - 6 种健康状况卡片（2 列网格，可点选切换）
-   - 8 种过敏原复选框（大尺寸 26px）
-   - 用药情况文本框
-   - 选中/未选中状态高对比
-
-4. **历史记录页** (`history.html`)
-   - 语音搜索栏（麦克风脉冲动画）
-   - 风险筛选标签（全部/安全/注意/高风险）
-   - 垂直记录卡片列表（分数圆圈 + 产品名 + 日期）
-   - 空状态：友好插图 + 「开始扫描」按钮
-
-5. **设计系统文档** (`design-system.html`)
-   - 色彩 token、字体层级、间距规范
-   - 组件规格（按钮/卡片/风险徽章/Tab 栏/评分圆圈/进度条）
-   - 交互状态说明（上传流程/语音按钮/空状态/表单状态）
-   - 适老化设计指南 8 条
-
-**核心问题修复**
-- 「注意」标识含义不清 -> 每种被标注意成分增加具体原因说明行
-- 「点击播报」按钮无反应感 -> 3 种视觉状态（默认绿/加载灰+旋转/播放脉冲+声波）
-- 上传图片无进度提示 -> 进度条 + 百分比 + AI 分析动画
-- 界面提示过多 -> 去除技术术语，仅保留用户需要的信息
-
----
-
-## v0.3.7 — 2026-07-02
-
-### 适老化首页 UI 重设计（高保真原型）
-
-- **新增文件**：`pages-redesign/home.html` -- 移动端 375px 高保真首页原型
-- **品牌 CSS 变量**：全部颜色、字体、间距、圆角、阴影均引用 `colors_and_type-draft.css` 中的 CSS 变量，无硬编码色值
-- **页面结构**：
-  - 顶部状态栏（装饰性）+ 导航栏（标题「配料表识别」+ 健康档案按钮）
-  - Hero 区：居中大标题「拍一下配料表，吃得更明白」+ 副标题
-  - 主操作区：绿色大按钮（72px 高，圆角 12px，相机图标 + 文字）
-  - 示例缩略图：3 张横向滚动卡片（食品包装/饮料标签/零食背面），标注「示例：配料表长这样」
-  - 上传进度状态：进度条 + 百分比动画，标题「正在上传图片...」
-  - AI 识别状态：脉冲环动画 + 弹跳圆点，标题「AI 正在分析配料表...」
-  - 最近扫描区：3 张横向滑动卡片，含产品名、评分徽章（绿/橙/红）、标签、日期
-  - 底部 Tab 栏（固定 80px）：首页/历史/健康档案/帮助，每个含图标 + 文字
-- **交互 Demo**：页面底部 3 个切换按钮（默认状态/上传中/识别中），JS 切换上传进度状态
-- **适老化合规**：正文字号 >= 18px，标题 >= 22px，按钮高度 72px（>= 56px 要求），触摸目标 >= 48px，图标全部配文字标签，文字背景对比度 >= 4.5:1
-- **技术**：单文件 HTML，内联 CSS + JS，Material Icons Round CDN，无外部依赖；375px 宽居中 + 圆角设备框阴影
-
-## v0.3.6 — 2026-07-02
-
-### 工程质量与可维护性提升
-
-- **CI/CD 工作流**：
-  - 新增 `.github/workflows/ci.yml`，包含代码检查（black/isort/flake8）、单元测试（pytest）、安全扫描（bandit/safety）、构建验证
-  - 提交 PR 到 main 分支自动触发，确保代码质量
-- **日志与监控**：
-  - 引入 `logging` 模块，生产环境 INFO 级别，本地 DEBUG=1 时 DEBUG 级别
-  - `call_api()` 函数增加详细日志：图片大小、请求耗时、HTTP 状态码、重试次数、错误详情
-  - 便于排查 API 调用问题和性能瓶颈
-- **安全部署文档**：
-  - `README.md` 新增「安全部署检查清单」，覆盖 Secrets 配置、DEBUG 禁用、XSRF/CORS、上传限制、依赖安全、日志级别、HTTPS、安全头、密钥轮换、访问控制
-  - 新增 `HANDOFF.md` 交接文档，包含项目结构、关键配置、部署步骤、回滚步骤、常见故障排查、数据持久化说明、安全注意事项、测试与 CI/CD、待办事项
-- **CSS 外置与缓存**：
-  - 将 340 行适老化样式迁移到 `.streamlit/style.css`，独立维护
-  - `inject_elder_css()` 改为读取文件并缓存，减少每次 rerun 的 HTML payload
-  - 样式包含：全局字体、标题层级、大按钮、语音按钮、评分数字、卡片、图例、侧边栏、表单、响应式布局、高对比度模式、动画效果、打印样式
-- **数据持久化说明**：
-  - `HANDOFF.md` 中明确说明当前 JSON 文件存储的限制（多用户共享、重启丢失）
-  - 提供 SQLite/PostgreSQL 迁移预案，包含表结构设计和迁移脚本思路
-
-## v0.3.5 — 2026-07-02
-
-### 质量、安全与体验优化
-
-- **安全修复**：
-  - 修复 XSS 漏洞：所有动态文本（AI 返回内容、历史记录、详情页）统一用 `_safe()` 转义
-  - 清理 DEBUG 模式下的密钥泄露：不再展示 key 长度和末 4 位，仅显示"已配置/未配置"
-  - `config.toml` 中 `maxUploadSize` 从 20 降到 5，限制上传文件大小
-- **体验优化**：
-  - 结果页添加剂卡片顶部增加图例说明：● 可食用（常见） ▲ 特定人群注意 ■ 建议少吃
-  - 添加剂 note 字段展示：对含有注意事项的添加剂，在卡片下方用灰色小字展示原因
-  - 语音播报浏览器兼容性检测：不支持时显示明确提示，而非静默失败
-- **工程改进**：
-  - `requirements.txt` 依赖版本从 `>=` 改为 `==` 固定，新增 `pytest`
-  - 为后续单元测试做准备（核心函数参数化改造）
-
-## v0.3.4 — 2026-07-02
-
-### UI/UX 适老化体验优化
-
-- **CSS 样式优化**：
-  - 统一字体比例：h1=28px、h2=24px、h3=20px，避免字体过大
-  - 优化语音按钮样式：图标文字对齐（24px图标 + 20px文字）
-  - 评分数字从72px调整为56px，视觉更平衡
-  - 添加语音控制条样式，结果页底部固定显示
-- **导航优化**：
-  - 顶部导航栏统一，移除右上角语音按钮（移到页面底部）
-  - 侧边栏精简：首页/历史/档案大按钮，法律文件收起到折叠区
-  - 高级设置（模型选择）仅在 DEBUG=1 时显示
-- **首页优化**：
-  - 移除不可点击的装饰性圆形按钮，保留单个功能按钮
-  - 移除冗余提示气泡，界面更简洁
-  - 最近扫描记录美化，添加空状态友好提示
-- **扫描页优化**：
-  - 隐藏模型选择等技术选项，默认使用 MiMo 模型
-  - 简化上传提示，添加拍照图标引导
-  - API密钥配置仅在 DEBUG=1 时显示
-- **结果页优化**：
-  - 整合免责提示为小字灰色文字，不占用主视觉
-  - 移除多处重复的警告提示
-  - 健康建议卡片添加图标
-  - 结果页底部添加「再扫一个」「返回首页」快捷按钮
-  - 个性化警告改为卡片式展示，减少 warning 堆叠
-- **健康档案页优化**：
-  - 移除敏感信息、Demo提示等冗余警告
-  - 移除确认复选框，一键保存
-  - 简化自由补充区域，收起到折叠区
-  - 档案摘要更简洁
-- **历史记录页优化**：
-  - 添加空状态友好引导，有「开始扫描」按钮
-  - 风险标签统一为「可食用/注意/少吃」更易懂
-  - 筛选标签隐藏label，更简洁
-- **底部优化**：
-  - 移除页面底部大面积法律文件展开区
-  - 移除跨境传输蓝色大横幅
-  - 保留底部居中的小字免责提示：「AI识别仅供参考，请以包装原文为准」
-  - 法律文件移到侧边栏折叠区，有独立页面展示
-
-## v0.3.3 — 2026-07-02
-
-### Streamlit Cloud 安全排查与加固
-
-- **安全审计**：确认 `.env` 未进入 Git 历史，真实 API key 未写入代码，API key 通过 `os.getenv()` / `st.secrets` 读取；
-- **`app.py` `get_api_key()`**：在 docstring 中补充安全说明，强调本地用 `.env`、生产用 Secrets、禁止写死 key；
-- **`app.py` 扫描页**：API key 缺失提示增加「本地检查 .env / Cloud 检查 Secrets / 禁止代码中填真实密钥」的明确引导；
-- **`app.py` DEBUG 信息块**：注释中明确标注生产环境严禁开启 `DEBUG=1`；
-- **`README.md`**：在 Streamlit Cloud 部署章节后新增「安全提示（必读）」，覆盖 Secrets 配置、.env 不上传、DEBUG 禁用、协作者检查、定期轮换 key；
-- **待用户操作**：登录 MiMo/Agnes 控制台轮换 API key，并在 Streamlit Cloud Secrets 中更新，然后 Reboot 应用。
-
-## v0.3.2 — 2026-07-02
-
-### 初赛资料 Review、安全加固与 Demo 帖重构
-
-- **代码 Review**：审查 `app.py`，确认适老化设计、双模型 A/B 对比、GB 2760 客户端判定、药物-食物冲突、法律合规三件套完整。
-- **安全加固**：
-  - `app.py`：`st.set_page_config` 增加 `menu_items` 隐藏右上角 "View source" / "About" 菜单；
-  - `.streamlit/config.toml`：`enableXsrfProtection` / `enableCORS` 改回 `true`。
-- **演示视频**：生成分辨率 1080×1920、30fps、约 981KB 的 30 秒竖屏视频，覆盖痛点 → 首页 → 上传 → 结果 → 语音播报 → 体验地址。
-- **论坛 Demo 帖重构**：
-  - 按初赛规则整理为 4 大部分：Demo 简介、创作思路、体验地址、TRAE 实践过程；
-  - 优化叙事结构，所有图片改用论坛 CDN 链接；
-  - 在"体验地址"部分插入 30 秒演示视频。
-- **待用户操作**：登录 [share.streamlit.io](https://share.streamlit.io/) 手动 Reboot 应用，确保公开链接可访问。
-
-## v0.3.1 — 2026-07-02
-
-### 手机浏览器语音播报修复
-
-- **文件**：`app.py`
-- **问题**：
-  1. 手机浏览器（iOS Safari / Android Chrome）对语音合成有严格的自动播放限制，只有用户明确交互才能触发；
-  2. 原 `speak_text` 和 `voice_control_panel` 使用 `st.button` + Python rerun 链路，导致用户手势上下文丢失，播报被拦截；
-  3. 结果页自动播报逻辑在页面渲染时触发，非用户交互，被手机浏览器阻止。
-- **修复**：
-  1. `speak_text` 改为注入纯 HTML `<button>` + 内联 `onclick` JS，点击时直接在浏览器端调用 `speechSynthesis.speak()`，不经过 Python rerun；
-  2. `voice_control_panel` 的 4 个控制按钮（重播/慢速/暂停/继续）全部改为纯 HTML 按钮 + 内联 JS，确保移动端手势同步触发；
-  3. `render_top_nav` 的 voice 分支也改为纯 HTML 按钮；
-  4. 移除结果页自动播报逻辑，仅保存播报内容供按钮使用。
-
-## v0.3.0 — 2026-07-02
-
-### 语音播报功能修复
-
-- **文件**：`app.py`
-- **问题**：
-  1. `render_top_nav` 传了 `right_action="voice"` 但未实现，结果页/详情页右上角语音按钮缺失；
-  2. `speak_text` 和 `_js_speech_control` 使用 `st.components.v1.html(js, height=0)`，iframe height=0 在部分浏览器不执行 JS；
-  3. voices 异步加载时只有一次 500ms 兜底，不够健壮。
-- **修复**：
-  1. `render_top_nav` 补充 `right_action="voice"` 分支，渲染「🔊 播报」按钮；
-  2. 将 `st.components.v1.html(js, height=0)` 全部替换为 `st.markdown(js, unsafe_allow_html=True)`，在主页面执行 JS；
-  3. `speak_text` 增加 voices 空时递归重试（最多 5 次，每次间隔 300ms）+ 500ms/1500ms 双兜底；
-  4. 增加 `u.onerror` 回调，便于排查播报失败原因；
-  5. voice 属性增加 null 安全检查（`v.name &&`）。
-
-## v0.2.9 — 2026-07-01
-
-### 赛前最终打磨与提交
-
-- **文件**：`app.py`、`README.md`、`.env.example`、`CHANGELOG.md`、Demo 帖 ID 51391
-- **内容**：
-  - 统一版本号为 v0.2.9（app.py / README / CHANGELOG）；
-  - README 改为优先 `.env` 配置，新增 `.env.example`；
-  - 人工收集淘宝/京东真实配料表图片到 `test_images/`，填充 `test_images/README.md` 来源信息；
-  - 清理非最终提交脚本：`collect_test_images.py`、`prototype_mimo.py`；
-  - 更新 `README.md` 项目结构，补充 `test_images/` 与 `download_test_images.py`；
-  - 用真实电商图片完成本地业务回归测试，通过率 ≥80%；
-  - 推送代码到 GitHub，验证 Streamlit Cloud 部署与公开链接可用；
-  - 用最新真实运行截图更新社区 Demo 帖。
-- **待用户操作**：若 Streamlit Cloud 返回 401，需更新 Secrets 中的 `MIMO_API_KEY`。
-
-## v0.2.7 — 2026-07-01
-
-### UI 统一优化与本地回归测试
-
-- `app.py`
-  - 新增 `session_state["page"]` 路由，`switch_page()`、`render_top_nav()` 工具函数。
-  - 新增 `render_home_page()`、`render_scan_page()`、`render_result_page()`、`render_history_page()`、`render_detail_page()`、`render_health_profile_page()` 页面函数。
-  - 重写 `main()` 为页面分发器；侧边栏改为弱化导航。
-  - `inject_elder_css()` 统一注入设计稿变量和页面组件 CSS。
-  - `render_food()` / `render_supplement()` 按设计稿卡片化。
-  - 新增 `_get_level_info()`、`_render_score_hero()`、`_clip_path()`、`_render_additive_card()` 等 helper。
-  - 新增 `data/history_full.json` 读写（`load_history_full()` / `save_history_full()`），最多保存 20 条完整识别快照。
-  - `add_history()` 识别成功后同步保存完整快照。
-- 新增页面
-  - 历史记录页：搜索、筛选、竖向列表。
-  - 产品详情页：评分英雄区、扫描信息、添加剂/营养/建议卡片。
-- 回归测试
-  - 本地 `streamlit run app.py` 跑通上传 → 识别 → 语音播报 → 保存历史 → 详情页流程。
-  - 修复按钮失效、样式错位、session_state 丢失等回归问题。
-
-## v0.2.6 — 2026-07-01
-
-### Phase 3：适老化体验补齐（Task 7 / 8 / 9 / 10）
-
-#### Task 7：语音播报增强
-- **`app.py` `speak_text()`**
-  - 新增 `rate` 参数（默认 1.0），支持 0.7x 慢速 / 1.0x 正常 / 1.3x 快速 / 0.75x 慢速重播
-  - 限制 rate 范围 [0.5, 2.0]，避免极端值
-- **`app.py` 新增 `_js_speech_control(action)`**
-  - 通过 JS 调用 `speechSynthesis.pause() / resume() / cancel()`
-- **`app.py` 新增 `voice_control_panel(speak_content, key_prefix)`**
-  - 统一语音控制面板：语速 radio（横排三选一）+ 4 个按钮（重播 / 慢速重播 / 暂停 / 继续播放）
-  - 用 `session_state["tts_rate"]` 记忆语速选择
-- **`app.py` `render_food()` / `render_supplement()`**
-  - 识别结果返回后自动触发语音播报（用 `session_state["last_spoken_key"]` 防止 rerun 重复播报）
-  - 替换原「语音播报」单按钮为完整控制面板
-  - 原按钮 key `btn_speak` 移除，改为 `tts_food_*` / `tts_supp_*`
-
-#### Task 8：添加剂风险编码色盲友好
-- **`app.py` `inject_elder_css()`**
-  - 新增 `.score-shape` 样式（评分等级形状图标，56px）
-  - 新增 `.additive-shape` / `.additive-level` 样式（添加剂卡片三重编码：颜色+形状+文字）
-  - 评分色块 `.score-box` 改为 flex 布局，容纳形状图标
-- **`app.py` `render_food()` 评分卡片**
-  - 新增形状图标：80+ 绿圆 ● / 60-79 橙三角 ▲ / <60 红方块 ■
-  - 与颜色、文字组成三重编码
-- **`app.py` `render_food()` 添加剂卡片**
-  - `level_map` 扩展为三元组 `(标签, 颜色, 形状)`
-  - 每张卡片右侧显示带边框的等级徽章：形状图标 + 等级文字 + 背景色
-- **对比度**：橙色/黄色背景配深色文字 `#333333`（v0.2.4 已确认，本次保持）
-
-#### Task 9：简化健康档案与首次引导
-- **`app.py` `render_onboarding()`**
-  - 第 2 步默认勾选「脑梗/心血管 + 高血压」（`session_state["onboarding_groups"]` 初始化）
-  - 第 2 步新增「⏭️ 跳过，稍后设置」按钮，点击后保留默认档案直接进入第 3 步
-- **`app.py` `render_health_profile()`**
-  - 基础疾病区新增 3 个一键组合按钮：「💔 我有三高」（高血压+高脂血症+2型糖尿病）/「🧠 脑梗/心血管」（高血压+脑梗死+冠心病）/「🗑️ 清空疾病」
-  - 过敏原区新增 2 个一键组合按钮：「🥜 花生/牛奶过敏」（花生及其制品+乳及乳制品）/「🗑️ 清空过敏原」
-  - 按钮点击后通过 `st.session_state[key]` 直接更新 multiselect widget 状态，再 `st.rerun()`
-- **`app.py` `inject_elder_css()`**
-  - `.stCheckbox > label > div` 设置 `min-width/height: 32px`，复选框放大到 32px
-  - `.stCheckbox > label` 字体放大到 20px
-  - 选中状态由 Streamlit 默认勾选图标 + CSS 边距提供双重反馈
-
-#### Task 10：首页与结果页视觉还原
-- **`app.py` `inject_elder_css()`**
-  - 新增 `.scan-circle-btn` 样式：200x200 圆形渐变绿按钮，带阴影
-  - 新增 `.nrv-bar-wrap` / `.nrv-bar-label` / `.nrv-bar-track` / `.nrv-bar-fill` 营养成分可视化条样式
-  - 新增 `.sticky-voice-bar` 底部固定语音按钮样式（sticky + 顶部绿色边框）
-- **`app.py` `main()` 扫描识别页**
-  - 在 `file_uploader` 上方新增大圆形扫描按钮（视觉引导，标注「📷 拍照 / 上传配料表」）
-- **`app.py` 新增 `render_nutrition_bars(result)`**
-  - 营养成分可视化条：钠/糖/脂肪 NRV% 占比
-  - 仅当识别结果含 `nutrition_nrv` 或 `nutrition` 字段时显示（模型可选返回）
-  - 颜色分级：<5% 绿（低）/ 5-20% 橙（中）/ >20% 红（高）
-- **`app.py` `render_food()`**
-  - 全部配料后调用 `render_nutrition_bars(result)`
-  - 末尾新增底部固定语音按钮「🔊 再听一遍结果」，复用 `last_speak_content`
-- **历史卡片竖向列表**：`show_history()` 已是竖向 div 列表，无横向滚动 CSS（验证确认）
-- **引导页下一步大按钮**：`render_onboarding()` 末尾已有 `use_container_width=True` 的「下一步 ➡️」按钮，适老化 56px 高（验证确认）
-
-#### 版本与文档
-- **`app.py` 顶部版本注释** 从 `v0.2.5` 更新为 `v0.2.6`
-- **`.trae/specs/competition-strategy-and-next-steps/tasks.md`**
-  - Task 7 及全部 SubTask（7.1 / 7.2 / 7.3 / 7.4）标记为完成（7.4 iOS Safari 测试为代码层兼容性实现，实际设备测试待用户验证）
-  - Task 8 及全部 SubTask（8.1 / 8.2 / 8.3 / 8.4）标记为完成
-  - Task 9 及全部 SubTask（9.1 / 9.2 / 9.3 / 9.4）标记为完成
-  - Task 10 及全部 SubTask（10.1 / 10.2 / 10.3 / 10.4 / 10.5）标记为完成
-- **`.trae/specs/competition-strategy-and-next-steps/checklist.md`**
-  - 适老化体验 16 项检查项中，14 项代码实现相关项全部勾选
-  - 「语音播报在 iOS Safari / 微信内置浏览器测试通过」一项标注为待用户设备验证
-
-#### 验证
-- `python -m py_compile app.py` 通过（exit_code=0）
-- 适老化基础样式（18px 字体、56px 按钮）保持不变
-- 法律合规弹窗、风险提示、跨境披露、AI 不确定性提示、医疗免责声明等功能保持不变
-
-## v0.2.5 — 2026-07-01
-
-### Phase 4：技术健壮性改进（Task 11 / 12 / 13）
-
-#### Task 11：API 调用健壮性与错误脱敏
-- **`app.py` `call_api()`**
-  - 新增最多 2 次指数退避重试：第 1 次重试等 2 秒，第 2 次重试等 4 秒
-  - 仅网络错误（`Timeout`/`RequestException`）或 5xx 状态码才重试；4xx 直接返回不重试
-  - 重试循环共 3 次尝试（1 次初始 + 2 次重试）
-- **`app.py` 新增 `_show_friendly_error()`**
-  - 错误提示统一使用用户友好文案（如「识别服务暂时不可用，请稍后重试」），不再直接展示 `resp.text`
-  - 原始错误信息（HTTP 状态码、`resp.text` 前 1000 字符、异常堆栈）仅在 `DEBUG=1` 时通过折叠区展示
-- **Agnes 调试代码审查结论**
-  - 经审查，当前代码中无「默认开启的 Agnes A/B 对比调试代码」
-  - 侧边栏「模型选择」radio 默认选中 MiMo（列表第 1 项），Agnes 需用户主动选择
-  - DEBUG 信息块中的 Agnes 配置展示受 `DEBUG=1` 控制，非默认开启
-  - 因此无需移除代码，已满足「默认关闭」要求
-
-#### Task 12：数据文件加载校验
-- **`app.py` 新增 `validate_data_files()`**
-  - 启动时校验 5 个关键数据文件的存在性与结构：
-    - `data/gb2760_risk.csv`（必需列：`cn_name`、`risk_level`）
-    - `data/common_diseases.json`（必需键：`categories`）
-    - `data/allergens.json`（必需键：`categories`）
-    - `data/common_drugs.json`（必需键：`categories`）
-    - `data/drug_food_conflicts.json`（必需键：`conflicts`）
-  - 返回问题列表 `list[str]`，空列表表示全部通过
-  - 不阻断运行，仅返回问题清单
-- **`app.py` 新增 `_DATA_FILE_SPEC` 常量**
-  - 数据文件 → 必需键/列 的对照表，便于后续扩展
-- **`app.py` `main()`**
-  - 主页标题之后调用 `validate_data_files()`
-  - 异常时通过 `st.warning()` 在页面顶部显示具体缺失的文件和问题
-  - 即使部分数据缺失，应用仍可运行（相关功能不可用，但不会 `exit`）
-
-#### Task 13：历史记录持久化（初赛版本）
-- **`app.py` 新增 `load_history()`**
-  - 读取本地 `data/history.json`，文件不存在或损坏时返回空列表
-  - 不抛异常，刷新页面不丢失
-- **`app.py` 新增 `save_history(record)`**
-  - 追加一条记录到本地 JSON，自动保留最近 50 条，超出自动删除最旧的
-  - 写入失败静默忽略，不阻断识别主流程
-  - 兜底调用 `os.makedirs(_DATA_DIR, exist_ok=True)` 确保 data 目录存在
-- **`app.py` `add_history()` 重写**
-  - 改为构造 record 并调用 `save_history(record)` 写入本地 JSON
-  - 记录字段：`timestamp`（ISO 格式）、`product_name`、`score`、`type`（food/supplement）、`additives_count`
-  - 不保存图片数据（隐私保护，已在 Phase 0 确认）
-  - 同步写入 `session_state` 便于其他逻辑即时读取
-- **`app.py` `show_history()` 重写**
-  - 改为从 `load_history()` 读取，刷新页面不丢失
-  - 历史卡片新增「类型标签」（食品 / 保健食品）和「时间显示」（YYYY-MM-DD HH:MM）
-  - 文案从「仅保存在当前会话」改为「最近 50 条记录保存在本地」
-- **`app.py` 新增常量**
-  - `_HISTORY_PATH = data/history.json`
-  - `_HISTORY_MAX = 50`
-- **`app.py` import 调整**
-  - 新增 `import time`（指数退避重试用）
-  - 新增 `from datetime import datetime`（历史记录时间戳用）
-
-#### 版本与文档
-- **`app.py` 顶部版本注释** 从 `v0.2.4` 更新为 `v0.2.5`
-- **`.trae/specs/competition-strategy-and-next-steps/tasks.md`**
-  - Task 11 及全部 SubTask（11.1 / 11.2 / 11.3）标记为完成
-  - Task 12 及全部 SubTask（12.1 / 12.2 / 12.3）标记为完成
-  - Task 13 及全部 SubTask（13.1 / 13.2 / 13.3）标记为完成
-- **`.trae/specs/competition-strategy-and-next-steps/checklist.md`**
-  - 技术健壮性 5 项检查全部勾选：
-    - MiMo/Agnes API 调用有最多 2 次指数退避重试
-    - Agnes 调试代码已移除或默认关闭
-    - 启动时校验关键数据文件存在性与结构
-    - 数据异常时在页面顶部显示警告
-    - 历史记录使用本地 JSON 持久化，刷新不丢失
-  - （API 错误提示用户友好文案、CHANGELOG 版本一致性 两项已在 v0.2.4 勾选）
-
-#### 验证
-- `python -m py_compile app.py` 通过（exit_code=0）
-- 适老化样式、法律合规弹窗、风险提示、跨境披露、AI 不确定性提示等功能保持不变
-
-## v0.2.4 — 2026-07-01
-
-### 合规：医疗文案去医疗化、添加剂表述中性化、AI 不确定性提示（Phase 0.2-0.4 + Task 2）
-
-- **`app.py` `render_personal_warnings()`**
-  - 药物-食物冲突展示完全科普化：不再直接展示 `drug_food_conflicts.json` 中的 `description/mechanism/recommendation`
-  - 统一输出文案：「{药物} 与 {配料} 可能存在相互作用，具体用药方案请咨询医生或药师」
-  - 冲突区块末尾强制附加「本工具不提供用药建议」
-- **`app.py` `render_food()`**
-  - 评分标签从「安全/注意/警告」改为「较常见/特定人群建议关注/建议咨询专业人士」，与 A/B/C 等级文案一致
-  - 评分大色块橙色背景（#FF9800）改用深色文字（#333333），避免黄底白字对比度不足
-  - 每条添加剂卡片内新增逐条提示：「在 GB 2760 合规使用范围内是安全的。」
-- **`app.py` `build_system_prompt()`**
-  - 健康建议收尾文案从「建议咨询医生」扩展为「请咨询医生/药师/营养师」
-- **`app.py` `render_supplement()`**
-  - 语音播报与底部免责声明同步使用「请咨询医生/药师/营养师」
-- **`d:\GBT\.trae\specs\competition-strategy-and-next-steps\checklist.md`**
-  - Task 0.2、0.3、0.4 及全部 SubTask 标记为完成
-  - Task 2 及全部 SubTask 标记为完成
-- **`d:\GBT\.trae\specs\competition-strategy-and-next-steps\checklist.md`**
-  - 勾选 12 项相关合规检查项
-- **`app.py`**
-  - 修正文件顶部版本注释为 `v0.2.4`，与 `CHANGELOG.md` 保持一致
-- **`d:\GBT\.trae\specs\competition-strategy-and-next-steps\checklist.md`**
-  - 第七步 QA 验证：勾选 Phase 0/1 全部 27 项合规与医疗安全项
-  - 勾选技术健壮性可立即验证项：API 错误提示不泄露原始响应、CHANGELOG 版本与代码一致
-
-## v0.2.3 — 2026-07-01
-
-### 新增与强化：公开 Demo 风险提示与跨境披露（Phase 0.5）
-- **首页显著风险提示** (`app.py`)
-  - 标题下方新增高对比度橙色横幅："本 Demo 仅供技术展示，不构成任何医疗或消费建议"
-  - 采用大字号（20px）、粗体、左侧色条，确保老人可见
-- **跨境传输披露常驻化** (`app.py`)
-  - 页面底部改为蓝色高对比度横幅："服务部署于境外服务器，识别过程可能涉及跨境数据传输"
-  - 侧边栏底部同步常驻展示同一提示
-- **法律合规评估文件** (`LEGAL_REVIEW.md`)
-  - 新增备案评估记录，覆盖 ICP 备案、算法备案、互联网药品信息服务备案
-  - 结论：初赛 Demo 阶段通常无需上述备案，正式上线前需聘请律师/合规顾问重新评估
-- **法律合规评估入口** (`app.py`)
-  - 侧边栏「用户协议与隐私政策」旁新增「法律合规评估」展开入口，可直接查看 `LEGAL_REVIEW.md`
-- **Demo 数据保护强化** (`app.py`)
-  - 历史记录不再保存用户上传图片，仅保留匿名化摘要（产品名、分数、添加剂数量、建议）
-  - 历史记录区域增加提示："历史记录仅保存在当前会话，不存储图片，Demo 结束后自动清空"
-  - 健康档案页增加 Demo 提示：建议不要输入真实姓名、身份证号、详细病史等真实个人信息
-
-## v0.2.2 — 2026-07-01
-
-### 修复：医疗安全与数据准确性（Phase 1）
-- **`data/drug_food_conflicts.json`**
-  - 移除 `DFC0051` 氯吡格雷-PPI 药物-药物相互作用条目
-  - 修正 `DFC0015` 阿卡波糖「单独用药或低糖饮食易致低血糖」错误表述
-  - `DFC0036` 氨茶碱移除证据不足关键词（高蛋白低糖）、弱化描述、severity 调整为 medium
-  - 全量 recommendation 去指令化：避免「严禁」「必须避免」「危及生命」「小时禁食」等诊疗措辞
-  - 补充 `DFC0060` 甲硝唑、`DFC0061` 替硝唑双硫仑样反应条目
-  - 所有冲突条目标注权威来源（NMPA 说明书/指南）
-- **`data/common_drugs.json`**
-  - 抗感染分类新增甲硝唑（D363）、替硝唑（D364），id 唯一
-- **`app.py`**
-  - `render_personal_warnings()` 去掉 emoji，并在药物冲突区块末尾统一附加「本工具不提供用药建议」
-
-## v0.2.1 — 2026-07-01
+## v0.4.7 - 2026-07-06
+
+### 修复结果页语音组件 JS 代码块泄露
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\diag_verify_ui.py`、`d:\GBT\ai-food-scanner\README.md`、`d:\GBT\ai-food-scanner\CODE_WIKI.md`
+- **版本统一**：
+  - `app.py` 顶部注释版本更新为 `v0.4.7`
+  - `style.css` 顶部注释版本更新为 `v0.4.7`
+  - `README.md` 版本徽章与最新更新说明更新为 `v0.4.7`
+  - `CODE_WIKI.md` 版本字段更新为 `v0.4.7`
+- **结果页语音组件 JS 代码块泄露修复**：
+  - 根因：`voice_control_panel` / `speak_text` 把多行 JavaScript 直接嵌入 HTML 元素的 `onclick` 属性，再交给 `st.markdown(..., unsafe_allow_html=True)` 渲染；Streamlit 的 Markdown 解析器将换行/缩进识别为代码块，导致结果页出现可见的 `<pre>/<code>` 原始 JS 文本
+  - 修复：新增 `_render_tts_namespace()` 函数，将 TTS 播报逻辑（语音选择、iOS 兼容、错误处理、语速控制）完整注入 `<script>` 标签中作为全局 `window.foodScannerTts` 对象；`voice_control_panel` 与 `speak_text` 的按钮改为单属性 `onclick="window.foodScannerTts.speak(...)"` 调用，停止按钮改为 `onclick="window.foodScannerTts.stop()"`
+  - 保持功能不变：Microsoft Yaoyao 语音优先、中文语音兜底、`onvoiceschanged` 等待、iOS Safari / 微信内置浏览器 `setTimeout(..., 0)` 兼容、播报状态反馈、错误提示
+- **自动化验证增强**：
+  - `diag_verify_ui.py` 首页、结果页、扫描页均新增 `preBlocks == 0` 与 `codeBlocks == 0` 断言
+  - 结果页新增 `hasRawJS == False` 断言，以及 `voice-float-bar`、语音按钮、底部操作栏 marker、底部按钮数 ≥2 的存在性断言
+- **验证**：
+  - `python -m py_compile app.py` 通过
+  - `pytest tests/` 17 项通过
+  - `diag_verify_ui.py`：首页/结果页/扫描页均无可见 JS 代码块，语音按钮与底部操作栏正常
+
+## v0.4.6 - 2026-07-06
+
+### 修复扫描页与结果页 Bug 并优化页面
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\diag_verify_ui.py`、`d:\GBT\ai-food-scanner\README.md`
+- **版本统一**：
+  - `app.py` 顶部注释版本更新为 `v0.4.6`
+  - `style.css` 顶部注释版本更新为 `v0.4.6`
+  - `README.md` 版本徽章与最新更新说明更新为 `v0.4.6`
+- **结果页语音按钮健壮性修复**：
+  - 根因：`render_food` / `render_supplement` 先写入 `last_speak_content`，再用 `if last_speak:` 判断是否渲染 `voice_control_panel`；页面刷新或直接进入结果页时该 session 值可能丢失，导致语音按钮消失
+  - 修复：改为直接用本页生成的 `speak_content` 调用 `voice_control_panel`，不依赖可能丢失的 session 缓存
+- **结果页底部操作栏样式修复**：
+  - 根因：CSS 中 `.bottom-action-bar` 规则没有对应 HTML class，样式选择器找不到目标
+  - 修复：底部操作栏容器内增加 `.bottom-action-bar-marker`，CSS 改用 `div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker)` 应用 flex 间距与安全区内边距
+- **扫描页卡片视觉容器修复**：
+  - 根因：`scan-card` / `preview-card` 是 `st.markdown` 内部 div，真正的 `st.file_uploader`、`st.image`、按钮等组件在其兄弟位置，卡片背景没有包裹组件
+  - 修复：上传区和预览区改用 `st.container()` 分组，加入 `.scan-card-marker` / `.preview-card-marker`，CSS 通过 `:has()` 给容器外层 vertical block 加背景、圆角、阴影
+- **桌面端扫描页并排布局恢复**：
+  - 根因：`style.css` 中已有 `.scan-desktop-row` 网格样式，但 `app.py` 没有把上传卡和预览卡放进同一父容器
+  - 修复：扫描页外层增加 `.scan-desktop-row-marker` 容器，桌面端通过 CSS grid 实现上传卡与预览卡并排；未选择图片时上传卡占满整行
+- **测试模式 mock 数据**：
+  - 在 `?test=1` 基础上新增 `?mock=1` 参数，自动注入普通食品 mock 结果（`mock_type=supplement` 可切换保健食品），方便 Playwright 稳定验证结果页 DOM
+- **验证**：
+  - `python -m py_compile app.py` 通过
+  - `pytest tests/` 17 项通过
+  - `diag_verify_ui.py`：首页扫描按钮/提示气泡正常、结果页 voice-float-bar 与底部操作栏正常、扫描页卡片 marker 正常，均无原始 JS 代码块
+
+## v0.4.5 - 2026-07-06
+
+### 修复扫描页无法滚动 + 结果页布局错乱
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\README.md`
+- **版本统一**：
+  - `app.py` 顶部注释版本更新为 `v0.4.5`
+  - `style.css` 顶部注释版本更新为 `v0.4.5`
+  - `README.md` 版本徽章与最新更新说明更新为 `v0.4.5`
+- **扫描页滚动修复**：
+  - 根因：Streamlit `layout=centered` 下 `.stApp` 和 `.stAppViewContainer` 被设为 `position:absolute; height:100vh`（900px），内容超出视口后被截断无法滚动
+  - 修复：CSS 用 `position: relative !important; height: auto !important; min-height: 100vh !important; overflow-y: auto !important` 覆盖 emotion-cache 的绝对定位
+  - 同时覆盖中间层 `div[class*="eqt0gmo10"]` 的高度限制
+  - 验证：上传图片后页面 `scrollH=1132, clientH=900, canScroll=True`，"使用照片"按钮可见可点击
+- **结果页布局修复**：
+  - 根因：`st.markdown("<div class='voice-float-bar'>")` + Streamlit 组件 + `st.markdown("</div>")` 无法包裹组件（Streamlit 组件平级渲染），导致 `voice-float-bar` div 为空，语音按钮在外，sticky 样式失效
+  - 同理：`bottom-action-bar` div 无法包裹 `st.columns` 和 `st.button`
+  - 修复：`render_food`、`render_supplement`、`render_detail_page` 的底部语音和操作栏改用 `st.container()` 分组
+  - `voice_control_panel` 新增 `wrapper_class` 参数，结果页调用时传 `voice-float-bar voice-control-wrap`，让语音按钮直接渲染在 sticky 容器内
+  - 验证：`voice-float-bar` 存在=True，内有按钮=True，按钮数=1
+- **顶部导航栏 sticky 修复**：
+  - 根因：`render_top_nav` 用 `st.markdown div` 包裹 `st.columns`，div 为空，sticky 失效
+  - 修复：改用 `st.container()`，CSS 用 `:has(.top-nav-title)` 选择器定位 `div[data-testid="stHorizontalBlock"]` 应用 sticky 样式
+  - 验证：`top-nav: position=sticky, top=0px`
+- **CSS 缓存修复**：
+  - 根因：`load_css()` 用 `@st.cache_data` 缓存，CSS 修改后不生效
+  - 修复：移除 `@st.cache_data` 装饰器，每次读取文件（CSS 文件小，开销可忽略）
+- **清理**：
+  - 删除 21 个诊断脚本（diag_*.py、inspect_button.py）
+  - 移除临时模拟结果注入代码
+- **验证**：
+  - `python -m py_compile app.py` 通过
+  - `pytest tests/` 17 项通过
+
+## v2.4.5 - 2026-07-05
+
+### 扫描页重构：移除黑屏遮罩、区分桌面与移动端
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\README.md`
+- **版本统一**：
+  - `app.py` 顶部注释版本更新为 `v0.4.4`
+  - `style.css` 顶部注释版本更新为 `v0.4.4`
+  - `README.md` 版本徽章与最新更新说明更新为 `v0.4.4`
+- **扫描页重构**：
+  - 将全屏黑色相机风格改为卡片式上传区，移除 `position: fixed` 全屏遮罩
+  - 选择图片后改为内联预览卡片，支持「重新选择」与「使用照片」两个清晰操作
+  - 桌面端上传卡与预览卡并排显示；手机端上下堆叠，避免小屏横向滚动
+  - 修复上传图片后黑屏遮挡、无法继续的问题
+- **响应式适配**：
+  - 桌面端容器最大宽度 900px，大扫描按钮放大至 240×240px
+  - 手机端保持全宽、大触控目标（最小 48px），导航栏与按钮尺寸适配适老需求
+- **部署前验证**：
+  - `python -m py_compile app.py` 通过
+  - `pytest tests/test_core.py` 17 项通过
+- **待完成**：推送至 GitHub 后，在 Streamlit Cloud 控制台点击 Reboot 以唤醒公开体验链接
+
+## v2.4.4 - 2026-07-02
+
+### 画布设计稿对齐与移动端部署
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\README.md`
+- **版本统一**：
+  - `app.py` 顶部注释版本从 `v0.3.4` 更新为 `v0.4.3`
+  - `style.css` 顶部注释版本从 `v0.4.0` 更新为 `v0.4.3`
+  - `README.md` 版本徽章更新为 `0.4.3`，并新增 v0.4.3 更新说明
+- **移动端适配确认**：
+  - 本地 `streamlit run app.py` 启动成功（端口 8501）
+  - 通过模拟 iPhone 14 Pro Max 视口验证：首页、扫描页布局无横向滚动，大按钮与顶部导航清晰可点
+  - `viewport` meta 标签已设置 `width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no`
+- **部署前验证**：
+  - `python -m py_compile app.py` 通过
+  - `pytest tests/test_core.py` 17 项通过
+
+## v2.4.3 - 2026-07-02
+
+### 结果页适老化与语音播报修复
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`
+- **字体放大**：
+  - 全局基础字号整体上调一档：`body` 16px → 18px，`body-lg` 18px → 20px，`body-sm` 14px → 16px，`caption` 12px → 14px
+  - 评分英雄区产品名：`body-sm` → `h3`（20px）
+  - 评分英雄区状态标签：`body-sm` → `body-lg`（20px）
+  - 添加剂风险等级标签：`body-sm` → `body`（18px），内边距适当加大
+  - 免责声明：`caption` → `body-sm`（16px）
+  - `app.py` 中添加剂图例、备注、个性化提醒等硬编码小字号统一放大 1-2px
+- **语音播报修复**：
+  - 重写 `voice_control_panel` 内联 JS，增加 voices 列表为空时的 `onvoiceschanged` 等待与重试逻辑
+  - iOS Safari / 微信内置浏览器兼容：`speechSynthesis.speak(u)` 放入 `setTimeout(..., 0)`，确保仍在用户手势上下文中执行
+  - 增加播报状态反馈：点击后按钮显示"播报中…"，结束或出错后恢复
+  - 错误提示更明确：区分"浏览器不支持"、"未找到中文语音"、"播报失败请刷新或调大音量"
+  - `_preload_tts_voices` 增加首次点击页面任意位置时的语音列表预加载，提升首次成功率
+- **验证**：`python -m py_compile app.py` 通过，`pytest tests/` 17 项通过
+
+## v2.4.2 - 2026-07-02
+
+### 设计稿匹配：历史记录页与产品详情页
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`
+- **历史记录页对齐 7 页设计稿**：
+  - 新增带搜索图标与麦克风图标的圆角搜索栏
+  - 新增横向滚动筛选标签：全部 / 安全 / 注意 / 高风险
+  - 记录列表改为左圆角评分徽章 + 产品名 + 状态 + 日期 + 右箭头的卡片式布局
+  - 空状态统一使用 `.empty-state` 样式
+- **产品详情页对齐设计稿**：
+  - 复用评分英雄区组件，展示产品名与评分
+  - 新增扫描信息卡片（图片占位 + 扫描时间 / 识别引擎 / 产品类型）
+  - 复用添加剂清单、营养成分条、健康建议组件
+  - 新增底部双按钮操作栏：重新评分 / 分享给家人
+- **CSS 补充**：
+  - 历史筛选标签 active / safe / caution / danger 四种状态样式
+  - 历史列表项点击热区与右箭头样式
+  - 详情页扫描信息卡片、底部操作栏、建议文本样式
+  - 搜索框内部输入框去边框/去背景适配
+- **验证**：`python -m py_compile app.py` 通过，`pytest tests/test_core.py` 17 项通过
+
+## v2.4.1 - 2026-07-02
+
+### HyperFrames 演示视频优化
+
+- **文件**：`d:\GBT\hyperframes-demo-video\index.html`
+- **优化内容**：
+  - 场景 6 结尾的"二维码"占位符替换为真实可扫码二维码
+  - 新增"扫码体验"文字提示，引导用户直接访问公开链接
+  - 保留 1080×1920 竖屏、30fps、6 场景 GSAP 动画结构
+- **新增资源**：`d:\GBT\hyperframes-demo-video\assets\qr_code.png`（1997 bytes）
+- **渲染结果**：`d:\GBT\hyperframes-demo-video\renders\hyperframes-demo-video_2026-07-02_11-05-08.mp4`
+  - 时长 30.0s，分辨率 1080×1920，30fps，文件大小 3.1 MB
+  - 已抽取 27s 关键帧验证：二维码、网址、标签均清晰可辨
+- **备注**：HyperFrames lint 提示 `scene_layer_missing_visibility_kill`，但不影响渲染输出；保持 `opacity: 0` 切场以兼容框架自动管理 clip 可见性
+
+### 论坛自动发帖状态
+
+- `edit_post_via_chrome.py` 依赖本地 Chrome 远程调试端口 9222
+- 当前环境未检测到 9222 端口，TRAE 沙箱限制自动启动 Chrome
+- **下一步**：用户手动启动 Chrome 远程调试并运行脚本，或复制 `d:\GBT\初赛Demo帖_AI食品配料表识别工具.md` 内容到论坛编辑器手动更新
+
+## v2.4.0 - 2026-07-02
+
+### 初赛资料 Review 与增强
+
+#### 代码 Review
+- 全面审查 `app.py`（2202 行），确认功能完整
+- 优点：适老化设计完整、双模型 A/B 对比、GB 2760 客户端判定、52 条药物-食物冲突、法律合规三件套
+- 待优化：建议拆分大文件、减少重复代码（复赛阶段处理）
+
+#### 初赛资料核实
+- ✅ 报名帖（ID 46161）已发布，标签正确
+- ✅ Demo 帖（ID 51391）4 部分内容完整，3 个 Session ID，CDN 图片正常
+- ⚠️ Streamlit Cloud 应用休眠，需用户 Reboot
+- ✅ MiMo API Key 确认有效（本地 401 为环境配置问题）
+
+#### Demo 帖"开发心得"增强
+- 挑战列表从 3 条扩充到 5 条（新增 Streamlit Cloud 休眠、Discourse CDN 图片问题）
+- 骄傲细节从 3 条扩充到 5 条（新增适老化细节、双模型 A/B 对比）
+- 新增"TRAE 工具链使用心得"段落（4 条）
+- 文件：`d:\GBT\初赛Demo帖_AI食品配料表识别工具.md`
+
+#### 演示视频脚本
+- 新增 30 秒演示视频分镜脚本（6 个镜头）
+- 包含录制清单、备选方案（无真人出镜）、发布渠道
+- 文件：`d:\GBT\demo_video_script.md`
+
+#### 演示视频生成
+- 因本地 MiMo/Agnes API 均不可用，改用真实截图 + Pillow 生成 30 秒竖屏视频
+- 分辨率 1080×1920，30fps，文件大小约 981KB
+- 完整覆盖 6 个目标：痛点 → 首页 → 上传识别 → 结果 → 语音播报 → 体验地址
+- 文件：`d:\GBT\demo_video_output\demo_video_30s.mp4`
+
+#### 安全加固
+- `app.py`：`st.set_page_config` 增加 `menu_items` 隐藏右上角 "View source" / "About" 菜单
+- `.streamlit/config.toml`：`enableXsrfProtection` / `enableCORS` 从 `false` 改为 `true`
+- 说明：`DEBUG=1` 仅本地排查使用，比赛 Demo 中不开启
+
+#### 论坛 Demo 帖重构
+- 按初赛规则重新整理为 4 大部分：Demo 简介、创作思路、体验地址、TRAE 实践过程
+- 优化叙事结构：痛点 → 方案 → 体验 → 实践证明
+- 所有图片改用论坛 CDN 实际链接，避免外链失效
+- 在"体验地址"部分插入 30 秒演示视频（论坛 CDN）
+- 报名信息、标签、作品信息统一放到末尾
+
+## v2.3.2 - 2026-07-01
 
 ### 修复：公开 Demo 可访问性（Phase 0.6）
-- **API 密钥读取逻辑确认** (`get_api_key()`)
-  - 环境变量优先，其次 `st.secrets`，异常时返回空字符串
-  - MiMo 与 Agnes 分别读取 `MIMO_API_KEY` / `AGNES_API_KEY`
-- **移除响应内容泄露** (`call_api()`)
-  - 错误状态码 / 解析失败时不再直接展示 `resp.text[:500]`
-  - 仅在 `DEBUG=1` 时通过折叠区展示原始响应
-- **新增 DEBUG 信息块** (`main()` 顶部)
-  - 仅当环境变量 `DEBUG=1` 时显示
-  - 显示 API URL、Model、Key 长度与末4位、Auth Header 类型
-  - 不展示完整 API Key
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\.trae\specs\competition-strategy-and-next-steps\tasks.md`
+- **内容**：
+  - 确认 `get_api_key()` 读取顺序：环境变量 → `st.secrets` → 页面输入框
+  - 移除 `call_api()` 在错误时直接展示 `resp.text[:500]` 的调试代码，改为仅在 `DEBUG=1` 时显示
+  - 在 `main()` 顶部新增 DEBUG 信息块（`DEBUG=1` 时显示 API URL、Model、Key 长度/末4位、Auth Header 类型）
+  - 更新 `tasks.md` Task 0.6 进度：SubTask 0.6.1 待用户在 Streamlit Cloud 完成，0.6.2 本地启动验证通过
+- **本地验证**：`streamlit run app.py` 启动成功，页面 HTTP 200；当前 `MIMO_API_KEY` 测试返回 401 Invalid API Key，需用户更新密钥
+- **待用户操作**：登录 Streamlit Cloud → 更新 Secrets `MIMO_API_KEY` → Reboot app → 验证公开链接
 
-### 待用户操作
-- 在 Streamlit Cloud Secrets 中更新有效的 `MIMO_API_KEY` 后重新部署验证
+## v2.3.1 - 2026-07-01
 
-## v0.2.0 — 2026-07-01
+### 新增：完整个人健康档案 + 药物-食物冲突检测 + 双模型评分统一
 
-### 新增
-- **法律文件入口** (`app.py`)
-  - 在侧边栏增加「用户协议与隐私政策」展开入口
-  - 用户可随时重新查看《用户协议及免责声明》和《隐私政策》
-- **未成年人与老年人使用提示**
-  - `USER_AGREEMENT.md` 新增第十条「未成年人与老年人使用提示」
-  - `PRIVACY_POLICY.md` 第八条增加老年人使用提示，标题调整为「儿童、未成年人与老年人保护」
+**用户反馈**：
+1. MiMo/Agnes 双模型对同一图评分不一致（同图 Agnes 85 安全 vs MiMo 75 注意）
+2. 调试信息（401 排查用）需要去掉
+3. 基础疾病/过敏原/常用药物要维护好，药物-食物冲突要仔细考虑
 
-### 调整
-- 无破坏性改动，仅在现有法律合规基础上补充入口与特殊人群提示。
+**实现内容**（app.py +268 行 + 5 个数据文件）：
 
-## v0.2.0 — 2026-07-01
+#### 1. 5 个权威数据文件（`data/` 目录）
+- ✅ `gb2760_risk.csv` - 177 项 GB 2760 添加剂风险分级（A=绿/B=黄/C=红）
+- ✅ `common_diseases.json` - 30+ 老年慢病（7 个系统分类）
+- ✅ `allergens.json` - GB 7718-2025 8 大类过敏原
+- ✅ `common_drugs.json` - 60+ 老年常用药（9 个系统分类）
+- ✅ `drug_food_conflicts.json` - **52 条核心药物-食物冲突**
 
-### 新增
-- **法律合规同意流程** (`app.py`)
-  - 新增 `render_legal_consent()`：首次访问强制阅读《用户协议及免责声明》《隐私政策》
-  - 使用 `st.session_state["legal_agreed"]` 记录同意状态
-  - 两个复选框全部勾选后「开始使用」按钮才可用
-  - 未同意前无法进入引导页和主功能
-- **健康档案敏感信息单独同意** (`render_health_profile()`)
-  - 页面顶部增加敏感个人信息提示
-  - 「保存档案」前增加确认复选框，未勾选时按钮禁用
-- **公开 Demo 风险提示与跨境披露** (`main()`)
-  - 首页标题下方增加「本 Demo 仅供技术展示，不构成任何医疗或消费建议」
-  - 页面底部增加「服务部署于境外服务器，识别过程可能涉及跨境数据传输」
-- **AI 识别不确定性与过敏原提示**
-  - `render_food()` 顶部增加「AI 识别可能存在错误，请以包装原文为准」
-  - `render_supplement()` 顶部免责声明增加「内容为包装原文摘录，不代表本工具立场」
-  - 过敏原匹配区域增加「配料表识别可能遗漏致敏物质，严重过敏者请勿仅依赖本工具」
+**引用依据**：
+- GB 2760-2024 食品添加剂使用标准 + JECFA ADI 值
+- GB 7718-2025 食品标识（过敏原）
+- NMPA 药品说明书（药物相互作用字段）
+- 国家老年健康宣传周 2026 老年人慢病用药指导
+- CFSA 国家食品安全风险评估中心 https://gb2760.cfsa.net.cn/
 
-### 调整
-- **食品添加剂表述中性化** (`render_food()`)
-  - level_map 标签从「安全/注意/规避」改为「较常见/特定人群建议关注/建议咨询专业人士」
-  - 同时兼容 A/B/C 与 green/yellow/red 两种 level 值
-  - 评分区域增加「评分仅供参考，不构成安全判断」
-  - 添加剂列表增加「在 GB 2760 合规使用范围内是安全的」提示
-- **药物-食物冲突科普化展示** (`render_personal_warnings()`)
-  - 标题改为「检测到可能与您的用药相关的食物信息，仅供参考」
-  - 用 ⚠️ 统一替换 🔴🟠🟡 颜色图标
-  - expander 标题中「风险」改为「关注」
-  - 详情标题改为「相关介绍/涉及原理/日常注意」
-  - 每个冲突详情底部强制附加用药建议免责提示
-- **语音播报内容更新** (`render_food()`)
-  - 在 advice 后附加「本工具仅供参考，不构成医疗建议」
+#### 2. 双模型评分统一
+- ✅ `normalize_additive()` 查 GB 2760 库（精确/去括号/模糊匹配）
+- ✅ `compute_score_from_additives()` 按 `100 - 红×25 - 黄×8 + 特殊人群+4` 算分
+- ✅ `parse_result()` 强制覆盖 `additives.level` 和 `result.score`
+- ✅ 修改 system prompt：让模型只识别不判断
+- ✅ **结果**：MiMo/Agnes 评分完全一致
 
-### 数据透明
-- 添加剂列表底部增加「数据来源：GB 2760-2024」
-- 健康档案疾病/过敏原/用药区域保留已有数据来源说明
+#### 3. 完整健康档案
+- ✅ 基础疾病：从 common_diseases.json 按系统分类多选
+- ✅ 过敏原：从 allergens.json 8 大类多选（GB 7718 强制标注）
+- ✅ 当前用药：从 common_drugs.json 搜索式选择（按系统分组）
+- ✅ 自由补充（中药/保健品/特殊过敏）
+- ✅ 档案摘要 + 一键保存
 
-## v0.1.0 — 2026-06-25
+#### 4. 药物-食物冲突检测
+- ✅ `check_drug_food_conflicts()` 引擎：基于用户用药 + 识别配料
+- ✅ 50+ 核心冲突已实现（覆盖老年慢病 80%+ 常用药）
+- ✅ UI 智能过滤：按用户档案只显示相关冲突（一般 0-5 条）
+- ✅ 三级严重度：🔴 high / 🟠 medium / 🟡 low
+- ✅ 冲突信息：机制 + 描述 + 建议 + 权威来源（NMPA/老年健康宣传周）
 
-### 新增
-- **首次引导页** (`pages/onboarding.html`)
-  - 3 屏可滑动引导轮播（触摸 + 鼠标拖拽）
-  - 第 1 屏：产品价值「拍照即知添加剂风险」，SVG 扫描动画插图
-  - 第 2 屏：核心功能「3秒识别，语音播报」，SVG 时钟 + 声波动画插图
-  - 第 3 屏：健康档案设置入口，6 个慢病标签可点选（糖尿病/高血压/肾病/痛风/心脏病/食物过敏）
-  - 底部进度点指示器，最后一屏显示「开始使用」按钮
-  - 右上角「跳过引导」链接（18pt 最小字号）
-  - 适老化设计：48px 最小触摸目标、24pt 圆角按钮、大字体
-  - 引用 `colors_and_type.css` 品牌设计变量
-  - `data-dom-id="btn-start"` / `data-dom-id="btn-skip"` 交互标记
+#### 5. 移除 401 排查 debug 代码
+
+**数据准备规模**（核心包，未来可扩展）：
+- 添加剂 177 项 + 疾病 30 项 + 过敏原 8 类 + 药物 60+ + 冲突 52 条
+- 数据来源权威、可手工编辑（CSV/JSON 格式）
+
+**测试通过**：
+- 5/5 normalize_additive 正确
+- 3/3 compute_score 正确
+- 3/3 check_drug_food_conflicts 正确（华法林+菠菜、氨氯地平+葡萄柚、无冲突场景）
+
+**部署**：
+- commit + push → Streamlit Cloud 自动重新部署（1-2 分钟）
+- 体验地址：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
+
+---
+
+## v2.3.0 - 2026-06-30
+
+### 重大更新：补全设计稿缺失功能（用户反馈"和实际 Demo 不一致"）
+
+**问题**：原 7 张设计稿（首次引导/首页/拍照识别/识别结果/健康档案/历史记录/产品详情），实际 Demo 只实现了约 3.5 个（首页+识别结果+历史+人群选项），缺失首次引导页和健康档案页（设计稿≠实际）
+
+**实现内容**（app.py +221 行）：
+- ✅ **render_onboarding() 4 步引导**：欢迎页（图标+功能介绍）→ 健康状况选择（人群多选）→ 使用说明（3 步彩色卡片）→ 开始使用
+- ✅ **render_health_profile() 健康档案页**：称呼+年龄+健康状况多选+过敏食物+当前用药+保存+摘要
+- ✅ **main() 加 sidebar 菜单**：🔍 扫描识别 / 👤 健康档案 两个 radio 切换
+- ✅ **首次访问触发引导**：session_state.onboarded 跟踪，sidebar 按钮可重新查看
+
+**部署**：
+- git commit: `5f14275` "feat: add 4-step onboarding and health profile pages"
+- push 到 GitHub（用 PAT）→ Streamlit Cloud 自动重新部署
+- 部署后实测：引导页 4 步、主页、健康档案页全部正常显示
+
+**Demo 帖更新**：
+- 上传 2 张真实运行截图到 Discourse CDN：
+  - 27_onboarding_full.png（id=109766, 20.4KB, 1258×622）
+  - 32_health_profile.png（id=109767, 55.5KB, 1258×622）
+- 替换 03_health_profile 设计稿 × 2 处 + 05_onboarding 设计稿 × 1 处（共 3 处 URL 替换）
+- PUT 200 成功
+
+**截图存档**（D:\GBT\demo_screenshots\）：
+- 27_onboarding_full.png：引导第 1 步全页
+- 28_onboarding_step2.png：选人群
+- 29_onboarding_step3.png：使用说明（3 步彩色卡片）
+- 30_onboarding_step4.png：开始使用
+- 31_main_page.png：主页（扫描识别）
+- 32_health_profile.png：健康档案页
+
+## v2.2.3 - 2026-06-30
+
+### 首页图片修复（用户反馈"首页怎么是空白"）
+- **问题**：Demo 帖两处首页图（`![首页](...)`）显示为空白
+- **根因**：
+  - `01_homepage.png` 本地文件本身就是 1280×900 纯白图（mean=255, std=0, 1 种颜色）
+  - PIL 重新压缩的 v4 版本在 optimized 缩略图缓存中是 136 字节损坏版
+  - `22_app_alive_check.png` 是 1877×1917 整页截图，y=0-400 全白底（std=4.3），整体看上去几乎是空白
+- **修复**：
+  - 用 agent-browser 直接打开 `https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/` 实时截屏
+  - 截图 1258×622, mean=246.8, std=28.9（真实含 sidebar + 上传区内容）
+  - 保存为 `D:\GBT\demo_screenshots\fresh_homepage.png`
+  - 上传到 Discourse CDN（id=109710, filesize=44421, hash `ba75...`）
+  - 替换 raw 中 3 处旧 URL（首页×2 + 真实运行截图×1）
+- **验证**：PUT 成功 200，URL 替换 3 处
+- **附注**：agent-browser 自启 Chrome 在 CodexSandboxUsers 用户下写 `daemon.sock` 需权限，已通过 `Stop-Process` 旧 daemon + 重新初始化恢复
+
+## v2.2.2 - 2026-06-30
+
+### Task C：补充真实开发截图（P1 完成）
+- **新增 3 张真实运行截图**到 Demo 帖"关键步骤截图"段落：
+  - `22_app_alive_check.png`（111KB）- Streamlit Cloud 部署验证首页
+  - `streamlit_with_key.png`（199KB）- API key 配置 + MiMo/Agnes 模型切换
+  - `streamlit_v2_result.png`（194KB）- 真实识别结果（评分色块+添加剂红绿灯+健康建议）
+- **上传方式**：通过 `/session/csrf` 获取 CSRF + fetch FormData 调用 `/uploads.json` 上传到 Discourse 自有 CDN
+- **新增 upload id**：108727 / 108729 / 108730
+- **验证**：帖子 11 张图全部加载成功（naturalWidth>0），从原 8 张增加到 11 张
+
+### Task D：增强"开发心得"段落（P1 完成）
+- **挑战列表扩充**：从 3 条增加到 5 条
+  - 新增：Streamlit Cloud app 休眠唤醒、Discourse 外链图片被 `rel="ugc"` 包裹不渲染问题
+- **骄傲细节扩充**：从 3 条增加到 5 条
+  - 新增：适老化不止"大字"（高对比度/56px 按钮/sidebar 历史记录/红条免责）
+  - 新增：双模型 A/B 对比架构说明
+- **新增"TRAE 工具链使用心得"段落**：4 条
+  - 19 天全流程、agent-browser 自动化、superpowers skill 规范、双模型架构
+- **raw 长度**：从 4532 字符增到 5636 字符
+- **验证**：4 项关键内容（TRAE 工具链/Streamlit Cloud 休眠/agent-browser 自动化/真实运行截图）全部渲染成功
+
+## v2.2.1 - 2026-06-30
+
+### Demo 帖图片显示修复（Task B 完成）
+- **问题**：Demo 帖（https://forum.trae.cn/t/topic/51391, postId=148548）5 张图片 broken
+- **根因**：raw 里图片用相对路径 + GitHub raw URL + jsdelivr CDN，均被 Discourse 外链策略包裹 `<a rel="ugc">`，且 optimized 缩略图未生成
+- **修复**：
+  - 通过 agent-browser eval 获取 CSRF token
+  - 用 Node.js + cookie + fetch FormData 调用 `/uploads.json` 上传 5 张 PNG 到 Discourse 自有 CDN（trae-forum-cdn.trae.com.cn）
+  - 用 PUT `/posts/148548.json` 替换 raw 中所有图片 URL 为 CDN URL
+  - 01_homepage.png 因 hash 去重返回旧记录，重新 PIL 压缩生成新 hash 后成功获取新 URL
+- **验证**：8 处图片引用（5 张图，01-03 各出现 2 次）全部加载成功（naturalWidth>0）
+- **附注**：图片 `loading="lazy"` 在视口外时 naturalWidth=0 是浏览器正常行为，非 broken
+
+### 上传结果
+- 5 张图 CDN URL 已保存到 `D:\GBT\uploads_result.json`
+- 上传 id: 108268 / 108217 / 108218 / 108219 / 108220（01-05 顺序）
+
+## v2.2.0 - 2026-06-30
+
+### 初赛资料核实（依据官方规则贴 22549）
+- **新增计划文件**：`d:\GBT\.trae\documents\初赛资料核实与后续任务计划.md`
+- **核实结果**：15 项官方硬性要求全部达标（报名帖+Demo 帖+4 部分内容+3 个 Session ID+体验链接+标签）
+- **3 项警告**：
+  - ⚠️ 截图多为设计稿（5 张中 4 张是 UI 设计稿），"开发关键步骤截图"过程感偏弱
+  - ⚠️ Demo 帖图片用相对路径 `01_homepage.png`，需确认论坛 CDN 是否已上传
+  - ⚠️ Streamlit Cloud 体验链接 WebFetch 返回 `Error: Received no response from server Code: 1ST`，**app 已休眠或崩溃**，需用户登录 share.streamlit.io 点 Reboot
+
+### Demo 帖内容核实（论坛实际渲染）
+- 帖子 URL: https://forum.trae.cn/t/topic/51391
+- 4 部分结构完整：简介 / 创作思路 / 体验地址 / TRAE 实践过程 ✅
+- 3 个 Session ID 完整保留 ✅
+- 标签：`社会服务` + `社会公益` ✅
+- 报名帖链接已附（ID 46161）✅
+
+### 后续任务清单（详见计划文件）
+- **P0（必须）**：用户 Reboot Streamlit Cloud app + 浏览器核实图片显示
+- **P1（建议）**：替换设计稿为真实开发截图 + 增强开发心得段落
+- **P2（可选）**：录演示视频 + 抖音人气通道 + 补充 Session ID
+- **P3（监测）**：7-21–23 公示结果
+
+## v2.1.0 - 2026-06-30
+
+### Agnes A/B 模型对比功能
+- **app.py 新增 Agnes-2.0-Flash 模型支持**
+  - sidebar 加 `st.radio` 模型选择器（MiMo / Agnes 切换）
+  - `call_api` 函数改签名，支持双模型动态调用
+  - Agnes API endpoint: `https://api.agnes-ai.com/v1/chat/completions`
+  - 模型名: `agnes-20-flash`
+- **Streamlit Cloud 部署上线**
+  - 公开链接: https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
+  - GitHub 仓库: gongyijie85/ai-food-scanner
+  - Secrets 配置: MIMO_API_KEY + AGNES_API_KEY
+
+### 初赛 Demo 帖发布
+- **帖子 URL**: https://forum.trae.cn/t/topic/51391
+- **标题**: 【智慧助老赛道】 拍了就懂 AI 食品配料表识别工具（初赛 Demo）
+- **分类**: TRAE AI 创造力大赛 / 【大赛初赛专区】
+- **标签**: 社会服务 + 社会公益
+- **内容**: 4 部分结构（简介 + 创作思路 + 体验地址 + TRAE 实践过程）
+- **3 个 Session ID**: 6a3b8c6c64bc56e770203a26 / 6a3cbfd6e6f60364c00c50c8 / 6a3e14d07b6aa390adb13cf6
+
+### 技术修复
+- **UTF-8 编码修复**: ProseMirror 编辑器内容乱码问题
+  - 根因: `atob(b64)` 返回 UTF-8 字节，被 `execCommand('insertText')` 当作独立 unicode 字符处理
+  - 修复: 用 `Uint8Array.from(atob(b64), c => c.charCodeAt(0))` + `new TextDecoder('utf-8').decode(bytes)` 正确解码
+  - 方法: base64 编码 markdown → PowerShell 传给 agent-browser eval → 浏览器端解码 → execCommand 插入
+- **Chrome 远程调试连接**: `agent-browser --cdp 9222` 连接用户手动启动的 Chrome
+  - 因 Trae sandbox 阻止写入 `C:\Users\Administrator\.agent-browser`，改用 CDP 连接模式
+  - 启动命令: `chrome.exe --remote-debugging-port=9222 --user-data-dir="C:\TempChrome"`
+
+### 代码变更
+- `d:\GBT\ai-food-scanner\app.py`: 4 处 Edit（AGNES_API_URL / get_api_key / call_api / sidebar）
+- `d:\GBT\ai-food-scanner\requirements.txt`: streamlit>=1.40.0 / requests>=2.31.0 / pillow>=10.0.0
+
+## v1.0.0 - 2026-06-25
+
+### 新增功能
+
+#### Ponytail 技能集
+- 新增 ponytail 主技能：懒惰高级开发者模式，强制使用最简单、最短的解决方案
+- 新增 ponytail-audit：审计整个代码库的过度工程
+- 新增 ponytail-review：审查代码差异中的过度工程
+- 新增 ponytail-debt：收集所有 ponytail: 快捷注释到债务台账
+- 新增 ponytail-gain：显示 ponytail 衡量影响的记分牌
+- 新增 ponytail-help：ponytail 快速参考卡
+
+#### Headroom 上下文压缩
+- 安装 headroom-ai Python 包 (v0.20.15)
+- 支持 AI 代理上下文压缩，减少 60-95% token 使用
+
+### 安装说明
+
+#### Ponytail 技能安装 ✅ 已完成
+技能已成功安装到TRAE全局技能目录：
+
+**安装位置 1**（TRAE全局内置技能）：
+`C:\Users\Administrator\.trae-cn\builtin\global\skills\`
+- ponytail/SKILL.md
+- ponytail-audit/SKILL.md
+- ponytail-debt/SKILL.md
+- ponytail-gain/SKILL.md
+- ponytail-help/SKILL.md
+- ponytail-review/SKILL.md
+
+**安装位置 2**（TRAE用户技能目录）：
+`C:\Users\Administrator\.trae-cn\skills\`
+- 同样包含以上6个技能
+
+**重启TRAE即可使用**所有ponytail技能。
+
+#### Headroom 使用
+- Python 包已安装：`headroom-ai 0.20.15`
+- 运行命令：`python -m headroom.cli --help`
+- 启动代理：`python -m headroom.cli proxy --port 8787`
+
+### 项目来源
+- Ponytail: https://github.com/DietrichGebert/ponytail
+- Headroom: https://github.com/headroomlabs-ai/headroom
+
+## v1.1.0 - 2026-06-25 13:50
+
+### 新增功能
+- 创建 ponytail + headroom 技能串联规则
+- 规则文件：`C:\Users\Administrator\.trae-cn\user_rules\rule-20260625134902.md`
+- 规则内容：
+  - 核心思路：headroom 压缩输入 + ponytail 简化输出
+  - 触发顺序：先压缩后简化
+  - 三个使用场景：阅读代码库、编写新功能、代码审查
+  - 强制规则：>500行先压缩，代码输出先过 ponytail 检查
+  - 效果预期：综合降低 70-90% 成本
+
+## v1.2.0 - 2026-06-25 20:30
+
+### 报告修订
+**新正式位置**：`d:\GBT\AI食品配料表智能识别工具_研究报告.md`（v1.1）
+**原位置**：`C:\Users\Administrator\WorkBuddy\2026-06-24-16-51-54\AI食品配料表智能识别工具_研究报告.md`（保留 v1.0，因系统权限限制无法写回）
+**备份**：`C:\Users\Administrator\WorkBuddy\2026-06-24-16-51-54\AI食品配料表智能识别工具_研究报告.md.bak`（v1.0 原版）
+
+#### 修改内容（4处）
+1. **第1.2节 FoodLMM 引用**：标注"CSDN转载，原论文待核验"+ ⚠️ 标记，提升引用严谨性
+2. **第2.2节 Yuka 94% 数据**：补引用源 [Yuka Social Impact Report]，原为无源数据
+3. **第3.4节 8300万推算**：补"1%渗透率为早期产品保守假设"说明，明确假设性质
+4. **元信息表**：报告版本 v1.0 → v1.1
+
+#### 未修改项
+- "7轮审稿零返修"声明不在报告文件内（仅在概要消息中），无需修改
+
+#### 流程说明
+- 因 Edit 工具限制工作目录外文件，采用"备份→复制到工作目录→Edit修改→保留在工作目录"流程
+- 原位置文件保持 v1.0 不变，修改后的 v1.1 版本以工作目录为准
+- 如需同步原位置，请用户手动复制 `d:\GBT\` 版本覆盖 WorkBuddy 版本
+
+## v1.3.0 - 2026-06-25 21:00
+
+### 新增功能
+- 新建文件：`d:\GBT\AI食品配料表识别工具_UI设计提示词.md` (v1.1)
+- 用途：递交设计师进行 UI 页面设计
+
+### 内容要点
+#### 页面规划（7个核心页+2个全局组件）
+1. 首次引导页（新增）
+2. 首页/拍照页
+3. 拍照/上传页
+4. 识别结果页（核心，含对比功能变体）
+5. 人群切换/健康档案页
+6. 历史记录页
+7. 产品详情页
+
+#### 全局组件
+- 语音播报浮层
+- 数据状态规范（加载/空/错误/离线）
+
+#### 设计规范补充
+- 画板尺寸：375×812 基准
+- 状态栏/导航栏规范
+- 色彩系统（10色）
+- 字体规范（H1-Display 8档）
+- 间距与圆角
+- 图标库：Material Icons
+- 阴影规范
+- 无障碍 WCAG 2.1 AA
+- 色盲友好（颜色+形状+文字冗余）
+- VoiceOver/TalkBack 支持
+
+#### 修订决策
+- 对比页降级为结果页变体（节省设计时间）
+- 新增首次引导页（适老化首次使用引导）
+- 补充数据状态规范（加载/空/错误/离线四态）
+- 补充数据示例（酱油/全麦面包）供设计师填空
+
+## v1.4.0 - 2026-06-25 21:35
+
+### 创建最小验证原型：`d:\GBT\ai-food-scanner\prototype_mimo.py`
+- 创建原型运行说明：`d:\GBT\ai-food-scanner\README_PROTOTYPE.md`
+
+### 原型说明
+#### 目标
+验证 MiMo Vision API 能否从配料表图片中提取成分并返回结构化 JSON 结果。
+
+#### 功能
+- 读取本地图片 `test_label.jpg`
+- 调用 MiMo Vision API(以 OpenAI 兼容格式占位,需根据官方文档调整)
+- 解析并打印：产品名称、综合评分、全部配料、食品添加剂、健康建议
+- 自动保存原始响应到 `last_api_response.txt`
+
+#### 运行前提
+1. 安装依赖：`pip install requests`
+2. 设置环境变量 `MIMO_API_KEY`(推荐) 或直接修改代码第21行
+3. 准备测试图片：`d:\GBT\ai-food-scanner\test_label.jpg`
+
+#### 已知限制
+- API 地址 `https://api.mimo.mi.com/v1/chat/completions` 和模型名 `mimo-vision` 为占位符,需根据 MiMo 官方文档修正
+- 当前为最小原型,无 UI、语音、历史记录、本地数据库
+- 这些功能待 API 验证通过后再逐步添加
+
+#### 待用户反馈
+- 运行 prototype_mimo.py 后,把输出或错误信息发给我
+- 根据实际 API 响应调整 endpoint、模型名、提示词
+
+### 补充文件
+- 测试图片生成脚本：`d:\GBT\ai-food-scanner\generate_test_image.py`
+- 测试图片：`d:\GBT\ai-food-scanner\test_label.jpg` (800x1000, 含配料表+营养成分表+过敏原提示)
+- 图片内容：水、小麦粉、白砂糖、食用植物油、食用盐、山梨酸钾、谷氨酸钠、焦糖色、特丁基对苯二酚、食品用香精
+
+### v1.4.0 补丁 - 2026-06-25 22:00
+#### 修复 API 配置
+- Base URL 修正为新加坡集群：`https://token-plan-sgp.xiaomimimo.com/v1/chat/completions`
+- 请求头从 `Authorization: Bearer` 改为 MiMo Token Plan 要求的 `api-key`
+- 文件：`d:\GBT\ai-food-scanner\prototype_mimo.py`
+
+## v1.5.0 - 2026-06-25 22:30
+
+### 提示词优化
+- 重构为 system/user 双角色消息结构
+- system 放规则说明,user 放图片+简短指令
+- 修正添加剂分类规则:基础配料(水/糖/油/面粉/香精等)不列入 additives
+
+### API 调优
+- 关键修复:`max_tokens` 从 1024 提升到 4096
+  - 原因:1024 不够输出完整 JSON,导致响应被截断(`finish_reason: length`)
+  - 表现:模型返回空内容或半截 JSON
+- 图片压缩:最长边超过 1024 自动等比例缩放,减少 base64 体积
+- 确认可用模型:`mimo-v2.5`(多模态)+ 新加坡集群 Token Plan
+
+### 验证结果
+- API 调用:成功
+- 配料识别:10 项配料全部准确
+- 添加剂分类:正确(食品用香精不再误列入 additives)
+- INS号:完整(INS202/621/150a/319)
+- 安全等级:合理(TBHQ=red, 山梨酸钾/焦糖色=yellow, 谷氨酸钠=green)
+- 评分:40分(含 TBHQ 红色添加剂,合理)
+
+### 新增 Streamlit Demo
+- 文件:`d:\GBT\ai-food-scanner\app.py`
+- 功能:上传图片→调用 API→展示结果(评分大色块/添加剂清单/健康建议/原始JSON)
+- 运行命令:`streamlit run app.py`
+- 依赖:`pip install streamlit requests pillow`
+- API 密钥:优先环境变量 MIMO_API_KEY,其次 Streamlit secrets,最后页面输入框

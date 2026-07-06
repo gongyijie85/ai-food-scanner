@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.4.5-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.4.7-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 一句话介绍
 
@@ -11,6 +11,8 @@
 
 ## 最新更新
 
+- **v0.4.7（2026-07-06）**：修复结果页语音播报组件中多行内联 JS 被 Streamlit Markdown 解析器渲染为可见 `<pre>/<code>` 代码块的问题。新增 `_render_tts_namespace()` 将 TTS 逻辑注入 `<script>` 标签，`voice_control_panel` 与 `speak_text` 的按钮改为单属性 `onclick="window.foodScannerTts.speak(...)"` 调用；同步更新 `diag_verify_ui.py` 断言，确保首页/结果页/扫描页均无可见 JS 代码块。
+- **v0.4.6（2026-07-06）**：修复结果页语音按钮依赖 `last_speak_content` 可能丢失的问题；修复结果页底部操作栏 CSS 未生效的问题；优化扫描页上传卡片/预览卡片视觉容器，使 Streamlit 组件真正被卡片包裹；恢复桌面端扫描页上传卡与预览卡并排布局；测试模式新增 `mock=1` 参数，便于 Playwright 自动化验证结果页。
 - **v0.4.5（2026-07-06）**：修复扫描页上传图片后无法滚动的严重问题（根因：Streamlit `layout=centered` 下 `.stApp` 被设为 `position:absolute;height:100vh`，CSS 覆盖后内容可正常滚动）；修复结果页 `voice-float-bar` 和 `bottom-action-bar` 的 div 无法包裹 Streamlit 组件导致样式失效的问题，改用 `st.container()` + CSS `:has` 选择器；修复顶部导航栏 sticky 失效；移除 `load_css()` 的 `@st.cache_data` 缓存，确保 CSS 修改即时生效。
 - **v0.4.4（2026-07-05）**：重构扫描页为卡片式布局，移除全屏黑屏遮罩，改为内联预览与「重新选择 / 使用照片」操作；优化响应式布局，桌面端与手机端分别适配。
 - **v0.4.3（2026-07-02）**：结果页字体进一步放大、语音播报移动端兼容修复、按画布设计稿优化结果页与首页布局，完成手机端适配。
