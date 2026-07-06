@@ -1,4 +1,4 @@
-"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.5.1
+"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.5.4
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 三端适配
 运行环境：Python 3.10+
@@ -14,7 +14,6 @@ import json
 import logging
 import os
 import re
-import textwrap
 import time
 from datetime import datetime
 
@@ -22,6 +21,7 @@ from dotenv import load_dotenv
 
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 from PIL import Image
 
 # ========== 日志配置 ==========
@@ -37,6 +37,9 @@ logger = logging.getLogger("ai-food-scanner")
 # 加载本地 .env（如果存在），便于本地测试；Streamlit Cloud 仍使用 Secrets
 load_dotenv()
 
+# 项目根目录，避免多处重复计算
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 # ========== 配置区 ==========
 
@@ -51,10 +54,22 @@ AGNES_MODEL_NAME = "agnes-2.0-flash"
 # 六大人群选项（保留向后兼容）
 HEALTH_GROUPS = ["糖尿病", "高血压", "脑梗/心血管", "减脂", "过敏", "孕妇/儿童"]
 
+# 健康档案疾病选项（模块级常量，避免每次渲染重复构造）
+CONDITION_ITEMS = [
+    ("diabetes", "糖尿病", "糖"),
+    ("hypertension", "高血压", "压"),
+    ("stroke", "脑梗/心血管", "脑"),
+    ("fat-loss", "减脂", "减"),
+    ("allergy", "过敏", "敏"),
+    ("children", "儿童", "儿"),
+    ("pregnant", "孕妇", "孕"),
+]
+CONDITION_NAME_MAP = {k: v for k, v, _ in CONDITION_ITEMS}
+
 
 # ========== GB 2760 + 健康档案数据加载 ==========
 
-_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+_DATA_DIR = os.path.join(_BASE_DIR, "data")
 _GB2760_RISK_PATH = os.path.join(_DATA_DIR, "gb2760_risk.csv")
 _DISEASES_PATH = os.path.join(_DATA_DIR, "common_diseases.json")
 _ALLERGENS_PATH = os.path.join(_DATA_DIR, "allergens.json")
@@ -67,16 +82,6 @@ SCORE_PENALTY = {"A": 0, "B": 8, "C": 25}
 # 保健品辅料白名单（不参与扣分）
 SUPPLEMENT_EXCIPIENTS = {"鱼油", "明胶", "甘油", "蜂蜡", "卵磷脂", "淀粉", "麦芽糊精", "羧甲基纤维素钠"}
 
-# 页面名称映射
-PAGE_NAMES = {
-    "home": "首页",
-    "scan": "扫描",
-    "result": "识别结果",
-    "history": "历史记录",
-    "detail": "产品详情",
-    "profile": "健康档案",
-}
-
 # 完整历史快照路径与上限
 _HISTORY_FULL_PATH = os.path.join(_DATA_DIR, "history_full.json")
 _HISTORY_FULL_MAX = 20
@@ -88,12 +93,12 @@ def _safe(text: str) -> str:
 
 
 def _load_json(path):
-    """读取 JSON 文件，失败返回空 dict/list."""
+    """读取 JSON 文件，失败返回空 dict."""
     try:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-        return {} if path.endswith(("diseases.json", "allergens.json", "common_drugs.json", "drug_food_conflicts.json")) else {}
+        return {}
 
 
 @st.cache_data
@@ -137,60 +142,6 @@ def load_gb2760_risk():
         pass
     return risk_map
 
-
-# ========== 数据文件启动校验（Phase 4 / Task 12）==========
-
-# 数据文件 → 必需键/列 的对照表（用于启动时结构校验）
-_DATA_FILE_SPEC = [
-    # (路径常量, 文件显示名, 校验类型, 必需键/列列表)
-    (_GB2760_RISK_PATH, "gb2760_risk.csv", "csv", ["cn_name", "risk_level"]),
-    (_DISEASES_PATH, "common_diseases.json", "json", ["categories"]),
-    (_ALLERGENS_PATH, "allergens.json", "json", ["categories"]),
-    (_DRUGS_PATH, "common_drugs.json", "json", ["categories"]),
-    (_CONFLICTS_PATH, "drug_food_conflicts.json", "json", ["conflicts"]),
-]
-
-
-def validate_data_files():
-    """启动时校验关键数据文件存在性与结构，返回问题列表.
-
-    校验对象：gb2760_risk.csv / common_diseases.json / allergens.json /
-    common_drugs.json / drug_food_conflicts.json
-    校验内容：文件是否存在 + 必需列/键是否存在
-    返回值：list[str]，每个元素是一条用户可读的问题描述；空列表表示全部通过。
-    注意：本函数不阻断运行，仅返回问题清单由调用方决定如何展示。
-    """
-    issues = []
-    for path, display_name, kind, required_keys in _DATA_FILE_SPEC:
-        # 1. 文件存在性
-        if not os.path.exists(path):
-            issues.append(f"缺失文件：data/{display_name}（相关功能将不可用）")
-            continue
-
-        # 2. 结构校验
-        if kind == "csv":
-            try:
-                with open(path, encoding="utf-8") as f:
-                    reader = csv.DictReader(f)
-                    cols = reader.fieldnames or []
-                    missing = [k for k in required_keys if k not in cols]
-                    if missing:
-                        issues.append(
-                            f"data/{display_name} 缺少必要列：{', '.join(missing)}"
-                        )
-            except Exception as e:
-                issues.append(f"data/{display_name} 读取失败：{e}")
-        elif kind == "json":
-            data = _load_json(path)
-            if not isinstance(data, dict):
-                issues.append(f"data/{display_name} 不是合法 JSON 对象")
-                continue
-            missing = [k for k in required_keys if k not in data]
-            if missing:
-                issues.append(
-                    f"data/{display_name} 缺少键：{', '.join(missing)}"
-                )
-    return issues
 
 
 # ========== 页面路由工具 ==========
@@ -250,46 +201,129 @@ def inject_elder_css():
 
 # ========== 语音播报（浏览器原生，零依赖）==========
 
+# 播报按钮全局递增 ID，避免时间戳冲突
+_tts_counter = 0
+
+
+def _next_tts_id(prefix: str) -> str:
+    """生成唯一的 TTS 元素 ID."""
+    global _tts_counter
+    _tts_counter += 1
+    return f"{prefix}-{_tts_counter}"
+
+
 def _js_attr_safe(text: str) -> str:
-    """先 HTML 转义防 XSS，再做 JS 字符串转义，用于内联 onclick 属性."""
-    s = html.escape(str(text), quote=True)
-    return s.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ").replace("\r", "")
+    """先做 JS 字符串转义，再做 HTML 属性转义，用于内联 onclick 单引号属性.
+
+    顺序很重要：若先 HTML escape 单引号成 &#x27;，HTML 解析器会重新解码回 '，
+    导致 JS 单引号字符串破裂。因此先 JS 转义，再对结果做 HTML 属性转义。
+    """
+    s = str(text)
+    # 1) JS 字符串内需要转义的字符
+    s = s.replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"').replace("\n", " ").replace("\r", "")
+    # 2) HTML 属性转义（& 必须最先处理，防止后续实体被二次转义）
+    s = s.replace("&", "&amp;").replace("'", "&#39;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
+    return s
 
 
 def _render_tts_namespace():
-    """注入全局语音播报命名空间（幂等，可被多次调用）.
+    """通过 iframe 注入全局语音播报命名空间与按钮事件绑定（幂等）.
 
-    把多行 JS 逻辑放到 <script> 标签中，避免内联 onclick 被 Streamlit
-    Markdown 解析器误识别为可见的 <pre>/<code> 代码块。
+    Streamlit 的 st.markdown 会过滤 <script>，导致脚本不执行；
+    使用 st.components.v1.html 在隐藏 iframe 中执行脚本，并把函数挂到
+    window.parent。
+
+    关键兼容：Streamlit/React 在 hydration 时会剥离 HTML 元素的
+    onclick="..." 字符串属性，因此按钮不能依赖内联 onclick。
+    这里改为在父页面用 MutationObserver 自动发现带
+    .food-scanner-tts-btn / .food-scanner-tts-stop-btn /
+    .food-scanner-tts-replay-btn 类的元素，并通过 addEventListener 绑定点击
+    事件，确保事件在用户手势同步路径中触发 speechSynthesis.speak()，同时
+    避免 React hydration 剥离内联 onclick。
     """
-    st.markdown(
+    components.html(
         """
         <script>
-        window.foodScannerTts = window.foodScannerTts || {
-            speak: function(btnId, errId, text, rate) {
-                var btn = document.getElementById(btnId);
-                var err = document.getElementById(errId);
-                if (!window.speechSynthesis) {
-                    if (btn) { btn.disabled = true; btn.innerHTML = '🔇 不支持播报'; }
-                    if (err) err.textContent = '您的浏览器不支持语音播报功能';
+        (function() {
+            var parent = null;
+            try {
+                parent = window.parent;
+                if (!parent || !parent.document || !parent.speechSynthesis) {
+                    throw new Error('parent context unavailable');
+                }
+            } catch (e) {
+                var fallback = {
+                    speak: function() { alert('语音组件加载失败，请刷新页面后重试'); },
+                    stop: function() {}
+                };
+                try { if (window.parent) window.parent.foodScannerTts = fallback; } catch(_) {}
+                window.foodScannerTts = fallback;
+                return;
+            }
+
+            function bindTtsButton(btn) {
+                if (!btn || btn.__foodScannerTtsBound) return;
+                btn.__foodScannerTtsBound = true;
+                var action = btn.getAttribute('data-action') || 'speak';
+                if (action === 'stop') {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        parent.foodScannerTts.stop();
+                    });
                     return;
                 }
-                // 桌面 Chrome/Edge  autoplay 策略会挂起 speechSynthesis，
-                // 必须在用户手势（点击）内先 resume，否则无声音。
-                try { window.speechSynthesis.resume(); } catch(e) { console.warn('[TTS resume]', e); }
-                var originalHtml = btn ? btn.innerHTML : '';
-                if (btn) btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…';
-                if (err) err.textContent = '';
+                if (action === 'replay') {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var scope = btn.closest('.result-score-hero') || parent.document;
+                        var voiceBtn = scope.querySelector('.food-scanner-tts-btn');
+                        if (voiceBtn) voiceBtn.click();
+                    });
+                    return;
+                }
+                var errId = btn.getAttribute('data-err-id') || '';
+                var text = btn.getAttribute('data-text') || '';
+                var rate = parseFloat(btn.getAttribute('data-rate') || '1.0') || 1.0;
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    parent.foodScannerTts.speak(btn.id, errId, text, rate);
+                });
+            }
 
-                function doSpeak() {
-                    speechSynthesis.cancel();
-                    var u = new SpeechSynthesisUtterance(text);
+            function bindAllTtsButtons() {
+                var btns = parent.document.querySelectorAll('.food-scanner-tts-btn, .food-scanner-tts-stop-btn, .food-scanner-tts-replay-btn');
+                for (var i = 0; i < btns.length; i++) {
+                    bindTtsButton(btns[i]);
+                }
+            }
+
+            parent.foodScannerTts = parent.foodScannerTts || {
+                speak: function(btnId, errId, text, rate) {
+                    var btn = parent.document.getElementById(btnId);
+                    var err = parent.document.getElementById(errId);
+                    var synth = parent.speechSynthesis;
+                    if (!synth) {
+                        if (btn) { btn.disabled = true; btn.innerHTML = '🔇 不支持播报'; }
+                        if (err) err.textContent = '您的浏览器不支持语音播报功能';
+                        return;
+                    }
+                    var originalHtml = btn ? btn.innerHTML : '';
+                    if (btn) btn.innerHTML = '<span class="voice-btn-icon">🔊</span> 播报中…';
+                    if (err) err.textContent = '';
+
+                    try { synth.cancel(); } catch(e) {}
+                    try { synth.resume(); } catch(e) {}
+
+                    var u = new parent.SpeechSynthesisUtterance(text);
                     u.lang = 'zh-CN';
                     u.rate = rate;
                     u.pitch = 1.0;
                     u.volume = 1.0;
 
-                    var voices = speechSynthesis.getVoices();
+                    var voices = synth.getVoices();
                     var selected = null;
                     for (var i = 0; i < voices.length; i++) {
                         var name = voices[i].name || '';
@@ -304,64 +338,50 @@ def _render_tts_namespace():
                     }
                     if (selected) u.voice = selected;
 
-                    var hasStarted = false;
-                    u.onstart = function() {
-                        hasStarted = true;
-                        if (btn) btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…';
+                    u.onend = function() {
+                        if (btn) btn.innerHTML = originalHtml;
+                        if (err) err.textContent = '';
                     };
-                    u.onend = function() { if (btn) btn.innerHTML = originalHtml; if (err) err.textContent = ''; };
                     u.onerror = function(e) {
                         if (btn) btn.innerHTML = originalHtml;
-                        if (err) err.textContent = '播报失败，请尝试刷新页面或调高手机音量';
+                        var errMsg = '播报失败，请尝试刷新页面或调高手机音量';
+                        try {
+                            var errType = (e && (e.error || e.type || e.message || '')).toString().toLowerCase();
+                            if (errType.indexOf('not-allowed') >= 0 || errType.indexOf('notallowed') >= 0) {
+                                errMsg = '浏览器阻止了语音播放，请刷新后点击页面任意位置再试';
+                            }
+                        } catch(_) {}
+                        if (err) err.textContent = errMsg;
                         console.warn('[TTS error]', e);
                     };
 
-                    // iOS Safari 需要把 speak 放在事件循环中，确保在用户手势内执行
-                    setTimeout(function() {
-                        try { speechSynthesis.speak(u); }
-                        catch(e) {
-                            if (btn) btn.innerHTML = originalHtml;
-                            if (err) err.textContent = '播报失败，请刷新页面后重试';
-                            console.warn('[TTS speak]', e);
-                        }
-                    }, 0);
-
-                    // 兜底：部分浏览器 onstart 触发不及时，100ms 后若仍未触发则强制刷新按钮文字
-                    setTimeout(function() {
-                        if (!hasStarted && btn) {
-                            btn.innerHTML = '<span class=\\'voice-btn-icon\\'>🔊</span> 播报中…';
-                        }
-                    }, 100);
+                    try {
+                        synth.speak(u);
+                    } catch(e) {
+                        if (btn) btn.innerHTML = originalHtml;
+                        if (err) err.textContent = '播报失败，请刷新页面后重试';
+                        console.warn('[TTS speak]', e);
+                    }
+                },
+                stop: function() {
+                    try { parent.speechSynthesis.cancel(); } catch(e) {}
                 }
+            };
 
-                var voices = speechSynthesis.getVoices();
-                if (voices && voices.length > 0) {
-                    doSpeak();
-                } else if (speechSynthesis.onvoiceschanged !== undefined) {
-                    // 首次加载 voices 为空时，等待加载完成
-                    var once = function() {
-                        speechSynthesis.onvoiceschanged = null;
-                        doSpeak();
-                    };
-                    speechSynthesis.onvoiceschanged = once;
-                    // 部分浏览器不会触发事件，设置兜底超时
-                    setTimeout(function() {
-                        if (speechSynthesis.getVoices().length === 0) {
-                            if (btn) btn.innerHTML = originalHtml;
-                            if (err) err.textContent = '未找到中文语音，请检查系统语言设置';
-                        }
-                    }, 2000);
-                } else {
-                    doSpeak();
-                }
-            },
-            stop: function() {
-                try { speechSynthesis.cancel(); } catch(e) {}
+            bindAllTtsButtons();
+
+            try {
+                var observer = new parent.MutationObserver(function(mutations) {
+                    bindAllTtsButtons();
+                });
+                observer.observe(parent.document.body, { childList: true, subtree: true });
+            } catch(e) {
+                console.warn('[TTS observer]', e);
             }
-        };
+        })();
         </script>
         """,
-        unsafe_allow_html=True,
+        height=0,
     )
 
 
@@ -379,39 +399,20 @@ def speak_text(text: str, rate: float = 1.0):
     """
     rate = max(0.5, min(2.0, float(rate)))
     safe = _js_attr_safe(text)
-    # 生成唯一 ID，避免多个简单播报按钮冲突
-    uid = int(time.time() * 1000) % 1000000
-    btn_id = f"tts-simple-btn-{uid}"
-    err_id = f"tts-simple-err-{uid}"
+    btn_id = _next_tts_id("tts-simple-btn")
+    err_id = _next_tts_id("tts-simple-err")
     _render_tts_namespace()
-    js = f"""
-    <div style="text-align:center;margin:12px 0;">
-        <button id="{btn_id}" onclick="window.foodScannerTts.speak('{btn_id}', '{err_id}', '{safe}', {rate})" style="
-            font-size:20px; height:56px; padding:0 28px;
-            border-radius:12px; border:2px solid #2E7D32;
-            background:#E8F5E9; color:#1B5E20; font-weight:bold;
-            cursor:pointer; min-width:200px;
-        ">🔊 点击播报</button>
-        <span id="{err_id}" class="tts-err" style="color:#D32F2F;font-size:14px;margin-left:8px;"></span>
-    </div>
-    """
-    st.markdown(js, unsafe_allow_html=True)
-
-
-def _js_speech_control(action: str):
-    """通过 JS 控制 speechSynthesis：pause / resume / cancel.
-
-    参数：
-        action: 'pause' / 'resume' / 'cancel' 之一
-    """
-    action = action if action in ("pause", "resume", "cancel") else "cancel"
-    js = f"""
-    <script>
-    (function() {{
-        try {{ speechSynthesis.{action}(); }} catch(e) {{ console.warn('[tts {action}]', e); }}
-    }})();
-    </script>
-    """
+    js = (
+        f"<div style='text-align:center;margin:12px 0;'>"
+        f"<button id='{btn_id}' aria-label='语音播报识别结果' "
+        f"class='food-scanner-tts-btn' data-err-id='{err_id}' data-text='{safe}' data-rate='{rate}' "
+        f"style='font-size:20px;height:56px;padding:0 28px;border-radius:12px;"
+        f"border:2px solid #2E7D32;background:#E8F5E9;color:#1B5E20;"
+        f"font-weight:bold;cursor:pointer;min-width:200px;'>"
+        f"🔊 点击播报</button>"
+        f"<span id='{err_id}' class='tts-err' style='color:#D32F2F;font-size:14px;margin-left:8px;'></span>"
+        f"</div>"
+    )
     st.markdown(js, unsafe_allow_html=True)
 
 
@@ -421,7 +422,6 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text
     使用浏览器原生 Web Speech API，针对 iOS Safari / 微信内置浏览器等
     移动端环境做了兼容处理：
     - 点击按钮时立即 cancel 并 speak，保证处于用户手势上下文。
-    - 如果 voices 列表尚未加载，等待 onvoiceschanged 后再重试。
     - 提供可视化反馈与明确的错误提示。
 
     wrapper_class: 外层 div 的 class，默认 voice-control-wrap；
@@ -433,24 +433,22 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text
     rate = st.session_state["tts_rate"]
     safe = _js_attr_safe(speak_content)
     safe_button_text = _js_attr_safe(button_text)
-    # 组件唯一标识，避免多个播报按钮冲突
-    btn_id = f"tts-btn-{key_prefix}"
-    err_id = f"tts-err-{key_prefix}"
+    btn_id = _next_tts_id(f"tts-btn-{key_prefix}")
+    stop_btn_id = _next_tts_id(f"tts-stop-{key_prefix}")
+    err_id = _next_tts_id(f"tts-err-{key_prefix}")
 
     _render_tts_namespace()
-    html_block = textwrap.dedent(
-        f"""
-        <div class="{wrapper_class}">
-            <button id="{btn_id}" onclick="window.foodScannerTts.speak('{btn_id}', '{err_id}', '{safe}', {rate})" class="voice-float-btn">
-                {safe_button_text}
-            </button>
-            <button onclick="window.foodScannerTts.stop()" class="voice-stop-btn" aria-label="停止播报">
-                停止
-            </button>
-            <span id="{err_id}" class="tts-err"></span>
-        </div>
-        """
-    ).strip()
+    html_block = (
+        f"<div class='{wrapper_class}'>"
+        f"<button id='{btn_id}' aria-label='语音播报识别结果' "
+        f"class='food-scanner-tts-btn voice-float-btn' data-action='speak' "
+        f"data-err-id='{err_id}' data-text='{safe}' data-rate='{rate}'>"
+        f"{safe_button_text}</button>"
+        f"<button id='{stop_btn_id}' class='food-scanner-tts-stop-btn voice-stop-btn' "
+        f"data-action='stop' aria-label='停止播报'>停止</button>"
+        f"<span id='{err_id}' class='tts-err'></span>"
+        f"</div>"
+    )
     st.markdown(html_block, unsafe_allow_html=True)
 
     with st.expander("语速调整"):
@@ -474,26 +472,26 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text
 
 def _preload_tts_voices():
     """页面加载时预加载浏览器语音列表，提升首次点击播报成功率."""
-    st.markdown(
+    components.html(
         """
         <script>
         (function() {
-            if (!window.speechSynthesis) return;
+            var parent = null;
+            try {
+                parent = window.parent;
+                if (!parent || !parent.speechSynthesis) return;
+            } catch(e) { return; }
             function loadVoices() {
-                try { window.speechSynthesis.getVoices(); } catch(e) {}
+                try { parent.speechSynthesis.getVoices(); } catch(e) {}
             }
             loadVoices();
-            if (window.speechSynthesis.onvoiceschanged !== undefined) {
-                window.speechSynthesis.onvoiceschanged = loadVoices;
+            if (parent.speechSynthesis.onvoiceschanged !== undefined) {
+                parent.speechSynthesis.onvoiceschanged = loadVoices;
             }
-            // iOS 需要一次性的用户交互后才能正常播放，这里只做预加载
-            document.addEventListener('click', function() {
-                try { window.speechSynthesis.getVoices(); } catch(e) {}
-            }, { once: true });
         })();
         </script>
         """,
-        unsafe_allow_html=True,
+        height=0,
     )
 
 
@@ -845,6 +843,8 @@ def save_history(record):
         os.makedirs(_DATA_DIR, exist_ok=True)  # 兜底确保 data 目录存在
         with open(_HISTORY_PATH, "w", encoding="utf-8") as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
+        # 写入后清除缓存，确保展示侧立即刷新
+        load_history.clear()
     except OSError:
         # 写入失败不阻断主流程
         pass
@@ -870,6 +870,7 @@ def save_history_full(result):
         os.makedirs(_DATA_DIR, exist_ok=True)
         with open(_HISTORY_FULL_PATH, "w", encoding="utf-8") as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
+        load_history_full.clear()
     except OSError:
         pass
 
@@ -885,14 +886,9 @@ def add_history(result):
         "score": result.get("score", 0),
         "type": str(result.get("type", "food")),
         "additives_count": len(result.get("additives", [])),
+        "engine": result.get("engine", "mimo"),
     }
     save_history(record)
-    # 同步写入 session_state，便于其他逻辑即时读取（可选）
-    if "history" not in st.session_state:
-        st.session_state["history"] = []
-    st.session_state["history"].insert(0, record)
-    st.session_state["history"] = st.session_state["history"][:_HISTORY_MAX]
-
     # 保存完整识别快照供详情页使用
     save_history_full(result)
 
@@ -930,10 +926,7 @@ def show_history():
 
 # ========== 结果页通用组件 ==========
 
-from typing import Tuple
-
-
-def _get_level_info(level: str) -> Tuple[str, str, str]:
+def _get_level_info(level: str) -> tuple[str, str, str]:
     """统一返回添加剂等级信息：标签、颜色、形状图标."""
     mapping = {
         "A": ("可食用", "#43A047", "●"),
@@ -958,19 +951,18 @@ def _clip_path(shape: str) -> str:
 def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = True):
     """渲染评分英雄区（按画布设计稿：纯色卡片 + 装饰圆点 + 慢速重听）."""
     if score >= 80:
-        color, label, bg = "#43A047", "可放心食用", "#43A047"
+        _, label, bg = "#43A047", "可放心食用", "#43A047"
     elif score >= 60:
-        color, label, bg = "#FF9800", "特定人群注意", "#FF9800"
+        _, label, bg = "#FF9800", "特定人群注意", "#FF9800"
     else:
-        color, label, bg = "#E53935", "建议咨询医生", "#E53935"
+        _, label, bg = "#E53935", "建议咨询医生", "#E53935"
     shape = "●" if score >= 80 else ("▲" if score >= 60 else "■")
     replay_btn = ""
     if show_slow_replay:
         replay_id = f"slow-replay-{score}"
         replay_btn = (
-            f"<button id='{replay_id}' class='score-replay-btn' "
-            f"onclick=\"this.closest('.result-score-hero').querySelector('.voice-float-btn, .voice-btn').click();\" "
-            f"aria-label='慢速重听'>"
+            f"<button id='{replay_id}' class='score-replay-btn food-scanner-tts-replay-btn' "
+            f"data-action='replay' aria-label='慢速重听'>"
             f"<span>🔁</span> 慢速重听</button>"
         )
     st.markdown(
@@ -1050,7 +1042,6 @@ def render_food(result):
     )
 
     speak_content = f"评分{score}分。{advice}本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生/药师/营养师。"
-    st.session_state["last_speak_content"] = speak_content
 
     _render_additive_card(result.get("additives", []))
 
@@ -1123,7 +1114,6 @@ def render_personal_warnings(result, ingredients):
                 warnings.append(f"⚠️ {drug} 与 {food_names} 可能存在相互作用，建议咨询医生或药师")
 
     if user_allergens:
-        health_data = load_health_data()
         allergen_warnings = []
         all_ingredient_text = " ".join(ingredients) + " " + " ".join(
             a.get("name", "") for a in result.get("additives", [])
@@ -1246,7 +1236,6 @@ def render_supplement(result):
         f"保健食品不是药物，不能代替药物治疗疾病。"
         f"如需选择，请咨询医生/药师/营养师。"
     )
-    st.session_state["last_speak_content"] = speak_content
 
     if summary:
         st.markdown(
@@ -1376,9 +1365,9 @@ def render_legal_consent():
         "使用本工具前请阅读并同意《用户协议及免责声明》和《隐私政策》。"
     )
 
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    user_agreement = _load_markdown(os.path.join(base_dir, "USER_AGREEMENT.md"))
-    privacy_policy = _load_markdown(os.path.join(base_dir, "PRIVACY_POLICY.md"))
+    # 使用模块级 _BASE_DIR，避免重复计算
+    user_agreement = _load_markdown(os.path.join(_BASE_DIR, "USER_AGREEMENT.md"))
+    privacy_policy = _load_markdown(os.path.join(_BASE_DIR, "PRIVACY_POLICY.md"))
 
     with st.expander("查看《用户协议及免责声明》", expanded=False):
         st.markdown(user_agreement)
@@ -1561,7 +1550,6 @@ def render_health_profile():
         }
     profile = st.session_state["health_profile"]
     health_data = load_health_data()
-    diseases = health_data.get("diseases", [])
     allergens = health_data.get("allergens", [])
     drug_categories = health_data.get("drugs", [])
 
@@ -1578,23 +1566,6 @@ def render_health_profile():
             "年龄", min_value=1, max_value=120,
             value=profile.get("age", 60), step=1
         )
-
-    CONDITION_ITEMS = [
-        ("diabetes", "糖尿病", "糖"),
-        ("hypertension", "高血压", "压"),
-        ("fat-loss", "减脂", "减"),
-        ("allergy", "过敏", "敏"),
-        ("children", "儿童", "儿"),
-        ("pregnant", "孕妇", "孕"),
-    ]
-    CONDITION_NAME_MAP = {
-        "diabetes": "糖尿病",
-        "hypertension": "高血压",
-        "fat-loss": "减脂",
-        "allergy": "过敏",
-        "children": "儿童",
-        "pregnant": "孕妇",
-    }
 
     st.markdown("<div class='profile-section-title'>我的健康状况</div>")
     st.markdown("<div class='profile-section-desc'>可多选，帮助我们提供更准确的建议</div>")
@@ -1796,14 +1767,14 @@ def render_scan_page():
     profile = st.session_state.get("health_profile", {})
     groups = profile.get("diseases", [])
 
-    model = "mimo"
-    model_choice = "MiMo (mimo-v2.5)"
-    st.session_state["model_choice"] = model_choice
+    # 模型选择：优先使用侧边栏/会话中的选择，默认 MiMo
+    model_choice = st.session_state.get("model_choice", "MiMo (mimo-v2.5)")
+    model = "agnes" if model_choice.startswith("Agnes") else "mimo"
 
     api_key = get_api_key(model)
 
     if not api_key and os.getenv("DEBUG") == "1":
-        var_name = "MIMO_API_KEY"
+        var_name = "AGNES_API_KEY" if model == "agnes" else "MIMO_API_KEY"
         st.warning(f"未检测到 {var_name}，请在 .env 或 Secrets 中配置")
         api_key = st.text_input("API 密钥", type="password")
 
@@ -1878,6 +1849,7 @@ def render_scan_page():
                                 result = parse_result(raw, health_groups=groups)
                                 if result:
                                     status.update(label="识别完成", state="complete")
+                                    result["engine"] = model
                                     st.session_state["last_result"] = result
                                     add_history(result)
                                     switch_page("result")
@@ -1887,6 +1859,9 @@ def render_scan_page():
                                     if os.getenv("DEBUG") == "1":
                                         with st.expander("查看原始返回（调试用）"):
                                             st.text(raw)
+                            else:
+                                status.update(label="识别失败", state="error")
+                                st.error("识别服务暂时不可用，请检查网络或 API 密钥后重试。")
 
     st.markdown(
         "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",
@@ -2038,6 +2013,7 @@ def render_detail_page():
     # 扫描信息卡片
     ts = fallback.get("timestamp", "") or (record.get("timestamp", "") if record else "")
     type_label = "保健食品" if fallback.get("type") == "supplement" else "食品"
+    engine_name = record.get("engine", fallback.get("engine", MODEL_NAME)) if record else fallback.get("engine", MODEL_NAME)
     st.markdown(
         "<div class='result-card detail-scan-card'>"
         "<div class='result-card-title'>扫描信息</div>"
@@ -2047,7 +2023,7 @@ def render_detail_page():
         f"<div class='detail-scan-row'><span class='detail-scan-label'>扫描时间</span>"
         f"<span class='detail-scan-value'>{_safe(ts)}</span></div>"
         f"<div class='detail-scan-row'><span class='detail-scan-label'>识别引擎</span>"
-        f"<span class='detail-scan-value'>{MODEL_NAME}</span></div>"
+        f"<span class='detail-scan-value'>{_safe(engine_name)}</span></div>"
         f"<div class='detail-scan-row'><span class='detail-scan-label'>产品类型</span>"
         f"<span class='detail-scan-value'>{_safe(type_label)}</span></div>"
         "</div></div></div>",
@@ -2115,6 +2091,8 @@ def main():
     )
     inject_elder_css()
     _preload_tts_voices()
+    # 提前注入全局 TTS 命名空间，避免页面刚加载时点击播报提示"组件加载中"
+    _render_tts_namespace()
 
     # DEBUG 信息块：仅当环境变量 DEBUG=1 时显示，用于本地排查 API 配置
     # ⚠️ 生产环境（Streamlit Cloud）严禁设置 DEBUG=1，避免泄露 API key 信息
@@ -2171,23 +2149,27 @@ def main():
         if st.button("👤 健康档案", use_container_width=True, key="sb_profile"):
             switch_page("profile")
         st.divider()
+        # 模型选择对所有用户可用（A/B 对比）
+        if "model_choice" not in st.session_state:
+            st.session_state["model_choice"] = "MiMo (mimo-v2.5)"
+        model_choice = st.radio(
+            "选择识别模型",
+            ["MiMo (mimo-v2.5)", "Agnes (agnes-2.0-flash)"],
+            index=0 if st.session_state["model_choice"].startswith("MiMo") else 1,
+            key="sb_model_choice",
+        )
+        st.session_state["model_choice"] = model_choice
+        st.divider()
+
         if os.getenv("DEBUG") == "1":
             with st.expander("高级设置"):
                 if st.button("重新查看引导", use_container_width=True, key="replay_ob"):
                     st.session_state["onboarded"] = False
                     st.session_state["onboarding_step"] = 1
                     st.rerun()
-                if "model_choice" not in st.session_state:
-                    st.session_state["model_choice"] = "MiMo (mimo-v2.5)"
-                model_choice = st.radio(
-                    "选择识别模型",
-                    ["MiMo (mimo-v2.5)", "Agnes (agnes-2.0-flash)"],
-                    index=0 if st.session_state["model_choice"].startswith("MiMo") else 1,
-                )
-                st.session_state["model_choice"] = model_choice
         with st.expander("📄 法律声明"):
             st.caption("AI识别仅供参考，不构成医疗建议")
-            base_dir = os.path.dirname(os.path.abspath(__file__))
+            # 使用模块级 _BASE_DIR，避免重复计算
             if st.button("查看用户协议", use_container_width=True, key="sb_ua"):
                 st.session_state["page"] = "legal_ua"
                 st.rerun()
@@ -2211,12 +2193,12 @@ def main():
         render_health_profile_page()
     elif page == "legal_ua":
         render_top_nav("用户协议", back_target="home")
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        st.markdown(_load_markdown(os.path.join(base_dir, "USER_AGREEMENT.md")))
+        # 使用模块级 _BASE_DIR，避免重复计算
+        st.markdown(_load_markdown(os.path.join(_BASE_DIR, "USER_AGREEMENT.md")))
     elif page == "legal_pp":
         render_top_nav("隐私政策", back_target="home")
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        st.markdown(_load_markdown(os.path.join(base_dir, "PRIVACY_POLICY.md")))
+        # 使用模块级 _BASE_DIR，避免重复计算
+        st.markdown(_load_markdown(os.path.join(_BASE_DIR, "PRIVACY_POLICY.md")))
     else:
         st.session_state["page"] = "home"
         st.rerun()

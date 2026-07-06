@@ -1,5 +1,70 @@
 # 变更日志
 
+## v0.5.4 - 2026-07-06
+
+### 修复结果页语音按钮无声音与 ponytail 清理
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\README.md`、`d:\GBT\ai-food-scanner\CHANGELOG.md`
+- **语音播报无声音修复**：
+  - `voice_control_panel()` 的主播报按钮改为 `class='food-scanner-tts-btn voice-float-btn'`，停止按钮改为 `class='food-scanner-tts-stop-btn voice-stop-btn'`，均通过 `data-*` 属性传递参数，彻底移除内联 `onclick`。
+  - `_render_tts_namespace()` 的 `MutationObserver` 同时识别 `.food-scanner-tts-btn`、`.food-scanner-tts-stop-btn`、`.food-scanner-tts-replay-btn` 三类元素并绑定 `addEventListener`。
+  - 修复 `_render_score_hero()` 中「慢速重听」按钮同样使用内联 `onclick` 的问题，改为 `food-scanner-tts-replay-btn` + `data-action='replay'`，点击时由 MutationObserver 逻辑自动触发最近的语音按钮。
+- **ponytail 安全清理**：
+  - `_render_score_hero()` 中移除未使用的 `color` 变量（使用 `_` 占位）。
+  - `render_personal_warnings()` 中移除未使用的 `health_data = load_health_data()`。
+  - `render_health_profile()` 中移除未使用的 `diseases` 变量。
+- **版本统一**：
+  - `app.py` 顶部注释版本更新为 `v0.5.4`
+  - `style.css` 顶部注释版本更新为 `v0.5.4`
+  - `README.md` 版本徽章与最新更新说明更新为 `v0.5.4`
+- **验证**：
+  - `python -m py_compile app.py` 通过
+  - `pytest tests/` 17 项通过
+  - `python diag_verify_ui.py` 通过
+  - `python diag_tts_real_browser.py` 通过：Microsoft Yaoyao 可用，点击后 `speechSynthesis.speaking=true`
+
+## v0.5.3 - 2026-07-06
+
+### ponytail-audit 安全清理与版本同步
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\README.md`、`d:\GBT\ai-food-scanner\CHANGELOG.md`
+- **版本统一**：
+  - `app.py` 顶部注释版本更新为 `v0.5.3`
+  - `style.css` 顶部注释版本更新为 `v0.5.3`
+  - `README.md` 版本徽章与最新更新说明更新为 `v0.5.3`
+- **ponytail 安全清理**：
+  - 删除 `.streamlit/style.css` 中未生效的 `:root[data-mode="large"]` 和 `:root[data-mode="extra-large"]` 变量规则（`app.py` 未设置 `data-mode`，这些规则从不生效）。
+  - 简化 `voice_control_panel()` 的 HTML 拼接：移除冗余的 `textwrap.dedent(...).strip()`，改为普通 f-string 拼接。
+  - 移除未使用的 `import textwrap`。
+  - 删除重复的 TTS 诊断脚本 `diag_tts_check.py`，保留功能更完整的 `diag_tts_debug.py`。
+- **验证**：
+  - `python -m py_compile app.py` 通过
+  - `pytest tests/` 17 项通过
+
+## v0.5.2 - 2026-07-06
+
+### 修复语音播报无声音与生产就绪清理
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\README.md`、`d:\GBT\ai-food-scanner\CHANGELOG.md`
+- **版本统一**：
+  - `app.py` 顶部注释版本更新为 `v0.5.2`
+  - `style.css` 顶部注释版本更新为 `v0.5.2`
+  - `README.md` 版本徽章与最新更新说明更新为 `v0.5.2`
+- **语音播报无声音修复**：
+  - 在 `main()` 中 `_preload_tts_voices()` 之后立即调用 `_render_tts_namespace()`，页面加载完成即准备好 `window.foodScannerTts`，降低首次点击「语音组件加载中」概率。
+  - 增强 `_render_tts_namespace()` 的 iframe 降级路径：当 iframe 无法访问父页面时，同时尝试向 `parent` 注入降级对象，确保按钮点击能给出明确提示。
+  - 保留 `synth.resume()` + 同步 `synth.speak(u)`，并在 `onerror` 中针对 `not-allowed` 错误提示「浏览器阻止了语音播放，请刷新后点击任意位置再试」。
+- **API 错误状态补全**：
+  - `render_scan_page()` 中当 `call_api()` 返回 `None` 时，调用 `status.update(label="识别失败", state="error")` 并显示用户友好的 `st.error` 提示。
+- **ponytail 代码清理**：
+  - 删除未使用的 `validate_data_files()` 函数与 `_DATA_FILE_SPEC` 常量。
+  - 将 `from typing import Tuple` 改为使用 Python 3.9+ 内置 `tuple[str, str, str]`。
+  - 健康档案 `CONDITION_ITEMS` / `CONDITION_NAME_MAP` 已提取到模块级，避免每次渲染重复构造。
+  - 识别成功后记录真实引擎（`result["engine"] = model`），`add_history()` 保存 `engine` 字段，`render_detail_page()` 动态展示引擎名称。
+- **验证**：
+  - `python -m py_compile app.py` 通过
+  - `pytest tests/` 17 项通过
+
 ## v0.5.1 - 2026-07-06
 
 ### 修复电脑端布局畸变与语音播报无声音

@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.5.1 | 更新时间: 2026-07-06 */
+/* 版本: v0.5.4 | 更新时间: 2026-07-06 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -100,30 +100,6 @@
   --min-touch-target: 48px;
   --min-list-item-height: 56px;
   --max-content-width: 100%;
-}
-
-/* 适老模式（大字） */
-:root[data-mode="large"] {
-  --font-size-display: 56px;
-  --font-size-h1: 32px;
-  --font-size-h2: 26px;
-  --font-size-h3: 22px;
-  --font-size-body-lg: 22px;
-  --font-size-body: 20px;
-  --font-size-body-sm: 16px;
-  --font-size-caption: 14px;
-}
-
-/* 超大字模式 */
-:root[data-mode="extra-large"] {
-  --font-size-display: 64px;
-  --font-size-h1: 36px;
-  --font-size-h2: 28px;
-  --font-size-h3: 24px;
-  --font-size-body-lg: 24px;
-  --font-size-body: 22px;
-  --font-size-body-sm: 18px;
-  --font-size-caption: 16px;
 }
 
 /* ========== Streamlit 全局覆盖 ========== */
