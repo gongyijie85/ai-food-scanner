@@ -25,6 +25,7 @@ import streamlit.components.v1 as components
 from PIL import Image
 
 from utils.data import _load_markdown, load_gb2760_risk, load_health_data
+from utils.security import _safe
 
 # ========== 日志配置 ==========
 # 生产环境 INFO，本地 DEBUG=1 时 DEBUG
@@ -128,11 +129,6 @@ _ICON_FOOD = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='curr
 # 用于嵌入 JS 字符串的 SVG（单引号已转义）
 _ICON_SPEAKER_JS = _ICON_SPEAKER.replace("'", "\\'")
 _ICON_MUTE_JS = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><polygon points='11 5 6 9 2 9 2 15 6 15 11 19 11 5'/><line x1='23' y1='9' x2='17' y2='15'/><line x1='17' y1='9' x2='23' y2='15'/></svg>".replace("'", "\\'")
-
-
-def _safe(text: str) -> str:
-    """对动态文本做 HTML 转义，防止 XSS."""
-    return html.escape(str(text), quote=True)
 
 
 # ========== 页面路由工具 ==========
