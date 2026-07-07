@@ -2,7 +2,7 @@
 
 ## v0.6.0 - 2026-07-07
 
-### 组件化架构重构
+### 组件化 + 页面模块化架构重构
 
 - **新增 `components/` 模块**：将 `app.py` 中可复用的 UI 组件抽离到独立文件，降低主文件复杂度。
   - `components/icons.py`：集中管理 12 个 SVG 图标常量及 2 个 JS 嵌入版（`_ICON_BACK` / `_ICON_HEART` / `_ICON_CAMERA` / `_ICON_HOME` / `_ICON_SPEAKER` / `_ICON_HISTORY` / `_ICON_PROFILE` / `_ICON_CHECK` / `_ICON_REFRESH` / `_ICON_SHARE` / `_ICON_EMPTY` / `_ICON_FOOD` / `_ICON_SPEAKER_JS` / `_ICON_MUTE_JS`）。
@@ -13,10 +13,21 @@
   - `components/voice_panel.py`：`_render_tts_namespace()` / `speak_text()` / `voice_control_panel()` / `_preload_tts_voices()` / `_next_tts_id()`，TTS 全局计数器 `_tts_counter` 随模块迁移。
   - `components/personal_warnings.py`：`render_personal_warnings()` 个性化健康档案警告。
   - `components/__init__.py`：统一暴露所有公共组件函数与图标常量。
+- **新增 `pages/` 模块**：将 `app.py` 中 15 个页面渲染函数按页面拆分为独立文件，避免单文件过大，提升可维护性。
+  - `pages/home.py`：`render_home_mobile()` / `render_home_desktop()`。
+  - `pages/scan.py`：`render_scan_mobile()` / `render_scan_desktop()`，以及扫描页内部辅助函数 `_scan_common_setup()` / `_scan_validate_and_recognize()`。
+  - `pages/result.py`：`render_result_page()` / `render_food_mobile()` / `render_food_desktop()` / `render_supplement_mobile()` / `render_supplement_desktop()`。
+  - `pages/history.py`：`render_history_page()` / `render_detail_page()`。
+  - `pages/profile.py`：`render_health_profile()` / `render_health_profile_page()`。
+  - `pages/onboarding.py`：`render_onboarding()`。
+  - `pages/legal.py`：`render_legal_consent()` / `render_legal_ua()` / `render_legal_pp()`。
+  - `pages/__init__.py`：统一暴露所有页面渲染函数。
+- **新增 `utils/constants.py`**：集中存放项目级常量（`_BASE_DIR`、`HEALTH_GROUPS`、`CONDITION_ITEMS`、`CONDITION_NAME_MAP`），供 `app.py` 与各页面模块共享，避免循环导入。
 - **更新 `app.py`**：
-  - 移除顶部 SVG 图标常量定义与上述 7 个组件函数的实现。
-  - 从 `components/` 引入所需组件与图标，保留页面渲染函数（首页、扫描页、结果页、历史页、健康档案等）不变。
-  - 版本号从 v0.5.9 升级到 v0.6.0。
+  - 移除顶部 SVG 图标常量定义、7 个 UI 组件函数实现，以及 15 个页面渲染函数实现。
+  - 从 `components/` 引入所需组件与图标，从 `pages/` 引入页面渲染函数。
+  - 保留 `inject_css()`、`_dispatch_page()` 页面分发器与 `main()` 主流程；设备类型判断仍由 `detect_device_type()` 在分发时实时获取。
+  - `app.py` 从约 1489 行精简至约 230 行（减少约 84%），主入口仅负责配置、初始化、侧边栏与页面路由。
 - **验证**：`python -m py_compile app.py` 通过，`pytest tests/test_core.py -q` 51 项全量通过。
 
 ## v0.5.9 - 2026-07-07
