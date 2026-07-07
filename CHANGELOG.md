@@ -1,5 +1,24 @@
 # 变更日志
 
+## v0.6.0 - 2026-07-07
+
+### 组件化架构重构
+
+- **新增 `components/` 模块**：将 `app.py` 中可复用的 UI 组件抽离到独立文件，降低主文件复杂度。
+  - `components/icons.py`：集中管理 12 个 SVG 图标常量及 2 个 JS 嵌入版（`_ICON_BACK` / `_ICON_HEART` / `_ICON_CAMERA` / `_ICON_HOME` / `_ICON_SPEAKER` / `_ICON_HISTORY` / `_ICON_PROFILE` / `_ICON_CHECK` / `_ICON_REFRESH` / `_ICON_SHARE` / `_ICON_EMPTY` / `_ICON_FOOD` / `_ICON_SPEAKER_JS` / `_ICON_MUTE_JS`）。
+  - `components/top_nav.py`：`render_top_nav()` 顶部导航栏。
+  - `components/score_hero.py`：`_render_score_hero()` 评分英雄区。
+  - `components/additive_card.py`：`_render_additive_card()` 添加剂清单卡片，含 `_get_level_info()` 辅助函数。
+  - `components/nutrition_bars.py`：`render_nutrition_bars()` 营养成分 NRV 可视化条。
+  - `components/voice_panel.py`：`_render_tts_namespace()` / `speak_text()` / `voice_control_panel()` / `_preload_tts_voices()` / `_next_tts_id()`，TTS 全局计数器 `_tts_counter` 随模块迁移。
+  - `components/personal_warnings.py`：`render_personal_warnings()` 个性化健康档案警告。
+  - `components/__init__.py`：统一暴露所有公共组件函数与图标常量。
+- **更新 `app.py`**：
+  - 移除顶部 SVG 图标常量定义与上述 7 个组件函数的实现。
+  - 从 `components/` 引入所需组件与图标，保留页面渲染函数（首页、扫描页、结果页、历史页、健康档案等）不变。
+  - 版本号从 v0.5.9 升级到 v0.6.0。
+- **验证**：`python -m py_compile app.py` 通过，`pytest tests/test_core.py -q` 51 项全量通过。
+
 ## v0.5.9 - 2026-07-07
 
 ### 同事反馈优化（P0/P1 快速收尾）

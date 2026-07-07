@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.5.9-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.6.0-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 一句话介绍
 
@@ -11,6 +11,7 @@
 
 ## 最新更新
 
+- **v0.6.0（2026-07-07）**：组件化架构重构。新增 `components/` 模块，将 `app.py` 中 7 个可复用 UI 组件（顶部导航、评分英雄区、添加剂卡片、营养成分条、语音面板、个性化警告）与 14 个 SVG 图标常量抽离到独立文件；`app.py` 移除对应实现并通过 `components/` 引入，页面渲染函数保持不变；版本号升级到 v0.6.0。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.5.9（2026-07-07）**：同事反馈 P0/P1 快速收尾。关键位置 emoji 统一替换为内联 SVG（返回、健康档案、首页、历史、健康档案、扫描、再扫一个、返回首页、语音播报、重新选择、使用照片、重新评分、分享给家人），避免跨平台渲染差异；统一 secondary 按钮为绿色主题；修复健康档案页 HTML 标签直接显示为文本的问题；修复结果页营养成分条字段别名；扫描页增加「拍照 / 从相册选择」入口；模型选择折叠到「高级设置」并加中文说明；移动端 body 字号从 18px 提升至 19px；补齐 `test_label.jpg` 示例图。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.5.8（2026-07-07）**：加回 Agnes 作为降级备用模型（仅 MiMo 失败时自动切换，正常流程不增加延迟）；`call_api()` 参数化支持双端点；新增 `call_api_with_fallback()` + `st.toast` 切换提示；新增 `TestBuildSystemPrompt` 和 `TestCallApiWithFallback` 共 8 项测试；恢复 `.env.example` 和 CI 中的 `AGNES_API_KEY` 环境变量配置；文档统一说明 Agnes 降级定位；版本号同步到 v0.5.8。
 - **v0.5.7（2026-07-07）**：执行 ponytail-audit 生产就绪清理。删除 GBT/、pages/、pages-redesign/ 等废弃目录与 README_PROTOTYPE.md、colors_and_type.css、download_test_images.py、diag_verify_ui.py；合并 `load_css()` + `inject_elder_css()` 为 `inject_css()`；内联 `_clip_path()` 与 `_show_friendly_error()`；删除 `render_home_page` 等四个单转发函数并内联设备分发；移除 `?test=1` / `?mock=1` 调试入口和 `_inject_mock_result`；`_js_attr_safe()` 改用标准库 `_safe()`；移除历史页无功能麦克风按钮。同步更新 .gitignore，py_compile、pytest 30 项全量通过。
@@ -183,6 +184,15 @@ ai-food-scanner/
 ├── .streamlit/
 │   ├── config.toml         # Streamlit 配置
 │   └── style.css           # 适老化自定义样式
+├── components/             # 可复用 UI 组件
+│   ├── __init__.py         # 统一暴露组件与图标
+│   ├── icons.py            # SVG 图标常量
+│   ├── top_nav.py          # 顶部导航栏
+│   ├── score_hero.py       # 评分英雄区
+│   ├── additive_card.py    # 添加剂清单卡片
+│   ├── nutrition_bars.py   # 营养成分 NRV 可视化条
+│   ├── voice_panel.py      # 语音播报面板
+│   └── personal_warnings.py # 个性化健康档案警告
 ├── utils/                  # 工具模块
 │   ├── api.py              # API 调用、提示词、结果归一化
 │   ├── data.py             # 本地数据加载（GB 2760、疾病、过敏原等）
