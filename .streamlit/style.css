@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.5.9 | 更新时间: 2026-07-07 */
+/* 版本: v0.6.0 | 更新时间: 2026-07-07 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -104,9 +104,9 @@
 
 /* ========== 设备类型布局 ========== */
 
-/* 移动端：单列、底部安全区 */
+/* 移动端：单列、底部安全区 + 底部导航栏高度 */
 .device-mobile .stMainBlockContainer {
-  padding-bottom: calc(var(--spacing-3xl) + var(--safe-area-bottom));
+  padding-bottom: calc(72px + var(--safe-area-bottom) + var(--spacing-base)) !important;
 }
 
 /* 桌面端：最大宽度限制、双栏卡片 */
@@ -125,6 +125,74 @@
 /* 桌面端结果页双栏：让 st.columns 间距更舒适 */
 .device-desktop [data-testid="stHorizontalBlock"] {
   gap: var(--spacing-lg);
+}
+
+/* ========== 移动端底部固定导航栏 ========== */
+/* 外层容器：固定在视口底部 */
+div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-marker) {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  min-height: 72px;
+  background: var(--color-bg-card);
+  border-top: 1px solid var(--color-border);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 50;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* 内部 4 列横向布局：均分并垂直居中 */
+div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-marker) > div[data-testid="stHorizontalBlock"] {
+  height: 100%;
+  min-height: 72px;
+  align-items: stretch;
+  margin: 0;
+}
+
+div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-marker) > div[data-testid="stHorizontalBlock"] > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+
+/* 单个 tab 项：图标 + 文字垂直居中 */
+div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item) .stButton {
+  width: 100%;
+}
+
+div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item) .stButton > button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  height: 56px;
+  padding: 0;
+  background: transparent !important;
+  color: var(--color-text-secondary) !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: var(--font-size-caption) !important;
+  font-weight: var(--font-weight-medium) !important;
+  line-height: 1.2 !important;
+  white-space: pre-line !important;
+}
+
+/* 当前激活 tab：主色绿色 */
+div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item.active) .stButton > button {
+  color: var(--color-primary) !important;
+  font-weight: var(--font-weight-bold) !important;
 }
 
 /* ========== Streamlit 全局覆盖 ========== */

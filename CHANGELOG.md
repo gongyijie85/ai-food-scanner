@@ -29,6 +29,11 @@
   - 保留 `inject_css()`、`_dispatch_page()` 页面分发器与 `main()` 主流程；设备类型判断仍由 `detect_device_type()` 在分发时实时获取。
   - `app.py` 从约 1489 行精简至约 230 行（减少约 84%），主入口仅负责配置、初始化、侧边栏与页面路由。
 - **验证**：`python -m py_compile app.py` 通过，`pytest tests/test_core.py -q` 51 项全量通过。
+- **导航重构**：
+  - 新增 `components/navigation.py`：统一封装 `render_mobile_bottom_nav()` / `render_desktop_sidebar()` / `render_navigation()`。
+  - 移动端使用底部固定 4 tab 导航（首页 / 扫描 / 历史 / 我的），当前页高亮主色绿色；桌面端保留侧边栏并新增「扫描」入口。
+  - `app.py` 移除原侧边栏代码，改为调用 `render_navigation(switch_page, _safe, show_history)`，功能与模型选择、法律声明、历史记录保持完全一致。
+  - `.streamlit/style.css` 新增 `.mobile-bottom-nav-marker`、`.mobile-bottom-nav-item` 等样式，并调整移动端主内容区底部内边距，避免内容被底部导航遮挡。
 
 ## v0.5.9 - 2026-07-07
 

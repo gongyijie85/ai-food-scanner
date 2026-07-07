@@ -21,12 +21,10 @@ from utils.security import _safe
 from utils.constants import _BASE_DIR
 
 from components import (
-    _ICON_HISTORY,
-    _ICON_HOME,
-    _ICON_PROFILE,
     _preload_tts_voices,
     _render_tts_namespace,
 )
+from components.navigation import render_navigation
 
 from pages import (
     render_detail_page,
@@ -176,47 +174,8 @@ def main():
         st.session_state["page"] = "home"
     page = st.session_state["page"]
 
-    # 侧边栏：弱化导航 + 模型选择 + 历史 + 法律文件入口
-    with st.sidebar:
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button(f"{_ICON_HOME} 首页", use_container_width=True, key="sb_home"):
-                switch_page("home")
-        with c2:
-            if st.button(f"{_ICON_HISTORY} 历史", use_container_width=True, key="sb_history"):
-                switch_page("history")
-        st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-        if st.button(f"{_ICON_PROFILE} 健康档案", use_container_width=True, key="sb_profile"):
-            switch_page("profile")
-        st.divider()
-
-        with st.expander("高级设置"):
-            model_choice = st.radio(
-                "选择识别模型",
-                options=["mimo", "agnes"],
-                format_func=lambda x: {
-                    "mimo": "MiMo（推荐）：识别更准确",
-                    "agnes": "Agnes（更快）：速度优先",
-                }[x],
-                key="selected_model_radio",
-                index=0 if st.session_state.get("selected_model", "mimo") == "mimo" else 1,
-            )
-            st.session_state["selected_model"] = model_choice
-            if os.getenv("DEBUG") == "1":
-                if st.button("重新查看引导", use_container_width=True, key="replay_ob"):
-                    st.session_state["onboarded"] = False
-                    st.session_state["onboarding_step"] = 1
-                    st.rerun()
-        with st.expander("📄 法律声明"):
-            st.caption("AI识别仅供参考，不构成医疗建议")
-            if st.button("查看用户协议", use_container_width=True, key="sb_ua"):
-                st.session_state["page"] = "legal_ua"
-                st.rerun()
-            if st.button("查看隐私政策", use_container_width=True, key="sb_pp"):
-                st.session_state["page"] = "legal_pp"
-                st.rerun()
-        st.divider()
-        show_history(switch_page, _safe)
+    # 根据设备类型渲染导航：移动端底部标签栏 / 桌面端侧边栏
+    render_navigation(switch_page, _safe, show_history)
 
     _dispatch_page(page)
 

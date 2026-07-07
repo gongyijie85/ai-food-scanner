@@ -1,6 +1,7 @@
 """可复用 UI 组件包."""
 
 from components.additive_card import _render_additive_card
+from components.navigation import render_navigation
 from components.icons import (
     _ICON_BACK,
     _ICON_CAMERA,
@@ -49,6 +50,7 @@ __all__ = [
     "_render_additive_card",
     "_render_score_hero",
     "_render_tts_namespace",
+    "render_navigation",
     "render_nutrition_bars",
     "render_personal_warnings",
     "render_top_nav",
