@@ -5,7 +5,9 @@
 
 import sys
 import os
+import json
 import pytest
+import streamlit as st
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
@@ -16,6 +18,8 @@ from app import (
     check_drug_food_conflicts,
     parse_result,
     load_gb2760_risk,
+    normalize_model_output,
+    detect_device_type,
 )
 
 
@@ -131,6 +135,122 @@ class TestParseResult:
         raw = "这不是 JSON"
         result = parse_result(raw)
         assert result is None
+
+
+class TestNormalizeModelOutput:
+    """测试 normalize_model_output 函数"""
+
+    def test_strip_markdown_code_block(self):
+        """应去掉 Markdown 代码块标记"""
+        raw = '```json\n{"type": "food", "product_name": "测试", "additives": []}\n```'
+        out = normalize_model_output(raw, "mimo")
+        data = json.loads(out)
+        assert data["type"] == "food"
+        assert data["product_name"] == "测试"
+
+    def test_ensure_additives_is_list(self):
+        """additives 非 list 时应强制为空 list"""
+        raw = '{"type": "food", "product_name": "测试", "additives": "无"}'
+        out = normalize_model_output(raw, "mimo")
+        data = json.loads(out)
+        assert data["additives"] == []
+
+    def test_english_product_name_fallback(self):
+        """纯英文 product_name 应替换为「该产品」"""
+        raw = '{"type": "food", "product_name": "Pure English", "additives": []}'
+        out = normalize_model_output(raw, "mimo")
+        data = json.loads(out)
+        assert data["product_name"] == "该产品"
+
+    def test_agnes_field_alias_mapping(self):
+        """Agnes 别名字段应映射为标准名"""
+        raw = json.dumps({
+            "type": "food",
+            "product_name": "测试",
+            "additive": [{"name": "山梨酸钾"}],
+        })
+        out = normalize_model_output(raw, "agnes")
+        data = json.loads(out)
+        assert "additives" in data
+        assert data["additives"] == [{"name": "山梨酸钾"}]
+        assert "additive" not in data
+
+    def test_model_score_is_removed(self):
+        """模型自带 score / level 应被删除"""
+        raw = json.dumps({
+            "type": "food",
+            "product_name": "测试",
+            "score": 95,
+            "additives": [{"name": "山梨酸钾", "level": "A", "score": 95}],
+        })
+        out = normalize_model_output(raw, "agnes")
+        data = json.loads(out)
+        assert "score" not in data
+        assert "level" not in data["additives"][0]
+
+    def test_invalid_json_returns_raw(self):
+        """非法 JSON 应原样返回"""
+        raw = "这不是 JSON"
+        out = normalize_model_output(raw, "mimo")
+        assert out == raw
+
+
+class TestDetectDeviceType:
+    """测试 detect_device_type 函数（通过 monkeypatch 模拟请求上下文）"""
+
+    def test_url_param_forces_desktop(self, monkeypatch):
+        """URL 参数 device=desktop 应返回 desktop"""
+        monkeypatch.setattr(st, "query_params", {"device": "desktop"})
+        monkeypatch.setattr(st, "session_state", {})
+        assert detect_device_type() == "desktop"
+
+    def test_url_param_forces_mobile(self, monkeypatch):
+        """URL 参数 device=mobile 应返回 mobile"""
+        monkeypatch.setattr(st, "query_params", {"device": "mobile"})
+        monkeypatch.setattr(st, "session_state", {})
+        assert detect_device_type() == "mobile"
+
+    def test_session_state_cache(self, monkeypatch):
+        """session_state 缓存应优先于 User-Agent"""
+        monkeypatch.setattr(st, "query_params", {})
+        monkeypatch.setattr(st, "session_state", {"device_type": "desktop"})
+        assert detect_device_type() == "desktop"
+
+    def test_mobile_user_agent(self, monkeypatch):
+        """手机 User-Agent 应返回 mobile"""
+        monkeypatch.setattr(st, "query_params", {})
+        monkeypatch.setattr(st, "session_state", {})
+        monkeypatch.setattr(
+            st, "context",
+            type("Ctx", (), {"headers": {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"}})()
+        )
+        assert detect_device_type() == "mobile"
+
+    def test_desktop_user_agent(self, monkeypatch):
+        """桌面 User-Agent 应返回 desktop"""
+        monkeypatch.setattr(st, "query_params", {})
+        monkeypatch.setattr(st, "session_state", {})
+        monkeypatch.setattr(
+            st, "context",
+            type("Ctx", (), {"headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}})()
+        )
+        assert detect_device_type() == "desktop"
+
+    def test_default_is_mobile(self, monkeypatch):
+        """无任何信息时默认返回 mobile"""
+        monkeypatch.setattr(st, "query_params", {})
+        monkeypatch.setattr(st, "session_state", {})
+        assert detect_device_type() == "mobile"
+
+    def test_invalid_url_param_falls_through(self, monkeypatch):
+        """非法 URL 参数应继续按 User-Agent 判断"""
+        monkeypatch.setattr(st, "query_params", {"device": "tablet"})
+        monkeypatch.setattr(st, "session_state", {})
+        monkeypatch.setattr(
+            st, "context",
+            type("Ctx", (), {"headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}})()
+        )
+        assert detect_device_type() == "desktop"
 
 
 class TestDataLoading:

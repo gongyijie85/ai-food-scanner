@@ -1,5 +1,59 @@
 # 变更日志
 
+## v0.5.7 - 2026-07-07
+
+### ponytail-audit 生产就绪清理
+
+- **文件**：`app.py`、`.streamlit/style.css`、`.gitignore`、`README.md`、`CHANGELOG.md`
+- **删除废弃产物**：
+  - 删除 `GBT/` 目录（Obsidian 个人知识库，与项目无关）。
+  - 删除 `pages/`、`pages-redesign/` 目录（旧静态 HTML 原型，Streamlit 已替代）。
+  - 删除 `README_PROTOTYPE.md`（引用的 `prototype_mimo.py` 已不存在，文档过期）。
+  - 删除 `colors_and_type.css`（设计稿 CSS 变量已被 `.streamlit/style.css` 吸收，无引用）。
+  - 删除 `download_test_images.py`（依赖外部 CDN 短链，不稳定）。
+  - 删除 `diag_verify_ui.py`（本地 Playwright 诊断脚本，应在 .gitignore 中排除）。
+- **简化 app.py**：
+  - 合并 `load_css()` + `inject_elder_css()` 为 `inject_css()`。
+  - 内联 `_clip_path()` 到 `_render_score_hero()` 与 `_render_additive_card()`。
+  - 将 `_show_friendly_error()` 改为 `call_api()` 内部局部函数 `_err()`。
+  - 删除 `render_home_page()`、`render_scan_page()`、`render_food()`、`render_supplement()` 四个单转发函数，在调用处直接按 `detect_device_type()` 分发。
+  - 移除 `?test=1` / `?mock=1` 调试入口及 `_inject_mock_result()` 模拟数据注入函数。
+  - 删除 `_js_attr_safe()`，改为使用标准库 `html.escape` 封装的 `_safe()`。
+  - 更新 `HEALTH_GROUPS` 注释为“引导页默认疾病选择”。
+  - 移除历史页无实际功能的麦克风搜索按钮与提示文字。
+- **仓库保护**：`.gitignore` 新增 `diag_verify_ui.py`、`download_test_images.py`、`GBT/`、`pages/`、`pages-redesign/`、`colors_and_type.css`、`README_PROTOTYPE.md`，防止误提交。
+- **版本同步**：`app.py`、`.streamlit/style.css`、`README.md` 统一升级到 v0.5.7。
+- **验证**：`python -m py_compile app.py` 通过，`pytest tests/` 30 项全部通过。
+
+## v0.5.6 - 2026-07-07
+
+### 双端独立页面重构
+
+- **文件**：`app.py`、`.streamlit/style.css`、`tests/test_core.py`
+- 新增 `detect_device_type()`：支持 URL 参数 `?device=`、session_state 缓存、User-Agent 判断（Mobi/Android/iPhone → mobile；Windows/Mac/Linux/X11 → desktop），默认 mobile。
+- 首页、扫描页、结果页拆分为 `*_mobile()` / `*_desktop()` 两套渲染函数：
+  - 移动端：单列堆叠、大按钮、底部操作栏；
+  - 桌面端：左右双栏、最大宽度 900px、上传与预览并排。
+- CSS 新增 `.device-mobile` / `.device-desktop` 设备类名规则。
+- 新增 7 个 `detect_device_type()` 单元测试。
+- **生产就绪清理**：删除 6 个临时测试脚本（含硬编码 API key 的 `_tmp_test_agnes.py`、`test_agnes_api.py`、一次性 `test_mimo_with_attachment.py`、旧版本验证脚本 `verify_v050*.py` 等），并在 `.gitignore` 中增加对应规则，防止密钥/临时产物误提交。
+- **验证**：`python -m py_compile app.py` 通过，`pytest tests/` 全部通过，桌面/手机本地预览无畸变。
+
+## v0.5.5 - 2026-07-07
+
+### 新增模型输出标准化层
+
+- **文件**：`app.py`、`tests/test_core.py`
+- 新增 `normalize_model_output(raw, engine)`，统一清洗 MiMo / Agnes 返回：
+  - 去掉 Markdown 代码块；
+  - 字段别名映射（如 `additive` → `additives`、`health_function` → `health_claims`）；
+  - `additives` 强制为 list，`ingredients` 字符串自动切分；
+  - 英文 `product_name` 替换为「该产品」；
+  - 删除模型自带的 `score` / `level`，统一由本地 GB2760 库判定。
+- 在 `render_scan_page()` 中插入归一化调用：`normalized = normalize_model_output(raw, model)`。
+- 新增 6 个单元测试覆盖上述行为。
+- **验证**：`python -m py_compile app.py` 通过，`pytest tests/` 23 项通过。
+
 ## v0.5.4 - 2026-07-06
 
 ### 修复结果页语音按钮无声音与 ponytail 清理

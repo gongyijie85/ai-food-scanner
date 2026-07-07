@@ -1,4 +1,4 @@
-"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.5.4
+"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.5.7
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 三端适配
 运行环境：Python 3.10+
@@ -51,7 +51,7 @@ MODEL_NAME = "mimo-v2.5"
 AGNES_API_URL = "https://apihub.agnes-ai.com/v1/chat/completions"
 AGNES_MODEL_NAME = "agnes-2.0-flash"
 
-# 六大人群选项（保留向后兼容）
+# 六大人群选项（引导页默认疾病选择）
 HEALTH_GROUPS = ["糖尿病", "高血压", "脑梗/心血管", "减脂", "过敏", "孕妇/儿童"]
 
 # 健康档案疾病选项（模块级常量，避免每次渲染重复构造）
@@ -156,6 +156,44 @@ def switch_page(page: str, **kwargs):
     st.rerun()
 
 
+def detect_device_type() -> str:
+    """检测设备类型：mobile 或 desktop.
+
+    判断优先级：
+    1. URL 查询参数 ?device=mobile / ?device=desktop（用于测试）
+    2. session_state 中已缓存的值
+    3. User-Agent 中的 Mobi/Android/iPhone 关键字 -> mobile
+    4. User-Agent 中的 Windows/Mac/Linux/X11 关键字 -> desktop
+    5. 默认返回 mobile（比赛主场景是手机）
+    """
+    # 1) URL 参数（最高优先级，便于 Playwright 测试和调试）
+    query_device = st.query_params.get("device")
+    if query_device in ("mobile", "desktop"):
+        return query_device
+
+    # 2) session_state 缓存
+    cached = st.session_state.get("device_type")
+    if cached in ("mobile", "desktop"):
+        return cached
+
+    # 3) 从 Streamlit 上下文读取 User-Agent
+    try:
+        ua = st.context.headers.get("User-Agent", "") if hasattr(st, "context") else ""
+    except Exception:
+        ua = ""
+
+    mobile_keywords = ["Mobi", "Android", "iPhone", "iPod", "BlackBerry", "IEMobile"]
+    if any(k in ua for k in mobile_keywords):
+        return "mobile"
+
+    desktop_keywords = ["Windows NT", "Macintosh", "X11", "Linux"]
+    if any(k in ua for k in desktop_keywords):
+        return "desktop"
+
+    # 5) 默认 mobile，优先保证手机体验
+    return "mobile"
+
+
 def render_top_nav(title: str, show_back: bool = True, back_target: str = "home", right_action: str | None = None, align: str = "center"):
     """渲染顶部导航栏（标题居中/居左 + 返回按钮 + 右侧可选入口）.
 
@@ -182,19 +220,14 @@ def render_top_nav(title: str, show_back: bool = True, back_target: str = "home"
 
 # ========== 适老化样式 ==========
 
-def load_css():
-    """加载 CSS 文件（不缓存，确保修改后立即生效）."""
-    css_path = os.path.join(os.path.dirname(__file__), ".streamlit", "style.css")
+def inject_css():
+    """注入 .streamlit/style.css 到页面."""
+    css_path = os.path.join(_BASE_DIR, ".streamlit", "style.css")
     try:
         with open(css_path, encoding="utf-8") as f:
-            return f.read()
+            css_content = f.read()
     except FileNotFoundError:
-        return ""
-
-
-def inject_elder_css():
-    """注入适老化 CSS：大字体、大按钮、高对比度，并按设计稿统一主题."""
-    css_content = load_css()
+        css_content = ""
     if css_content:
         st.markdown(f"<style>{css_content}</style>", unsafe_allow_html=True)
 
@@ -210,20 +243,6 @@ def _next_tts_id(prefix: str) -> str:
     global _tts_counter
     _tts_counter += 1
     return f"{prefix}-{_tts_counter}"
-
-
-def _js_attr_safe(text: str) -> str:
-    """先做 JS 字符串转义，再做 HTML 属性转义，用于内联 onclick 单引号属性.
-
-    顺序很重要：若先 HTML escape 单引号成 &#x27;，HTML 解析器会重新解码回 '，
-    导致 JS 单引号字符串破裂。因此先 JS 转义，再对结果做 HTML 属性转义。
-    """
-    s = str(text)
-    # 1) JS 字符串内需要转义的字符
-    s = s.replace("\\", "\\\\").replace("'", "\\'").replace('"', '\\"').replace("\n", " ").replace("\r", "")
-    # 2) HTML 属性转义（& 必须最先处理，防止后续实体被二次转义）
-    s = s.replace("&", "&amp;").replace("'", "&#39;").replace('"', "&quot;").replace("<", "&lt;").replace(">", "&gt;")
-    return s
 
 
 def _render_tts_namespace():
@@ -398,7 +417,7 @@ def speak_text(text: str, rate: float = 1.0):
     用户手势上下文不丢失。
     """
     rate = max(0.5, min(2.0, float(rate)))
-    safe = _js_attr_safe(text)
+    safe = _safe(text)
     btn_id = _next_tts_id("tts-simple-btn")
     err_id = _next_tts_id("tts-simple-err")
     _render_tts_namespace()
@@ -431,8 +450,8 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text
         st.session_state["tts_rate"] = 1.0
 
     rate = st.session_state["tts_rate"]
-    safe = _js_attr_safe(speak_content)
-    safe_button_text = _js_attr_safe(button_text)
+    safe = _safe(speak_content)
+    safe_button_text = _safe(button_text)
     btn_id = _next_tts_id(f"tts-btn-{key_prefix}")
     stop_btn_id = _next_tts_id(f"tts-stop-{key_prefix}")
     err_id = _next_tts_id(f"tts-err-{key_prefix}")
@@ -566,14 +585,6 @@ def build_system_prompt(groups):
     )
 
 
-def _show_friendly_error(friendly_msg, debug_detail=""):
-    """显示用户友好的错误提示；DEBUG=1 时附带原始详情折叠区（不直接展示给普通用户）."""
-    st.error(friendly_msg)
-    if os.getenv("DEBUG") == "1" and debug_detail:
-        with st.expander("调试：错误详情"):
-            st.code(debug_detail)
-
-
 def call_api(api_key, image_b64, system_prompt, model="mimo"):
     """统一调用 MiMo 或 Agnes Vision API，返回模型回复文本.
 
@@ -583,6 +594,14 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
     - 错误提示使用用户友好文案，不直接展示 resp.text
     - 原始错误信息仅在 DEBUG=1 时通过折叠区展示
     """
+
+    def _err(msg, detail=""):
+        """统一错误提示；DEBUG=1 时显示详情折叠区."""
+        st.error(msg)
+        if os.getenv("DEBUG") == "1" and detail:
+            with st.expander("调试：错误详情"):
+                st.code(detail)
+
     if model == "agnes":
         url, model_name = AGNES_API_URL, AGNES_MODEL_NAME
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
@@ -621,7 +640,7 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
                 continue
             elapsed = time.time() - start_time
             logger.error(f"API调用失败: 超时, 总耗时={elapsed:.2f}s")
-            _show_friendly_error(
+            _err(
                 "识别服务暂时不可用，请稍后重试。",
                 f"Timeout after 30s, attempts={attempt}"
             )
@@ -634,7 +653,7 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
                 continue
             elapsed = time.time() - start_time
             logger.error(f"API调用失败: 网络错误, 总耗时={elapsed:.2f}s")
-            _show_friendly_error(
+            _err(
                 "网络连接失败，请检查网络后重试。",
                 str(e)[:1000]
             )
@@ -650,7 +669,7 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
             except (KeyError, IndexError, json.JSONDecodeError) as e:
                 # 响应内容解析失败：不重试（重试也不会变好）
                 logger.error(f"API响应解析失败: error={str(e)[:200]}")
-                _show_friendly_error(
+                _err(
                     "识别结果解析失败，请重试。",
                     f"Parse error: {e}\n{resp.text[:1000]}"
                 )
@@ -659,7 +678,7 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
         # 4xx 客户端错误：不重试（API Key 无效、请求格式错误等）
         if 400 <= resp.status_code < 500:
             logger.error(f"API客户端错误: status={resp.status_code}, 耗时={elapsed:.2f}s")
-            _show_friendly_error(
+            _err(
                 "API 密钥无效或请求被拒绝，请检查密钥后重试。",
                 f"HTTP {resp.status_code}\n{resp.text[:1000]}"
             )
@@ -672,13 +691,99 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
             continue
         # 最后一次仍失败
         logger.error(f"API调用失败: 服务端错误, 总耗时={elapsed:.2f}s")
-        _show_friendly_error(
+        _err(
             "识别服务暂时不可用，请稍后重试。",
             f"HTTP {resp.status_code}\n{resp.text[:1000]}"
         )
         return None
 
     return None
+
+
+def normalize_model_output(raw: str, engine: str) -> str:
+    """把 MiMo / Agnes 的原始返回统一成标准 JSON 字符串.
+
+    职责：
+    - 去掉 Markdown 代码块；
+    - 字段别名映射（如 additive -> additives）；
+    - 类型修正：additives 强制 list、ingredients 字符串自动切分；
+    - product_name 英文时替换为「该产品」；
+    - 删除模型自带的 score / level，统一由本地 GB2760 库判定。
+
+    参数：
+        raw: 模型原始返回文本
+        engine: 模型标识（"mimo" / "agnes"），留作未来引擎特化扩展
+
+    返回：
+        清洗后的 JSON 字符串；若解析失败则原样返回，让下游 parse_result 处理。
+    """
+    s = raw.strip()
+    # 1) 去掉 Markdown 代码块
+    if s.startswith("```"):
+        s = s.strip("`")
+        if s.lower().startswith("json"):
+            s = s[4:].strip()
+
+    try:
+        data = json.loads(s)
+    except json.JSONDecodeError:
+        return s
+
+    if not isinstance(data, dict):
+        return s
+
+    # 2) 字段别名映射（Agnes 可能使用不同字段名）
+    alias_map = {
+        "additive": "additives",
+        "additive_list": "additives",
+        "ingredient": "ingredients",
+        "ingredient_list": "ingredients",
+        "supplement_facts": "functional_ingredients",
+        "health_function": "health_claims",
+        "functions": "health_claims",
+        "applicant": "suitable_for",
+        "target": "suitable_for",
+        "contraindication": "unsuitable_for",
+    }
+    for old_key, new_key in alias_map.items():
+        if old_key in data and new_key not in data:
+            data[new_key] = data.pop(old_key)
+
+    # 3) 类型修正与兜底
+    if "additives" in data and not isinstance(data["additives"], list):
+        data["additives"] = []
+    if "ingredients" in data:
+        if isinstance(data["ingredients"], str):
+            data["ingredients"] = [
+                x.strip()
+                for x in re.split(r"[,，、;；]", data["ingredients"])
+                if x.strip()
+            ]
+        elif not isinstance(data["ingredients"], list):
+            data["ingredients"] = []
+    if "functional_ingredients" in data and isinstance(data["functional_ingredients"], str):
+        data["functional_ingredients"] = [data["functional_ingredients"].strip()]
+
+    # 4) product_name 强制中文，英文替换为「该产品」
+    if "product_name" in data:
+        name = data["product_name"]
+        if not isinstance(name, str):
+            name = str(name)
+        name = name.strip()
+        is_english_name = re.fullmatch(r"[A-Za-z\s\-.&]+", name)
+        if not name or is_english_name:
+            name = "该产品"
+        data["product_name"] = name
+
+    # 5) 删除模型自带评分与风险等级，由本地 GB2760 权威判定
+    data.pop("score", None)
+    if isinstance(data.get("additives"), list):
+        for a in data["additives"]:
+            if isinstance(a, dict):
+                a.pop("level", None)
+                a.pop("score", None)
+
+    return json.dumps(data, ensure_ascii=False)
 
 
 def parse_result(raw, health_groups=None):
@@ -939,15 +1044,6 @@ def _get_level_info(level: str) -> tuple[str, str, str]:
     return mapping.get(level, ("未知", "#9E9E9E", "●"))
 
 
-def _clip_path(shape: str) -> str:
-    """返回形状对应的 CSS clip-path."""
-    if shape == "▲":
-        return "polygon(50% 0%, 0% 100%, 100% 100%)"
-    if shape == "■":
-        return "polygon(0 0, 100% 0, 100% 100%, 0 100%)"
-    return "circle(50%)"
-
-
 def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = True):
     """渲染评分英雄区（按画布设计稿：纯色卡片 + 装饰圆点 + 慢速重听）."""
     if score >= 80:
@@ -957,6 +1053,11 @@ def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = T
     else:
         _, label, bg = "#E53935", "建议咨询医生", "#E53935"
     shape = "●" if score >= 80 else ("▲" if score >= 60 else "■")
+    clip = (
+        "polygon(50% 0%, 0% 100%, 100% 100%)" if shape == "▲"
+        else "polygon(0 0, 100% 0, 100% 100%, 0 100%)" if shape == "■"
+        else "circle(50%)"
+    )
     replay_btn = ""
     if show_slow_replay:
         replay_id = f"slow-replay-{score}"
@@ -972,7 +1073,7 @@ def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = T
         f"<div class='result-score-hero-product'>{_safe(product_name)}</div>"
         f"<div class='result-score-hero-number'>{score}</div>"
         f"<div class='result-score-hero-label'>"
-        f"<span class='result-score-shape' style='background:#FFFFFF;clip-path:{_clip_path(shape)};'></span>"
+        f"<span class='result-score-shape' style='background:#FFFFFF;clip-path:{clip};'></span>"
         f"{_safe(label)}</div>"
         f"{replay_btn}"
         f"</div>",
@@ -1000,10 +1101,15 @@ def _render_additive_card(additives):
         note = _safe(item.get("note", ""))
         label, color, shape = _get_level_info(level)
         label = _safe(label)
+        clip = (
+            "polygon(50% 0%, 0% 100%, 100% 100%)" if shape == "▲"
+            else "polygon(0 0, 100% 0, 100% 100%, 0 100%)" if shape == "■"
+            else "circle(50%)"
+        )
         note_html = f"<div class='result-additive-note'>{note}</div>" if note else ""
         html += (
             f"<div class='result-additive-item' style='border-left-color:{color};'>"
-            f"<span class='result-additive-shape' style='background:{color};clip-path:{_clip_path(shape)};'></span>"
+            f"<span class='result-additive-shape' style='background:{color};clip-path:{clip};'></span>"
             f"<div class='result-additive-body'>"
             f"<div class='result-additive-name'>{name}</div>"
             f"{note_html}"
@@ -1025,17 +1131,14 @@ def _render_additive_card(additives):
 
 # ========== 结果展示 ==========
 
-def render_food(result):
-    """展示普通食品结果（设计稿卡片化：评分英雄区 + 添加剂 + 营养条 + 建议 + 浮动语音）."""
+def render_food_mobile(result):
+    """普通食品结果页：移动端单列布局."""
     score = result.get("score", 0)
     product_name = result.get("product_name", "未知")
     advice = result.get("advice", "")
 
-    # 顶部导航带语音入口（设计稿右侧有语音/对比图标，这里保留语音）
     render_top_nav("识别结果", back_target="home")
-
     _render_score_hero(score, product_name)
-
     st.markdown(
         "<div class='disclaimer-text'>评分仅供参考，AI识别可能存在误差，请以包装原文为准</div>",
         unsafe_allow_html=True,
@@ -1044,7 +1147,6 @@ def render_food(result):
     speak_content = f"评分{score}分。{advice}本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生/药师/营养师。"
 
     _render_additive_card(result.get("additives", []))
-
     render_nutrition_bars(result)
 
     if advice:
@@ -1072,7 +1174,6 @@ def render_food(result):
         with st.expander("查看原始 JSON（调试用）"):
             st.json(result)
 
-    # 底部浮动语音播报按钮（直接从 result 生成，避免 last_speak_content 丢失导致按钮消失）
     voice_control_panel(
         speak_content,
         key_prefix="tts_food",
@@ -1080,7 +1181,6 @@ def render_food(result):
         wrapper_class="voice-float-bar voice-control-wrap",
     )
 
-    # 底部操作栏（用 st.container + marker 分组，CSS :has 选择器应用样式）
     with st.container():
         st.markdown("<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
@@ -1090,6 +1190,59 @@ def render_food(result):
         with col2:
             if st.button("🏠 返回首页", use_container_width=True, key="food_btn_home"):
                 switch_page("home")
+
+
+def render_food_desktop(result):
+    """普通食品结果页：桌面端双栏布局."""
+    score = result.get("score", 0)
+    product_name = result.get("product_name", "未知")
+    advice = result.get("advice", "")
+    additives = result.get("additives", [])
+    ingredients = result.get("ingredients", [])
+
+    render_top_nav("识别结果", back_target="home")
+    st.markdown(
+        "<div class='disclaimer-text'>评分仅供参考，AI识别可能存在误差，请以包装原文为准</div>",
+        unsafe_allow_html=True,
+    )
+
+    speak_content = f"评分{score}分。{advice}本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生/药师/营养师。"
+
+    left, right = st.columns([1, 1])
+
+    with left:
+        _render_score_hero(score, product_name, show_slow_replay=True)
+        if ingredients:
+            st.markdown(
+                f"<div class='result-card'><div class='result-card-title'>全部配料</div>"
+                f"<p class='detail-ingredients-text'>{_safe('、'.join(ingredients))}</p></div>",
+                unsafe_allow_html=True,
+            )
+
+    with right:
+        _render_additive_card(additives)
+        render_personal_warnings(result, ingredients)
+        render_nutrition_bars(result)
+        if advice:
+            st.markdown(
+                f"<div class='result-card'><div class='result-card-title'>健康建议</div>"
+                f"<p class='detail-advice-text'>{_safe(advice)}</p></div>",
+                unsafe_allow_html=True,
+            )
+        voice_control_panel(
+            speak_content,
+            key_prefix="tts_food_desktop",
+            button_text="🔊 一键播报全部结果",
+            wrapper_class="voice-control-wrap",
+        )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📷 再扫一个", use_container_width=True, key="food_btn_scan_desktop"):
+            switch_page("scan")
+    with col2:
+        if st.button("🏠 返回首页", use_container_width=True, key="food_btn_home_desktop"):
+            switch_page("home")
 
 
 def render_personal_warnings(result, ingredients):
@@ -1212,8 +1365,8 @@ def render_nutrition_bars(result):
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-def render_supplement(result):
-    """展示保健食品结果（卡片化包装，强制免责声明）."""
+def render_supplement_mobile(result):
+    """保健食品结果页：移动端单列布局."""
     product_name = result.get("product_name", "未知")
     summary = result.get("summary", "")
     score = result.get("score", 0) or 0
@@ -1295,14 +1448,13 @@ def render_supplement(result):
         with st.expander("查看原始 JSON（调试用）"):
             st.json(result)
 
-    # 底部浮动语音播报按钮（直接从 result 生成，避免 last_speak_content 丢失导致按钮消失）
     voice_control_panel(
         speak_content,
         key_prefix="tts_supp",
+        button_text="🔊 一键播报全部结果",
         wrapper_class="voice-float-bar voice-control-wrap",
     )
 
-    # 底部操作栏（用 st.container + marker 分组，CSS :has 选择器应用样式）
     with st.container():
         st.markdown("<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
@@ -1314,46 +1466,118 @@ def render_supplement(result):
                 switch_page("home")
 
 
+def render_supplement_desktop(result):
+    """保健食品结果页：桌面端双栏布局."""
+    product_name = result.get("product_name", "未知")
+    summary = result.get("summary", "")
+    score = result.get("score", 0) or 0
+
+    render_top_nav("识别结果", back_target="home")
+
+    st.markdown(
+        "<div class='result-card' style='background:#FFEBEE;border:2px solid #E53935;'>"
+        "<div style='color:#C62828;font-weight:bold;font-size:18px;'>⚠️ 本产品为保健食品</div>"
+        "<p style='color:#C62828;margin:8px 0 0 0;'>保健食品不是药物，不能代替药物治疗疾病</p>"
+        "</div>",
+        unsafe_allow_html=True
+    )
+
+    _render_score_hero(score if score else 100, product_name)
+
+    speak_content = (
+        f"保健食品：{product_name}。"
+        f"{summary}。"
+        f"保健食品不是药物，不能代替药物治疗疾病。"
+        f"如需选择，请咨询医生/药师/营养师。"
+    )
+
+    left, right = st.columns([1, 1])
+
+    with left:
+        if summary:
+            st.markdown(
+                f"<div class='result-card'><div class='result-card-title'>📝 产品摘要</div><p>{_safe(summary)}</p></div>",
+                unsafe_allow_html=True
+            )
+        approval_no = result.get("approval_no", "未显示")
+        if approval_no and approval_no != "未显示":
+            st.markdown(
+                f"<div class='result-card'><div class='result-card-title'>📋 批准文号</div>"
+                f"<p><code>{_safe(approval_no)}</code></p></div>",
+                unsafe_allow_html=True
+            )
+        functional = result.get("functional_ingredients", [])
+        if functional:
+            html = "<div class='result-card'><div class='result-card-title'>✨ 标志性成分</div><ul style='margin:0;padding-left:20px;'>"
+            for item in functional:
+                html += f"<li style='margin:6px 0;'>{_safe(item)}</li>"
+            html += "</ul></div>"
+            st.markdown(html, unsafe_allow_html=True)
+        ingredients = result.get("ingredients", [])
+        if ingredients:
+            with st.expander("查看全部原料"):
+                st.write("、".join(ingredients))
+
+    with right:
+        health_claims = result.get("health_claims", "")
+        if health_claims and health_claims != "未显示":
+            st.markdown(
+                f"<div class='result-card'><div class='result-card-title'>💪 保健功能（包装原文）</div><p>{_safe(health_claims)}</p></div>",
+                unsafe_allow_html=True
+            )
+        suitable = result.get("suitable_for", "")
+        unsuitable = result.get("unsuitable_for", "")
+        if suitable and suitable != "未显示":
+            st.markdown(
+                f"<div class='result-card'><div class='result-card-title'>👥 适宜人群（包装原文）</div><p>{_safe(suitable)}</p></div>",
+                unsafe_allow_html=True
+            )
+        if unsuitable and unsuitable != "未显示":
+            st.markdown(
+                f"<div class='result-card' style='border-left:4px solid #FF9800;'><div class='result-card-title'>⚠️ 不适宜人群（包装原文）</div><p style='color:#E65100;'>{_safe(unsuitable)}</p></div>",
+                unsafe_allow_html=True
+            )
+        usage = result.get("usage", "")
+        if usage and usage != "未显示":
+            st.markdown(
+                f"<div class='result-card'><div class='result-card-title'>💊 食用方法（包装原文）</div><p>{_safe(usage)}</p></div>",
+                unsafe_allow_html=True
+            )
+        voice_control_panel(
+            speak_content,
+            key_prefix="tts_supp_desktop",
+            button_text="🔊 一键播报全部结果",
+            wrapper_class="voice-control-wrap",
+        )
+
+    if os.getenv("DEBUG") == "1":
+        with st.expander("查看原始 JSON（调试用）"):
+            st.json(result)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("📷 再扫一个", use_container_width=True, key="supp_btn_scan_desktop"):
+            switch_page("scan")
+    with col2:
+        if st.button("🏠 返回首页", use_container_width=True, key="supp_btn_home_desktop"):
+            switch_page("home")
+
+
 def show_result(result):
     """分发到食品/保健食品渲染器."""
     if not result:
         return
     ptype = str(result.get("type", "food")).lower()
     if ptype == "supplement":
-        render_supplement(result)
+        if detect_device_type() == "mobile":
+            render_supplement_mobile(result)
+        else:
+            render_supplement_desktop(result)
     else:
-        render_food(result)
-
-
-def _inject_mock_result(mock_type: str = "food"):
-    """测试模式用：注入模拟识别结果，方便 Playwright 验证结果页 DOM."""
-    if mock_type == "supplement":
-        st.session_state["last_result"] = {
-            "type": "supplement",
-            "product_name": "测试牌鱼油软胶囊",
-            "score": 90,
-            "summary": "本品为保健食品，主要原料为鱼油、明胶、甘油，适合血脂偏高者。",
-            "approval_no": "国食健注 G20250001",
-            "functional_ingredients": ["鱼油（EPA+DHA）"],
-            "health_claims": "辅助降血脂",
-            "suitable_for": "血脂偏高者",
-            "unsuitable_for": "少年儿童、孕妇、乳母；出血倾向者和出血性疾病患者",
-            "usage": "每日 2 次，每次 1 粒，口服",
-            "ingredients": ["鱼油", "明胶", "甘油", "纯化水"],
-        }
-    else:
-        st.session_state["last_result"] = {
-            "type": "food",
-            "product_name": "测试牌苏打饼干",
-            "score": 72,
-            "advice": "含有少量食用盐和植物油，普通人群可适量食用；高血压人群建议控制单次摄入量。",
-            "additives": [
-                {"name": "碳酸氢钠", "level": "A", "note": "常见膨松剂，按标准使用较安全"},
-                {"name": "焦亚硫酸钠", "level": "B", "note": "漂白剂/防腐剂，敏感人群需注意"},
-            ],
-            "ingredients": ["小麦粉", "植物油", "食用盐", "碳酸氢钠", "焦亚硫酸钠"],
-            "nutrition_nrv": {"钠": 18, "糖": 6, "脂肪": 15},
-        }
+        if detect_device_type() == "mobile":
+            render_food_mobile(result)
+        else:
+            render_food_desktop(result)
 
 
 # ========== 首次访问法律同意弹窗 ==========
@@ -1684,8 +1908,8 @@ def render_health_profile():
 
 # ========== 页面渲染函数 ==========
 
-def render_home_page():
-    """首页：顶部导航 + 健康标签 + 大圆形扫描按钮 + 最近扫描."""
+def render_home_mobile():
+    """首页：移动端布局（单列堆叠 + 大按钮 + 最近扫描卡片）."""
     render_top_nav("食品配料表识别", show_back=False, right_action="profile", align="left")
 
     profile = st.session_state.get("health_profile", {})
@@ -1760,108 +1984,239 @@ def render_home_page():
         )
 
 
-def render_scan_page():
-    """扫描上传页：卡片式上传区 + 内联预览，适配电脑端和手机端."""
-    render_top_nav("扫描识别", back_target="home", right_action="profile")
+def render_home_desktop():
+    """首页：桌面端布局，左右分栏 + 最近扫描列表."""
+    render_top_nav("食品配料表识别", show_back=False, right_action="profile", align="left")
 
     profile = st.session_state.get("health_profile", {})
-    groups = profile.get("diseases", [])
+    diseases = profile.get("diseases", [])
 
-    # 模型选择：优先使用侧边栏/会话中的选择，默认 MiMo
+    # 桌面端：左侧健康档案 + 扫描按钮，右侧最近扫描
+    left, right = st.columns([1, 1])
+
+    with left:
+        if diseases:
+            tags_html = "<div class='health-tags-row'>"
+            for d in diseases[:4]:
+                tags_html += f"<span class='health-tag'>{_safe(d)}</span>"
+            tags_html += "</div>"
+            st.markdown(tags_html, unsafe_allow_html=True)
+        else:
+            st.markdown(
+                "<div class='health-tags-row'>"
+                "<span class='health-tag'>+ 添加健康状况</span></div>",
+                unsafe_allow_html=True,
+            )
+
+        with st.container():
+            st.markdown(
+                "<div class='home-scan-area-marker'></div>"
+                "<div class='hint-bubble'>点击大按钮开始</div>",
+                unsafe_allow_html=True,
+            )
+            if st.button("📷\n扫描配料表", type="primary", key="home_goto_scan_desktop"):
+                switch_page("scan")
+
+    with right:
+        st.markdown(
+            "<div class='home-history-heading'><span class='home-history-title'>最近扫描</span></div>",
+            unsafe_allow_html=True,
+        )
+        history = load_history()[:6]
+        if history:
+            for i, item in enumerate(history[:6]):
+                score = item.get("score", 0)
+                score_class = "score-safe" if score >= 80 else ("score-caution" if score >= 60 else "score-danger")
+                cols = st.columns([3, 1])
+                with cols[0]:
+                    st.markdown(
+                        f"<div class='history-list-name'>{_safe(item.get('product_name', '未知'))}</div>",
+                        unsafe_allow_html=True,
+                    )
+                with cols[1]:
+                    st.markdown(
+                        f"<div class='history-list-score {score_class}'>{score}</div>",
+                        unsafe_allow_html=True,
+                    )
+                if st.button("查看", key=f"home_card_desktop_{i}"):
+                    st.session_state["selected_history_index"] = i
+                    st.session_state["detail_fallback_record"] = item
+                    switch_page("detail")
+        else:
+            st.markdown(
+                "<div class='empty-state'>"
+                "<div class='empty-state-icon'>🥫</div>"
+                "<p class='empty-state-text'>点击左侧大按钮开始扫描配料表</p>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+
+
+def _scan_common_setup():
+    """扫描页通用前置：读取档案、模型选择、API key、上传 key."""
+    profile = st.session_state.get("health_profile", {})
+    groups = profile.get("diseases", [])
     model_choice = st.session_state.get("model_choice", "MiMo (mimo-v2.5)")
     model = "agnes" if model_choice.startswith("Agnes") else "mimo"
-
     api_key = get_api_key(model)
+
+    if "scan_upload_key" not in st.session_state:
+        st.session_state["scan_upload_key"] = 0
+    uploader_key = f"scan_uploader_{st.session_state['scan_upload_key']}"
+    return groups, model, api_key, uploader_key
+
+
+def _scan_validate_and_recognize(uploaded, api_key, model, groups):
+    """校验图片并调用 API 识别，成功后跳转结果页."""
+    if not api_key:
+        st.error("API 密钥未配置，请联系管理员")
+        st.stop()
+    if uploaded.size > 5 * 1024 * 1024:
+        st.error("图片超过 5MB，请选择更小的图片或截图后重试")
+        st.stop()
+    try:
+        uploaded.seek(0)
+        Image.open(uploaded).verify()
+        uploaded.seek(0)
+    except Exception:
+        st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")
+        st.stop()
+    with st.status("正在识别配料表...", expanded=True) as status:
+        status.write("① 正在压缩图片...")
+        img_b64 = encode_image_to_base64(uploaded)
+        orig_kb = uploaded.size / 1024
+        b64_kb = len(img_b64) * 0.75 / 1024
+        status.update(
+            label=f"压缩完成：{orig_kb:.0f}KB → {b64_kb:.0f}KB",
+            state="running",
+        )
+        status.write("② 正在上传并识别...")
+        sys_prompt = build_system_prompt(groups)
+        raw = call_api(api_key, img_b64, sys_prompt, model)
+        if raw:
+            status.update(label="③ 正在整理结果...", state="running")
+            normalized = normalize_model_output(raw, model)
+            result = parse_result(normalized, health_groups=groups)
+            if result:
+                status.update(label="识别完成", state="complete")
+                result["engine"] = model
+                st.session_state["last_result"] = result
+                add_history(result)
+                switch_page("result")
+            else:
+                status.update(label="识别失败", state="error")
+                st.error("返回内容不是合法 JSON，请重试或更换图片")
+                if os.getenv("DEBUG") == "1":
+                    with st.expander("查看原始返回（调试用）"):
+                        st.text(raw)
+        else:
+            status.update(label="识别失败", state="error")
+            st.error("识别服务暂时不可用，请检查网络或 API 密钥后重试。")
+
+
+def render_scan_mobile():
+    """扫描上传页：移动端布局（单列堆叠）."""
+    render_top_nav("扫描识别", back_target="home", right_action="profile")
+
+    groups, model, api_key, uploader_key = _scan_common_setup()
 
     if not api_key and os.getenv("DEBUG") == "1":
         var_name = "AGNES_API_KEY" if model == "agnes" else "MIMO_API_KEY"
         st.warning(f"未检测到 {var_name}，请在 .env 或 Secrets 中配置")
         api_key = st.text_input("API 密钥", type="password")
 
-    # 用 key 计数器强制重新挂载 file_uploader，实现"重新选择"
-    if "scan_upload_key" not in st.session_state:
-        st.session_state["scan_upload_key"] = 0
-    uploader_key = f"scan_uploader_{st.session_state['scan_upload_key']}"
-
-    # 桌面端并排容器 marker（手机端默认堆叠，桌面端通过 CSS grid 并排）
+    # 上传卡片
     with st.container():
-        st.markdown("<div class='scan-desktop-row-marker'></div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='scan-card-marker'></div>"
+            "<div class='scan-card-header'>"
+            "<div class='scan-card-title'>📷 拍照或上传配料表</div>"
+            "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
+            "</div>"
+            "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>",
+            unsafe_allow_html=True,
+        )
+        uploaded = st.file_uploader(
+            "点击选择或拍照上传配料表图片",
+            type=["jpg", "jpeg", "png"],
+            label_visibility="collapsed",
+            help="支持 jpg/png，大图会自动压缩",
+            key=uploader_key,
+        )
 
-        # 上传卡片（用 container + marker 分组，CSS 通过 :has 选择器给整个卡片加背景）
+    # 预览与识别流程
+    if uploaded is not None:
         with st.container():
+            st.markdown("<div class='preview-card-marker'></div>", unsafe_allow_html=True)
+            st.markdown("<div class='preview-card-title'>已选择图片</div>", unsafe_allow_html=True)
+            st.image(uploaded, use_container_width=True)
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("↻ 重新选择", use_container_width=True, key="scan_retake"):
+                    st.session_state["scan_upload_key"] += 1
+                    st.rerun()
+            with col2:
+                if st.button("✓ 使用照片", type="primary", use_container_width=True, key="scan_confirm"):
+                    _scan_validate_and_recognize(uploaded, api_key, model, groups)
+
+    st.markdown(
+        "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def render_scan_desktop():
+    """扫描上传页：桌面端布局，上传与预览左右并排."""
+    render_top_nav("扫描识别", back_target="home", right_action="profile")
+
+    groups, model, api_key, uploader_key = _scan_common_setup()
+
+    if not api_key and os.getenv("DEBUG") == "1":
+        var_name = "AGNES_API_KEY" if model == "agnes" else "MIMO_API_KEY"
+        st.warning(f"未检测到 {var_name}，请在 .env 或 Secrets 中配置")
+        api_key = st.text_input("API 密钥", type="password")
+
+    left, right = st.columns([1, 1])
+
+    with left:
+        st.markdown(
+            "<div class='scan-card-marker'></div>"
+            "<div class='scan-card-header'>"
+            "<div class='scan-card-title'>📷 拍照或上传配料表</div>"
+            "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
+            "</div>"
+            "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>",
+            unsafe_allow_html=True,
+        )
+        uploaded = st.file_uploader(
+            "点击选择或拍照上传配料表图片",
+            type=["jpg", "jpeg", "png"],
+            label_visibility="collapsed",
+            help="支持 jpg/png，大图会自动压缩",
+            key=uploader_key,
+        )
+
+    with right:
+        if uploaded is not None:
+            st.markdown("<div class='preview-card-marker'></div>", unsafe_allow_html=True)
+            st.markdown("<div class='preview-card-title'>已选择图片</div>", unsafe_allow_html=True)
+            st.image(uploaded, use_container_width=True)
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("↻ 重新选择", use_container_width=True, key="scan_retake_desktop"):
+                    st.session_state["scan_upload_key"] += 1
+                    st.rerun()
+            with col2:
+                if st.button("✓ 使用照片", type="primary", use_container_width=True, key="scan_confirm_desktop"):
+                    _scan_validate_and_recognize(uploaded, api_key, model, groups)
+        else:
             st.markdown(
-                "<div class='scan-card-marker'></div>"
-                "<div class='scan-card-header'>"
-                "<div class='scan-card-title'>📷 拍照或上传配料表</div>"
-                "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
-                "</div>"
-                "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>",
+                "<div class='empty-state'>"
+                "<div class='empty-state-icon'>📷</div>"
+                "<p class='empty-state-text'>在左侧上传配料表图片后，这里会显示预览</p>"
+                "</div>",
                 unsafe_allow_html=True,
             )
-            uploaded = st.file_uploader(
-                "点击选择或拍照上传配料表图片",
-                type=["jpg", "jpeg", "png"],
-                label_visibility="collapsed",
-                help="支持 jpg/png，大图会自动压缩",
-                key=uploader_key,
-            )
-
-        # 预览与识别流程：内联显示，用 container + marker 确保组件被卡片包裹
-        if uploaded is not None:
-            with st.container():
-                st.markdown("<div class='preview-card-marker'></div>", unsafe_allow_html=True)
-                st.markdown("<div class='preview-card-title'>已选择图片</div>", unsafe_allow_html=True)
-                st.image(uploaded, use_container_width=True)
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("↻ 重新选择", use_container_width=True, key="scan_retake"):
-                        st.session_state["scan_upload_key"] += 1
-                        st.rerun()
-                with col2:
-                    if st.button("✓ 使用照片", type="primary", use_container_width=True, key="scan_confirm"):
-                        if not api_key:
-                            st.error("API 密钥未配置，请联系管理员")
-                            st.stop()
-                        if uploaded.size > 5 * 1024 * 1024:
-                            st.error("图片超过 5MB，请选择更小的图片或截图后重试")
-                            st.stop()
-                        try:
-                            uploaded.seek(0)
-                            Image.open(uploaded).verify()
-                            uploaded.seek(0)
-                        except Exception:
-                            st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")
-                            st.stop()
-                        with st.status("正在识别配料表...", expanded=True) as status:
-                            status.write("① 正在压缩图片...")
-                            img_b64 = encode_image_to_base64(uploaded)
-                            orig_kb = uploaded.size / 1024
-                            b64_kb = len(img_b64) * 0.75 / 1024
-                            status.update(
-                                label=f"压缩完成：{orig_kb:.0f}KB → {b64_kb:.0f}KB",
-                                state="running",
-                            )
-                            status.write("② 正在上传并识别...")
-                            sys_prompt = build_system_prompt(groups)
-                            raw = call_api(api_key, img_b64, sys_prompt, model)
-                            if raw:
-                                status.update(label="③ 正在整理结果...", state="running")
-                                result = parse_result(raw, health_groups=groups)
-                                if result:
-                                    status.update(label="识别完成", state="complete")
-                                    result["engine"] = model
-                                    st.session_state["last_result"] = result
-                                    add_history(result)
-                                    switch_page("result")
-                                else:
-                                    status.update(label="识别失败", state="error")
-                                    st.error("返回内容不是合法 JSON，请重试或更换图片")
-                                    if os.getenv("DEBUG") == "1":
-                                        with st.expander("查看原始返回（调试用）"):
-                                            st.text(raw)
-                            else:
-                                status.update(label="识别失败", state="error")
-                                st.error("识别服务暂时不可用，请检查网络或 API 密钥后重试。")
 
     st.markdown(
         "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",
@@ -1878,16 +2233,22 @@ def render_result_page():
             switch_page("home")
         return
     if result.get("type") == "supplement":
-        render_supplement(result)
+        if detect_device_type() == "mobile":
+            render_supplement_mobile(result)
+        else:
+            render_supplement_desktop(result)
     else:
-        render_food(result)
+        if detect_device_type() == "mobile":
+            render_food_mobile(result)
+        else:
+            render_food_desktop(result)
 
 
 def render_history_page():
     """历史记录页：搜索栏 + 筛选标签 + 竖向列表（对齐设计稿）."""
     render_top_nav("历史记录", back_target="home")
 
-    # 搜索栏（图标 + 输入框 + 麦克风）
+    # 搜索栏
     st.markdown(
         "<div class='history-search-wrap'>"
         "<div class='history-search-box'>"
@@ -1900,13 +2261,7 @@ def render_history_page():
         placeholder="搜索产品名称...",
         label_visibility="collapsed",
     )
-    st.markdown(
-        "<button class='history-search-mic' title='语音搜索'>🎤</button>"
-        "</div>"
-        "<p class='history-search-tip'>支持语音搜索，点击麦克风图标即可</p>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
     # 筛选标签
     filter_options = [
@@ -2089,10 +2444,28 @@ def main():
         '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">',
         unsafe_allow_html=True,
     )
-    inject_elder_css()
+    inject_css()
     _preload_tts_voices()
     # 提前注入全局 TTS 命名空间，避免页面刚加载时点击播报提示"组件加载中"
     _render_tts_namespace()
+
+    # 检测设备类型并注入 CSS class，供 .device-mobile / .device-desktop 样式规则使用
+    device_type = detect_device_type()
+    st.session_state["device_type"] = device_type
+    components.html(
+        f"""
+        <script>
+        (function() {{
+            try {{
+                var d = window.parent.document;
+                d.body.classList.remove('device-mobile', 'device-desktop');
+                d.body.classList.add('device-{device_type}');
+            }} catch(e) {{}}
+        }})();
+        </script>
+        """,
+        height=0,
+    )
 
     # DEBUG 信息块：仅当环境变量 DEBUG=1 时显示，用于本地排查 API 配置
     # ⚠️ 生产环境（Streamlit Cloud）严禁设置 DEBUG=1，避免泄露 API key 信息
@@ -2107,16 +2480,6 @@ def main():
             st.markdown(f"- **Agnes Model**: `{AGNES_MODEL_NAME}`")
             st.markdown(f"- **Agnes API Key 已配置**: {'是' if agnes_key else '否'}")
             st.markdown("- **Auth Header 类型**: MiMo=`api-key`, Agnes=`Bearer`")
-
-    # 临时测试模式：URL 加 ?test=1 跳过法律和引导（仅本地诊断用）
-    if st.query_params.get("test") == "1":
-        st.session_state["legal_agreed"] = True
-        st.session_state["onboarded"] = True
-        if "page" not in st.session_state:
-            st.session_state["page"] = st.query_params.get("page", "home")
-        # 若同时带 mock=1，注入模拟结果，便于 Playwright 验证结果页
-        if st.query_params.get("mock") == "1" and "last_result" not in st.session_state:
-            _inject_mock_result(st.query_params.get("mock_type", "food"))
 
     # 首次访问：先法律同意，再触发 4 步引导
     if "legal_agreed" not in st.session_state:
@@ -2180,9 +2543,15 @@ def main():
         show_history()
 
     if page == "home":
-        render_home_page()
+        if detect_device_type() == "mobile":
+            render_home_mobile()
+        else:
+            render_home_desktop()
     elif page == "scan":
-        render_scan_page()
+        if detect_device_type() == "mobile":
+            render_scan_mobile()
+        else:
+            render_scan_desktop()
     elif page == "result":
         render_result_page()
     elif page == "history":

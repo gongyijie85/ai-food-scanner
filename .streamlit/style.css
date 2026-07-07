@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.5.4 | 更新时间: 2026-07-06 */
+/* 版本: v0.5.7 | 更新时间: 2026-07-07 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -100,6 +100,31 @@
   --min-touch-target: 48px;
   --min-list-item-height: 56px;
   --max-content-width: 100%;
+}
+
+/* ========== 设备类型布局 ========== */
+
+/* 移动端：单列、底部安全区 */
+.device-mobile .stMainBlockContainer {
+  padding-bottom: calc(var(--spacing-3xl) + var(--safe-area-bottom));
+}
+
+/* 桌面端：最大宽度限制、双栏卡片 */
+.device-desktop .stMainBlockContainer {
+  max-width: 900px !important;
+  padding: 0 var(--spacing-xl) var(--spacing-3xl) !important;
+}
+
+.device-desktop .scan-desktop-row-marker + div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--card-gap);
+  align-items: start;
+}
+
+/* 桌面端结果页双栏：让 st.columns 间距更舒适 */
+.device-desktop [data-testid="stHorizontalBlock"] {
+  gap: var(--spacing-lg);
 }
 
 /* ========== Streamlit 全局覆盖 ========== */

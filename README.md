@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.5.4-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.5.7-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 一句话介绍
 
@@ -11,6 +11,8 @@
 
 ## 最新更新
 
+- **v0.5.7（2026-07-07）**：执行 ponytail-audit 生产就绪清理。删除 GBT/、pages/、pages-redesign/ 等废弃目录与 README_PROTOTYPE.md、colors_and_type.css、download_test_images.py、diag_verify_ui.py；合并 `load_css()` + `inject_elder_css()` 为 `inject_css()`；内联 `_clip_path()` 与 `_show_friendly_error()`；删除 `render_home_page` 等四个单转发函数并内联设备分发；移除 `?test=1` / `?mock=1` 调试入口和 `_inject_mock_result`；`_js_attr_safe()` 改用标准库 `_safe()`；移除历史页无功能麦克风按钮。同步更新 .gitignore，py_compile、pytest 30 项全量通过。
+- **v0.5.6（2026-07-07）**：双端独立页面重构。新增 `detect_device_type()`，支持 URL 参数、session_state 缓存、User-Agent 判断，默认 mobile；首页、扫描页、结果页拆分为 `*_mobile()` / `*_desktop()` 两套渲染函数，桌面端左右双栏、最大宽度 900px，移动端单列堆叠；CSS 新增 `.device-mobile` / `.device-desktop` 设备类名规则；新增 7 个 `detect_device_type()` 单元测试。py_compile、pytest 全量通过。
 - **v0.5.4（2026-07-06）**：修复结果页语音按钮仍无声音问题：voice_control_panel() 与慢速重听按钮均改为 MutationObserver + data-* 属性绑定，彻底移除内联 onclick（React hydration 会剥离 onclick）；同时清理 3 处未使用变量；py_compile、pytest、diag_verify_ui、真实浏览器 TTS 出声验证全部通过。
 - **v0.5.3（2026-07-06）**：执行 ponytail-audit 安全清理：删除未生效的 CSS 大字模式变量规则、简化语音面板 HTML 拼接、移除未使用的 `textwrap` import、合并重复的 TTS 诊断脚本；版本号同步升级到 v0.5.3。
 - **v0.5.2（2026-07-06）**：修复语音播报无声音问题，在页面加载时预注入 TTS 命名空间；补全 API 失败时的状态更新与错误提示；清理未使用的数据校验函数；健康档案常量提取到模块级；记录并展示真实识别引擎（MiMo/Agnes）。

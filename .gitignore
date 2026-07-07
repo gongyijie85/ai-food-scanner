@@ -35,11 +35,27 @@ supplement_3.jpg
 test_images/*.jpg
 test_images/*.jpeg
 test_images/*.png
+test_*_result.json
 
-# 大文件 / 设计稿源码
+# 临时测试脚本（含 API key 或一次性验证，不进仓库）
+_tmp_*.py
+test_*_api.py
+test_*_with_attachment.py
+verify_v*.py
+diag_tts_*.py
+# 已删除的本地诊断/下载脚本，防止误提交
+diag_verify_ui.py
+download_test_images.py
+
+# 大文件 / 设计稿源码 / 旧原型
 *.design
 generation-tree.json
 orchestration-summary.json
+GBT/
+pages/
+pages-redesign/
+colors_and_type.css
+README_PROTOTYPE.md
 
 # 环境变量
 .env
@@ -48,3 +64,6 @@ orchestration-summary.json
 # 推送脚本（含 PAT，绝不进仓库）
 push.ps1
 *.pat
+
+# Git worktrees
+.worktrees/
