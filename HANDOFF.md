@@ -53,7 +53,7 @@ ai-food-scanner/
 | 变量名 | 用途 | 本地配置 | 生产配置 |
 |--------|------|----------|----------|
 | `MIMO_API_KEY` | MiMo Vision API 密钥 | `.env` 文件 | Streamlit Cloud Secrets |
-| `AGNES_API_KEY` | Agnes API 密钥（A/B 测试用） | `.env` 文件 | Streamlit Cloud Secrets |
+| `AGNES_API_KEY` | Agnes 降级备用 API 密钥（可选） | `.env` 文件 | Streamlit Cloud Secrets |
 | `DEBUG` | 调试模式开关 | 本地设为 `1` 可看调试信息 | **生产环境必须为 `0` 或不设置** |
 
 ### 3.2 Streamlit 配置（`.streamlit/config.toml`）

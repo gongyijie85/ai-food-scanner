@@ -1,4 +1,4 @@
-"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.5.7
+"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.5.9
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 三端适配
 运行环境：Python 3.10+
@@ -47,9 +47,9 @@ _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 API_URL = "https://token-plan-sgp.xiaomimimo.com/v1/chat/completions"
 MODEL_NAME = "mimo-v2.5"
 
-# Agnes-2.0-Flash 配置（A/B 对比用）
-AGNES_API_URL = "https://apihub.agnes-ai.com/v1/chat/completions"
-AGNES_MODEL_NAME = "agnes-2.0-flash"
+# Agnes 降級備用模型（僅在 MiMo 失敗時調用）
+AGNES_API_URL = "https://api.agnes-ai.com/v1/chat/completions"
+AGNES_MODEL_NAME = "agnes-20-flash"
 
 # 六大人群选项（引导页默认疾病选择）
 HEALTH_GROUPS = ["糖尿病", "高血压", "脑梗/心血管", "减脂", "过敏", "孕妇/儿童"]
@@ -79,12 +79,58 @@ _CONFLICTS_PATH = os.path.join(_DATA_DIR, "drug_food_conflicts.json")
 # 评分公式常量（A=绿/B=黄/C=红）
 SCORE_PENALTY = {"A": 0, "B": 8, "C": 25}
 
+# C 级添加剂密度惩罚：当 C 级数量 >=3 时额外扣分
+C_LEVEL_DENSITY_PENALTY = 5
+C_LEVEL_DENSITY_THRESHOLD = 3
+
+# 不应被识别为食品添加剂的基础配料黑名单（避免 AI 误判导致分数虚低）
+ADDITIVE_BLOCKLIST = {
+    "水", "饮用水", "纯净水", "蒸馏水", "矿泉水",
+    "白砂糖", "白糖", "冰糖", "红糖", "绵白糖", "蔗糖",
+    "食用盐", "食盐", "精盐", "海盐", "岩盐",
+    "食用油", "植物油", "菜籽油", "花生油", "大豆油", "玉米油", "葵花籽油", "橄榄油", "棕榈油", "调和油",
+    "面粉", "小麦粉", "大米", "糯米粉", "淀粉", "小麦淀粉", "玉米淀粉", "马铃薯淀粉",
+    "食品用香精", "食用香精", "香精",
+    "酵母", "酵母抽提物",
+    "蜂蜜", "麦芽糖浆", "果葡糖浆", "葡萄糖浆", "乳糖",
+}
+
+# 建议文案模板（降低模型随机性，统一兜底）
+ADVICE_TEMPLATES = {
+    "default": "普通人群可适量食用，建议保持均衡饮食。",
+    "糖尿病": "糖尿病患者请注意控制摄入量，具体请咨询医生或营养师。",
+    "高血压": "高血压患者建议关注钠含量，具体请咨询医生或营养师。",
+    "脑梗/心血管": "脑梗/心血管人群建议低脂低盐饮食，具体请咨询医生或营养师。",
+    "减脂": "减脂人群建议关注糖分和脂肪含量，具体请咨询教练或营养师。",
+    "过敏": "过敏体质请仔细核对配料，具体请咨询医生。",
+    "孕妇/儿童": "孕妇及儿童人群请谨慎选择，具体请咨询医生或营养师。",
+    "儿童": "儿童请谨慎选择，具体请咨询医生或营养师。",
+    "孕妇": "孕妇请谨慎选择，具体请咨询医生或营养师。",
+}
+
 # 保健品辅料白名单（不参与扣分）
 SUPPLEMENT_EXCIPIENTS = {"鱼油", "明胶", "甘油", "蜂蜡", "卵磷脂", "淀粉", "麦芽糊精", "羧甲基纤维素钠"}
 
 # 完整历史快照路径与上限
 _HISTORY_FULL_PATH = os.path.join(_DATA_DIR, "history_full.json")
 _HISTORY_FULL_MAX = 20
+
+# 内联 SVG 图标（关键位置替代 emoji，保证跨平台一致）
+_ICON_BACK = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M19 12H5M12 19l-7-7 7-7'/></svg>"
+_ICON_HEART = "<svg class='icon-svg' viewBox='0 0 24 24' fill='currentColor'><path d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/></svg>"
+_ICON_CAMERA = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><rect x='3' y='6' width='18' height='12' rx='2'/><circle cx='12' cy='13' r='3'/><path d='M8 6h8l-1-2h-6l-1 2z'/></svg>"
+_ICON_HOME = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'/></svg>"
+_ICON_SPEAKER = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><polygon points='11 5 6 9 2 9 2 15 6 15 11 19 11 5'/><path d='M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14'/></svg>"
+_ICON_HISTORY = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M3 7h18M3 12h18M3 17h18'/></svg>"
+_ICON_PROFILE = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='12' cy='8' r='4'/><path d='M4 20c0-4 4-6 8-6s8 2 8 6'/></svg>"
+_ICON_CHECK = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><polyline points='20 6 9 17 4 12'/></svg>"
+_ICON_REFRESH = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M23 4v6h-6M1 20v-6h6'/><path d='M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15'/></svg>"
+_ICON_SHARE = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><circle cx='18' cy='5' r='3'/><circle cx='6' cy='12' r='3'/><circle cx='18' cy='19' r='3'/><path d='M8.59 13.51l6.83 3.98M8.59 10.49l6.83-3.98'/></svg>"
+_ICON_EMPTY = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M22 12h-6l-2 3h-4l-2-3H2'/><path d='M5.55 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.55-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.69.11z'/></svg>"
+_ICON_FOOD = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M6 8a6 6 0 0 1 12 0c0 7-3 9-3 9H9s-3-2-3-9zm4.5 0V5a2.5 2.5 0 0 1 5 0v3'/><line x1='3' y1='21' x2='21' y2='21'/></svg>"
+# 用于嵌入 JS 字符串的 SVG（单引号已转义）
+_ICON_SPEAKER_JS = _ICON_SPEAKER.replace("'", "\\'")
+_ICON_MUTE_JS = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><polygon points='11 5 6 9 2 9 2 15 6 15 11 19 11 5'/><line x1='23' y1='9' x2='17' y2='15'/><line x1='17' y1='9' x2='23' y2='15'/></svg>".replace("'", "\\'")
 
 
 def _safe(text: str) -> str:
@@ -206,7 +252,7 @@ def render_top_nav(title: str, show_back: bool = True, back_target: str = "home"
         cols = st.columns([1, 4, 1])
         with cols[0]:
             if show_back:
-                if st.button("←", key=f"tn_back_{title}", help="返回"):
+                if st.button(f"{_ICON_BACK} 返回", key=f"tn_back_{title}", help="返回"):
                     target = st.session_state.get("prev_page", back_target)
                     switch_page(target)
         with cols[1]:
@@ -214,7 +260,7 @@ def render_top_nav(title: str, show_back: bool = True, back_target: str = "home"
             st.markdown(f"<div class='top-nav-title' style='{title_style}'>{_safe(title)}</div>", unsafe_allow_html=True)
         with cols[2]:
             if right_action == "profile":
-                if st.button("♥", key=f"tn_profile_{title}", help="健康档案"):
+                if st.button(_ICON_HEART, key=f"tn_profile_{title}", help="健康档案"):
                     switch_page("profile")
 
 
@@ -325,12 +371,12 @@ def _render_tts_namespace():
                     var err = parent.document.getElementById(errId);
                     var synth = parent.speechSynthesis;
                     if (!synth) {
-                        if (btn) { btn.disabled = true; btn.innerHTML = '🔇 不支持播报'; }
+                        if (btn) { btn.disabled = true; btn.innerHTML = '<span class="voice-btn-icon">ICON_MUTE</span> 不支持播报'; }
                         if (err) err.textContent = '您的浏览器不支持语音播报功能';
                         return;
                     }
                     var originalHtml = btn ? btn.innerHTML : '';
-                    if (btn) btn.innerHTML = '<span class="voice-btn-icon">🔊</span> 播报中…';
+                    if (btn) btn.innerHTML = '<span class="voice-btn-icon">ICON_SPEAKER</span> 播报中…';
                     if (err) err.textContent = '';
 
                     try { synth.cancel(); } catch(e) {}
@@ -399,7 +445,7 @@ def _render_tts_namespace():
             }
         })();
         </script>
-        """,
+        """.replace("ICON_MUTE", _ICON_MUTE_JS).replace("ICON_SPEAKER", _ICON_SPEAKER_JS),
         height=0,
     )
 
@@ -428,14 +474,14 @@ def speak_text(text: str, rate: float = 1.0):
         f"style='font-size:20px;height:56px;padding:0 28px;border-radius:12px;"
         f"border:2px solid #2E7D32;background:#E8F5E9;color:#1B5E20;"
         f"font-weight:bold;cursor:pointer;min-width:200px;'>"
-        f"🔊 点击播报</button>"
+        f"{_ICON_SPEAKER} 点击播报</button>"
         f"<span id='{err_id}' class='tts-err' style='color:#D32F2F;font-size:14px;margin-left:8px;'></span>"
         f"</div>"
     )
     st.markdown(js, unsafe_allow_html=True)
 
 
-def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text: str = "🔊 点击播报", wrapper_class: str = "voice-control-wrap"):
+def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text: str = f"{_ICON_SPEAKER} 点击播报", wrapper_class: str = "voice-control-wrap"):
     """语音播报控制面板：简洁版，主按钮+折叠的语速控制.
 
     使用浏览器原生 Web Speech API，针对 iOS Safari / 微信内置浏览器等
@@ -516,20 +562,19 @@ def _preload_tts_voices():
 
 # ========== 核心函数（API 调用）==========
 
-def get_api_key(model="mimo"):
-    """从环境变量或 secrets 读取 API 密钥，按模型选不同变量名.
+def get_api_key():
+    """从环境变量或 secrets 读取 MiMo API 密钥.
 
     安全说明：
     - 本地开发使用 .env（已被 .gitignore 排除，禁止提交）；
     - 生产环境（Streamlit Cloud）必须使用 Settings → Secrets 配置，禁止在源码中写死 key；
     - 不要把真实 key 写入 README、issue、commit message 或聊天记录。
     """
-    var = "AGNES_API_KEY" if model == "agnes" else "MIMO_API_KEY"
-    key = os.getenv(var, "")
+    key = os.getenv("MIMO_API_KEY", "")
     if key:
         return key
     try:
-        return st.secrets[var]
+        return st.secrets["MIMO_API_KEY"]
     except (KeyError, FileNotFoundError):
         return ""
 
@@ -574,19 +619,39 @@ def build_system_prompt(groups):
         "- type: \"food\"\n"
         "- product_name: 产品名称（**必须中文**），英文产品名翻译成中文或填'该产品'，图片未显示则填'未知'\n"
         "- ingredients: 所有配料成分列表，按原文顺序\n"
-        "- additives: 只含 GB 2760 具体食品添加剂。**不要**把食品用香精、食用盐、水、糖、油、面粉等基础配料列入。"
-        "每个添加剂含 name、code(INS/E号，没有留空)。**不要输出 level 字段，不要给 score 评分，风险等级由系统判定。**\n"
-        "- advice: 针对以下人群的一句话建议：" + group_str + "\n\n"
+        "- additives: 只含 GB 2760 具体食品添加剂。**绝对不要**把以下基础配料列入：水、饮用水、白砂糖、白糖、冰糖、红糖、食用盐、食盐、食用油、植物油、菜籽油、花生油、面粉、小麦粉、大米、淀粉、食品用香精、食用香精、香精、酵母、蜂蜜、麦芽糖浆、果葡糖浆、葡萄糖浆。"
+        "每个添加剂必须含 name（字符串），可选 code（INS/E号，没有留空）。additives 必须是数组，无添加剂时传 []。**不要输出 level 字段，不要给 score 评分，风险等级由系统判定。**\n"
+        "- advice: 针对以下人群的一句话建议，使用固定句式：" + group_str + "。"
+        "例如：普通人群可适量食用，建议保持均衡饮食；糖尿病患者请注意控制摄入量，具体请咨询医生或营养师。"
+        "只输出一句，禁止医学疗效词。\n\n"
         "## 强制规则（两类产品都适用）\n"
         "- product_name **必须中文**，英文产品名翻译成中文或填'该产品'\n"
         "- 所有引用包装的内容（health_claims/suitable_for/usage）**严格按包装原文**，不评价、不推荐、不补全\n"
         "- 禁止任何医学疗效措辞：'治疗/疗效/降三高/防癌/增强免疫力+治愈'等\n"
-        "- 所有健康相关结论以'请咨询医生/药师/营养师'收尾"
+        "- 所有健康相关结论以'请咨询医生/药师/营养师'收尾\n"
+        "- 返回必须是纯 JSON 对象，不要数组、不要 Markdown、不要注释\n\n"
+        "## 输出示例（仅供格式参考，不要返回多余说明）\n"
+        "### 普通食品示例\n"
+        '{"type":"food","product_name":"某牌苏打饼干","ingredients":["小麦粉","植物油","食用盐","碳酸氢钠","酵母"],'
+        '"additives":[{"name":"碳酸氢钠","code":"500ii"}],'
+        '"advice":"普通人群可适量食用，建议保持均衡饮食。"}\n'
+        "### 保健食品示例\n"
+        '{"type":"supplement","product_name":"某牌鱼油软胶囊","approval_no":"国食健注G20251234",'
+        '"ingredients":["鱼油","明胶","甘油","纯化水"],'
+        '"functional_ingredients":["每100g含EPA 18g、DHA 12g"],'
+        '"health_claims":"辅助降血脂","suitable_for":"血脂偏高者","unsuitable_for":"少年儿童、孕妇、乳母",'
+        '"usage":"每日2次，每次1粒，口服","storage":"置阴凉干燥处","shelf_life":"24个月",'
+        '"summary":"鱼油软胶囊，每日2次每次1粒"}\n\n'
+        "## 格式强制规则\n"
+        "- 必须返回纯 JSON 对象，不要 Markdown 代码块，不要任何解释。\n"
+        "- additives 数组中只允许出现 GB 2760 规定的食品添加剂名称，禁止出现食品原料、基础配料、保健品辅料。\n"
+        "- 同一添加剂只出现一次，不要重复。\n"
+        "- 不要输出 '未检出'、'无' 等文字，无添加剂时 additives 必须是空数组 []。\n"
     )
 
 
-def call_api(api_key, image_b64, system_prompt, model="mimo"):
-    """统一调用 MiMo 或 Agnes Vision API，返回模型回复文本.
+def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
+    """调用多模态 API（默认 MiMo，可切換 Agnes），返回模型回复文本.
 
     Phase 4 (v0.2.5) 健壮性增强：
     - 最多 2 次指数退避重试（第1次等2秒，第2次等4秒）
@@ -602,14 +667,9 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
             with st.expander("调试：错误详情"):
                 st.code(detail)
 
-    if model == "agnes":
-        url, model_name = AGNES_API_URL, AGNES_MODEL_NAME
-        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-    else:
-        url, model_name = API_URL, MODEL_NAME
-        headers = {"api-key": api_key, "Content-Type": "application/json"}
+    headers = {"api-key": api_key, "Content-Type": "application/json"}
     payload = {
-        "model": model_name,
+        "model": model,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": [
@@ -617,8 +677,9 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
                 {"type": "text", "text": "请分析这张配料表图片，按规则返回 JSON。"}
             ]}
         ],
-        "temperature": 0.2,
-        "max_tokens": 2048
+        "temperature": 0,
+        "max_tokens": 2048,
+        "response_format": {"type": "json_object"},
     }
 
     # 日志：记录请求开始
@@ -700,19 +761,54 @@ def call_api(api_key, image_b64, system_prompt, model="mimo"):
     return None
 
 
-def normalize_model_output(raw: str, engine: str) -> str:
-    """把 MiMo / Agnes 的原始返回统一成标准 JSON 字符串.
+def call_api_with_fallback(mimo_key, image_b64, system_prompt, agnes_key=None):
+    """先调用 MiMo，失败时降级到 Agnes.
+
+    正常流程只调用 MiMo（3 秒），不增加延迟。
+    仅当 MiMo 返回 None（超时/网络错误/5xx/4xx）且配置了 agnes_key 时，
+    自动调用 Agnes 兜底，确保老人用户在 MiMo 故障时仍能得到结果。
+    """
+    raw = call_api(mimo_key, image_b64, system_prompt)
+    if raw:
+        return raw
+    if agnes_key:
+        logger.warning("MiMo 调用失败，降级到 Agnes 备用模型")
+        st.toast("主识别服务繁忙，已自动切换备用服务", icon="🔄")
+        return call_api(
+            agnes_key, image_b64, system_prompt,
+            url=AGNES_API_URL, model=AGNES_MODEL_NAME,
+        )
+    return None
+
+
+def _clean_name(name) -> str:
+    """清洗名称：去空白、去首尾标点，返回字符串."""
+    if not isinstance(name, str):
+        name = str(name)
+    return name.strip().strip("，,、.;；")
+
+
+def _is_blocklisted(name: str) -> bool:
+    """判断名称是否为基础配料黑名单（避免误识别为添加剂）."""
+    n = _clean_name(name)
+    if not n:
+        return True
+    return n in ADDITIVE_BLOCKLIST
+
+
+def normalize_model_output(raw: str) -> str:
+    """把 MiMo 的原始返回统一成标准 JSON 字符串.
 
     职责：
     - 去掉 Markdown 代码块；
-    - 字段别名映射（如 additive -> additives）；
+    - 字段别名映射（兼容可能的历史字段名）；
     - 类型修正：additives 强制 list、ingredients 字符串自动切分；
+    - 过滤基础配料黑名单与异常条目；
     - product_name 英文时替换为「该产品」；
     - 删除模型自带的 score / level，统一由本地 GB2760 库判定。
 
     参数：
         raw: 模型原始返回文本
-        engine: 模型标识（"mimo" / "agnes"），留作未来引擎特化扩展
 
     返回：
         清洗后的 JSON 字符串；若解析失败则原样返回，让下游 parse_result 处理。
@@ -732,7 +828,7 @@ def normalize_model_output(raw: str, engine: str) -> str:
     if not isinstance(data, dict):
         return s
 
-    # 2) 字段别名映射（Agnes 可能使用不同字段名）
+    # 2) 字段别名映射（保留少量兼容字段）
     alias_map = {
         "additive": "additives",
         "additive_list": "additives",
@@ -744,6 +840,9 @@ def normalize_model_output(raw: str, engine: str) -> str:
         "applicant": "suitable_for",
         "target": "suitable_for",
         "contraindication": "unsuitable_for",
+        "nutrition": "nutrition_nrv",
+        "nrv": "nutrition_nrv",
+        "营养成分": "nutrition_nrv",
     }
     for old_key, new_key in alias_map.items():
         if old_key in data and new_key not in data:
@@ -775,15 +874,34 @@ def normalize_model_output(raw: str, engine: str) -> str:
             name = "该产品"
         data["product_name"] = name
 
-    # 5) 删除模型自带评分与风险等级，由本地 GB2760 权威判定
-    data.pop("score", None)
+    # 5) 过滤 additives：去掉黑名单基础配料、空名称、过长/过短条目
     if isinstance(data.get("additives"), list):
+        cleaned = []
         for a in data["additives"]:
-            if isinstance(a, dict):
-                a.pop("level", None)
-                a.pop("score", None)
+            if not isinstance(a, dict):
+                continue
+            a.pop("level", None)
+            a.pop("score", None)
+            n = _clean_name(a.get("name", ""))
+            if not n or len(n) < 2 or len(n) > 30 or _is_blocklisted(n):
+                continue
+            a["name"] = n
+            cleaned.append(a)
+        data["additives"] = cleaned
+
+    # 6) 删除模型自带评分
+    data.pop("score", None)
 
     return json.dumps(data, ensure_ascii=False)
+
+
+def _generate_advice(health_groups):
+    """根据 health_groups 返回固定模板建议，降低模型随机性."""
+    groups = health_groups or []
+    matched = [g for g in groups if g in ADVICE_TEMPLATES]
+    if matched:
+        return " ".join(ADVICE_TEMPLATES[g] for g in matched)
+    return ADVICE_TEMPLATES["default"]
 
 
 def parse_result(raw, health_groups=None):
@@ -800,10 +918,14 @@ def parse_result(raw, health_groups=None):
         result = json.loads(s)
     except json.JSONDecodeError:
         return None
+    if not isinstance(result, dict):
+        return None
+
     # 兜底：纯英文 product_name 强制改成"该产品"（适老化）
     name = str(result.get("product_name", ""))
     if name and re.fullmatch(r"[A-Za-z\s\-\.\&]+", name):
         result["product_name"] = "该产品"
+
     # 仅对普通食品做客户端权威判定
     if result.get("type") == "food":
         additives = result.get("additives", [])
@@ -820,18 +942,32 @@ def parse_result(raw, health_groups=None):
             result["score"] = compute_score_from_additives(
                 additives, health_groups or []
             )
+        # advice 兜底：若为空或包含禁用词，用本地模板替换
+        advice = str(result.get("advice", "")).strip()
+        if not advice or any(w in advice for w in ["治疗", "疗效", "降三高", "防癌", "治愈"]):
+            advice = _generate_advice(health_groups)
+        result["advice"] = advice
     return result
 
 
 # ========== 客户端权威判定（GB 2760 库 + 药物冲突）==========
+
+def is_supplement_excipient(name: str) -> bool:
+    """判断是否为保健品辅料（不扣分）."""
+    n = str(name).strip()
+    return n in SUPPLEMENT_EXCIPIENTS or any(k in n for k in ["胶囊壳", "软胶囊"])
+
 
 def normalize_additive(name):
     """查 GB 2760 风险库返回 (level, ins_no, note)，未匹配默认 B 兜底."""
     if not name:
         return "B", "", ""
     n = str(name).strip()
+    # 基础配料黑名单：不应被识别为添加剂，直接判 A
+    if _is_blocklisted(n):
+        return "A", "", "基础配料，不扣分"
     # 保健品辅料豁免
-    if n in SUPPLEMENT_EXCIPIENTS or any(k in n for k in ["胶囊壳", "软胶囊"]):
+    if is_supplement_excipient(n):
         return "A", "", "保健品辅料，不扣分"
     risk = load_gb2760_risk()
     # 精确匹配
@@ -857,23 +993,29 @@ def normalize_additive(name):
 
 def compute_score_from_additives(additives, health_groups=None):
     """按添加剂风险等级 + 特殊人群敏感性算分.
-    公式: 100 - 红×25 - 黄×8 + 特殊人群命中额外扣 4."""
+    公式: 100 - 红×25 - 黄×8 - 特殊人群命中额外扣 4 - C级密度扣分."""
     if not additives:
         return 100
     score = 100
     health_set = set(health_groups or [])
     risk = load_gb2760_risk()
+    c_level_count = 0
     for a in additives:
         if not isinstance(a, dict):
             continue
         name = a.get("name", "")
         level, _, _ = normalize_additive(name)
         score -= SCORE_PENALTY.get(level, 0)
+        if level == "C":
+            c_level_count += 1
         # 特殊人群敏感性（如糖尿病/高血压 + 命中 warnings）
         if name in risk:
             warnings = risk[name].get("warnings", "")
             if warnings and any(w in health_set for w in warnings.split("/")):
                 score -= 4
+    # C 级密度惩罚：高风险添加剂过多时额外扣分
+    if c_level_count >= C_LEVEL_DENSITY_THRESHOLD:
+        score -= C_LEVEL_DENSITY_PENALTY
     return max(0, min(100, score))
 
 
@@ -991,7 +1133,7 @@ def add_history(result):
         "score": result.get("score", 0),
         "type": str(result.get("type", "food")),
         "additives_count": len(result.get("additives", [])),
-        "engine": result.get("engine", "mimo"),
+        "engine": MODEL_NAME,
     }
     save_history(record)
     # 保存完整识别快照供详情页使用
@@ -999,17 +1141,16 @@ def add_history(result):
 
 
 def show_history():
-    """在侧边栏展示历史记录（调用时需已在 sidebar 上下文内）.
+    """在侧边栏展示最近 3 条历史记录（调用时需已在 sidebar 上下文内）.
 
-    Phase 4 起改为从本地 JSON 加载，刷新页面不丢失。
+    完整历史记录请前往独立历史页面查看。
     """
     st.header("历史记录")
-    st.caption(f"最近 {_HISTORY_MAX} 条记录保存在本地，不存储图片。")
     history = load_history()
     if not history:
         st.caption("暂无记录")
         return
-    for item in history:
+    for item in history[:3]:
         score = item.get("score", 0)
         color = "green" if score >= 80 else ("orange" if score >= 60 else "red")
         # 简短时间显示（YYYY-MM-DD HH:MM），适老化不显示秒
@@ -1027,6 +1168,9 @@ def show_history():
             f"</div>",
             unsafe_allow_html=True
         )
+    if len(history) > 3:
+        if st.button("查看全部历史记录", use_container_width=True, key="sb_view_all_history"):
+            switch_page("history")
 
 
 # ========== 结果页通用组件 ==========
@@ -1048,10 +1192,13 @@ def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = T
     """渲染评分英雄区（按画布设计稿：纯色卡片 + 装饰圆点 + 慢速重听）."""
     if score >= 80:
         _, label, bg = "#43A047", "可放心食用", "#43A047"
+        meaning = "添加剂少，适合日常食用"
     elif score >= 60:
         _, label, bg = "#FF9800", "特定人群注意", "#FF9800"
+        meaning = "含少量需注意的成分"
     else:
         _, label, bg = "#E53935", "建议咨询医生", "#E53935"
+        meaning = "添加剂较多，请谨慎选择"
     shape = "●" if score >= 80 else ("▲" if score >= 60 else "■")
     clip = (
         "polygon(50% 0%, 0% 100%, 100% 100%)" if shape == "▲"
@@ -1075,6 +1222,7 @@ def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = T
         f"<div class='result-score-hero-label'>"
         f"<span class='result-score-shape' style='background:#FFFFFF;clip-path:{clip};'></span>"
         f"{_safe(label)}</div>"
+        f"<div class='result-score-meaning'>{_safe(meaning)}</div>"
         f"{replay_btn}"
         f"</div>",
         unsafe_allow_html=True
@@ -1177,7 +1325,7 @@ def render_food_mobile(result):
     voice_control_panel(
         speak_content,
         key_prefix="tts_food",
-        button_text="🔊 一键播报全部结果",
+        button_text=f"{_ICON_SPEAKER} 一键播报全部结果",
         wrapper_class="voice-float-bar voice-control-wrap",
     )
 
@@ -1185,10 +1333,10 @@ def render_food_mobile(result):
         st.markdown("<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("📷 再扫一个", use_container_width=True, key="food_btn_scan"):
+            if st.button(f"{_ICON_CAMERA} 再扫一个", use_container_width=True, key="food_btn_scan"):
                 switch_page("scan")
         with col2:
-            if st.button("🏠 返回首页", use_container_width=True, key="food_btn_home"):
+            if st.button(f"{_ICON_HOME} 返回首页", use_container_width=True, key="food_btn_home"):
                 switch_page("home")
 
 
@@ -1232,16 +1380,16 @@ def render_food_desktop(result):
         voice_control_panel(
             speak_content,
             key_prefix="tts_food_desktop",
-            button_text="🔊 一键播报全部结果",
+            button_text=f"{_ICON_SPEAKER} 一键播报全部结果",
             wrapper_class="voice-control-wrap",
         )
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📷 再扫一个", use_container_width=True, key="food_btn_scan_desktop"):
+        if st.button(f"{_ICON_CAMERA} 再扫一个", use_container_width=True, key="food_btn_scan_desktop"):
             switch_page("scan")
     with col2:
-        if st.button("🏠 返回首页", use_container_width=True, key="food_btn_home_desktop"):
+        if st.button(f"{_ICON_HOME} 返回首页", use_container_width=True, key="food_btn_home_desktop"):
             switch_page("home")
 
 
@@ -1451,7 +1599,7 @@ def render_supplement_mobile(result):
     voice_control_panel(
         speak_content,
         key_prefix="tts_supp",
-        button_text="🔊 一键播报全部结果",
+        button_text=f"{_ICON_SPEAKER} 一键播报全部结果",
         wrapper_class="voice-float-bar voice-control-wrap",
     )
 
@@ -1459,10 +1607,10 @@ def render_supplement_mobile(result):
         st.markdown("<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("📷 再扫一个", use_container_width=True, key="supp_btn_scan"):
+            if st.button(f"{_ICON_CAMERA} 再扫一个", use_container_width=True, key="supp_btn_scan"):
                 switch_page("scan")
         with col2:
-            if st.button("🏠 返回首页", use_container_width=True, key="supp_btn_home"):
+            if st.button(f"{_ICON_HOME} 返回首页", use_container_width=True, key="supp_btn_home"):
                 switch_page("home")
 
 
@@ -1546,7 +1694,7 @@ def render_supplement_desktop(result):
         voice_control_panel(
             speak_content,
             key_prefix="tts_supp_desktop",
-            button_text="🔊 一键播报全部结果",
+            button_text=f"{_ICON_SPEAKER} 一键播报全部结果",
             wrapper_class="voice-control-wrap",
         )
 
@@ -1556,10 +1704,10 @@ def render_supplement_desktop(result):
 
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("📷 再扫一个", use_container_width=True, key="supp_btn_scan_desktop"):
+        if st.button(f"{_ICON_CAMERA} 再扫一个", use_container_width=True, key="supp_btn_scan_desktop"):
             switch_page("scan")
     with col2:
-        if st.button("🏠 返回首页", use_container_width=True, key="supp_btn_home_desktop"):
+        if st.button(f"{_ICON_HOME} 返回首页", use_container_width=True, key="supp_btn_home_desktop"):
             switch_page("home")
 
 
@@ -1608,6 +1756,9 @@ def render_legal_consent():
     )
 
     start_disabled = not (agree_terms and agree_sensitive)
+    if start_disabled:
+        st.info("请勾选上方两项同意后，再点击「开始使用」按钮")
+
     if st.button(
         "开始使用",
         type="primary",
@@ -1615,8 +1766,11 @@ def render_legal_consent():
         disabled=start_disabled,
         key="legal_start_btn"
     ):
-        st.session_state["legal_agreed"] = True
-        st.rerun()
+        if agree_terms and agree_sensitive:
+            st.session_state["legal_agreed"] = True
+            st.rerun()
+        else:
+            st.warning("请先勾选同意用户协议及隐私政策")
 
 
 # ========== 首次引导页（4 步）==========
@@ -1791,8 +1945,8 @@ def render_health_profile():
             value=profile.get("age", 60), step=1
         )
 
-    st.markdown("<div class='profile-section-title'>我的健康状况</div>")
-    st.markdown("<div class='profile-section-desc'>可多选，帮助我们提供更准确的建议</div>")
+    st.markdown("<div class='profile-section-title'>我的健康状况</div>", unsafe_allow_html=True)
+    st.markdown("<div class='profile-section-desc'>可多选，帮助我们提供更准确的建议</div>", unsafe_allow_html=True)
     selected = set(profile.get("diseases", []))
     cols = st.columns(2)
     for i, (key, name, icon) in enumerate(CONDITION_ITEMS):
@@ -1809,8 +1963,8 @@ def render_health_profile():
                 st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='profile-section-title'>过敏原</div>")
-    st.markdown("<div class='profile-section-desc'>如有过敏请勾选</div>")
+    st.markdown("<div class='profile-section-title'>过敏原</div>", unsafe_allow_html=True)
+    st.markdown("<div class='profile-section-desc'>如有过敏请勾选</div>", unsafe_allow_html=True)
     allergen_options = ["花生", "牛奶", "鸡蛋", "鱼类", "甲壳类", "坚果", "小麦", "大豆"]
     allergen_structured_map = {}
     for a in allergens:
@@ -1843,8 +1997,8 @@ def render_health_profile():
 
     profile["allergens"] = [allergen_structured_map[name] for name in selected_alg]
 
-    st.markdown("<div class='profile-section-title'>💊 当前用药</div>")
-    st.markdown("<div class='profile-section-desc'>选填，用于配料交互提醒</div>")
+    st.markdown("<div class='profile-section-title'>💊 当前用药</div>", unsafe_allow_html=True)
+    st.markdown("<div class='profile-section-desc'>选填，用于配料交互提醒</div>", unsafe_allow_html=True)
     if drug_categories:
         all_drug_options = []
         drug_id_map = {}
@@ -1936,7 +2090,7 @@ def render_home_mobile():
             "<div class='hint-bubble'>点击大按钮开始</div>",
             unsafe_allow_html=True,
         )
-        if st.button("📷\n扫描配料表", type="primary", key="home_goto_scan"):
+        if st.button(f"{_ICON_CAMERA}\n扫描配料表", type="primary", key="home_goto_scan"):
             switch_page("scan")
 
     # 最近扫描
@@ -2014,7 +2168,7 @@ def render_home_desktop():
                 "<div class='hint-bubble'>点击大按钮开始</div>",
                 unsafe_allow_html=True,
             )
-            if st.button("📷\n扫描配料表", type="primary", key="home_goto_scan_desktop"):
+            if st.button(f"{_ICON_CAMERA}\n扫描配料表", type="primary", key="home_goto_scan_desktop"):
                 switch_page("scan")
 
     with right:
@@ -2053,20 +2207,18 @@ def render_home_desktop():
 
 
 def _scan_common_setup():
-    """扫描页通用前置：读取档案、模型选择、API key、上传 key."""
+    """扫描页通用前置：读取档案、API key、上传 key."""
     profile = st.session_state.get("health_profile", {})
     groups = profile.get("diseases", [])
-    model_choice = st.session_state.get("model_choice", "MiMo (mimo-v2.5)")
-    model = "agnes" if model_choice.startswith("Agnes") else "mimo"
-    api_key = get_api_key(model)
+    api_key = get_api_key()
 
     if "scan_upload_key" not in st.session_state:
         st.session_state["scan_upload_key"] = 0
     uploader_key = f"scan_uploader_{st.session_state['scan_upload_key']}"
-    return groups, model, api_key, uploader_key
+    return groups, api_key, uploader_key
 
 
-def _scan_validate_and_recognize(uploaded, api_key, model, groups):
+def _scan_validate_and_recognize(uploaded, api_key, groups):
     """校验图片并调用 API 识别，成功后跳转结果页."""
     if not api_key:
         st.error("API 密钥未配置，请联系管理员")
@@ -2082,24 +2234,28 @@ def _scan_validate_and_recognize(uploaded, api_key, model, groups):
         st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")
         st.stop()
     with st.status("正在识别配料表...", expanded=True) as status:
-        status.write("① 正在压缩图片...")
+        status.write("① 正在上传图片...")
         img_b64 = encode_image_to_base64(uploaded)
         orig_kb = uploaded.size / 1024
         b64_kb = len(img_b64) * 0.75 / 1024
         status.update(
-            label=f"压缩完成：{orig_kb:.0f}KB → {b64_kb:.0f}KB",
+            label=f"上传完成：{orig_kb:.0f}KB → {b64_kb:.0f}KB",
             state="running",
         )
-        status.write("② 正在上传并识别...")
+        status.write("② 正在分析配料表...")
         sys_prompt = build_system_prompt(groups)
-        raw = call_api(api_key, img_b64, sys_prompt, model)
+        agnes_key = os.getenv("AGNES_API_KEY", "")
+        selected_model = st.session_state.get("selected_model", "mimo")
+        if selected_model == "agnes" and agnes_key:
+            raw = call_api(agnes_key, img_b64, sys_prompt, url=AGNES_API_URL, model=AGNES_MODEL_NAME)
+        else:
+            raw = call_api_with_fallback(api_key, img_b64, sys_prompt, agnes_key=agnes_key)
         if raw:
-            status.update(label="③ 正在整理结果...", state="running")
-            normalized = normalize_model_output(raw, model)
+            status.update(label="③ 正在计算评分...", state="running")
+            normalized = normalize_model_output(raw)
             result = parse_result(normalized, health_groups=groups)
             if result:
                 status.update(label="识别完成", state="complete")
-                result["engine"] = model
                 st.session_state["last_result"] = result
                 add_history(result)
                 switch_page("result")
@@ -2118,31 +2274,55 @@ def render_scan_mobile():
     """扫描上传页：移动端布局（单列堆叠）."""
     render_top_nav("扫描识别", back_target="home", right_action="profile")
 
-    groups, model, api_key, uploader_key = _scan_common_setup()
+    groups, api_key, uploader_key = _scan_common_setup()
 
     if not api_key and os.getenv("DEBUG") == "1":
-        var_name = "AGNES_API_KEY" if model == "agnes" else "MIMO_API_KEY"
-        st.warning(f"未检测到 {var_name}，请在 .env 或 Secrets 中配置")
+        st.warning("未检测到 MIMO_API_KEY，请在 .env 或 Secrets 中配置")
         api_key = st.text_input("API 密钥", type="password")
+
+    # 拍照示例
+    st.image(
+        os.path.join(_BASE_DIR, "test_images", "example_label.jpg"),
+        caption="像这样正对配料表拍照，识别率更高",
+        use_container_width=True,
+    )
+
+    # 输入方式选择
+    input_method = st.radio(
+        "输入方式",
+        ["拍照", "从相册选择"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key=f"scan_input_method_{uploader_key}",
+    )
 
     # 上传卡片
     with st.container():
         st.markdown(
             "<div class='scan-card-marker'></div>"
             "<div class='scan-card-header'>"
-            "<div class='scan-card-title'>📷 拍照或上传配料表</div>"
+            f"<div class='scan-card-title'>{_ICON_CAMERA} 拍照或上传配料表</div>"
             "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
             "</div>"
             "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>",
             unsafe_allow_html=True,
         )
-        uploaded = st.file_uploader(
-            "点击选择或拍照上传配料表图片",
-            type=["jpg", "jpeg", "png"],
-            label_visibility="collapsed",
-            help="支持 jpg/png，大图会自动压缩",
-            key=uploader_key,
-        )
+        uploaded = None
+        if input_method == "拍照":
+            uploaded = st.camera_input(
+                "对准配料表拍照",
+                key=f"camera_{uploader_key}",
+                help="点击快门拍摄配料表",
+            )
+        else:
+            uploaded = st.file_uploader(
+                "点击选择或拍照上传配料表图片",
+                type=["jpg", "jpeg", "png"],
+                accept_multiple_files=False,
+                label_visibility="collapsed",
+                help="支持 jpg/png，大图会自动压缩",
+                key=uploader_key,
+            )
 
     # 预览与识别流程
     if uploaded is not None:
@@ -2152,12 +2332,12 @@ def render_scan_mobile():
             st.image(uploaded, use_container_width=True)
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("↻ 重新选择", use_container_width=True, key="scan_retake"):
+                if st.button(f"{_ICON_REFRESH} 重新选择", use_container_width=True, key="scan_retake"):
                     st.session_state["scan_upload_key"] += 1
                     st.rerun()
             with col2:
-                if st.button("✓ 使用照片", type="primary", use_container_width=True, key="scan_confirm"):
-                    _scan_validate_and_recognize(uploaded, api_key, model, groups)
+                if st.button(f"{_ICON_CHECK} 使用照片", type="primary", use_container_width=True, key="scan_confirm"):
+                    _scan_validate_and_recognize(uploaded, api_key, groups)
 
     st.markdown(
         "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",
@@ -2169,32 +2349,56 @@ def render_scan_desktop():
     """扫描上传页：桌面端布局，上传与预览左右并排."""
     render_top_nav("扫描识别", back_target="home", right_action="profile")
 
-    groups, model, api_key, uploader_key = _scan_common_setup()
+    groups, api_key, uploader_key = _scan_common_setup()
 
     if not api_key and os.getenv("DEBUG") == "1":
-        var_name = "AGNES_API_KEY" if model == "agnes" else "MIMO_API_KEY"
-        st.warning(f"未检测到 {var_name}，请在 .env 或 Secrets 中配置")
+        st.warning("未检测到 MIMO_API_KEY，请在 .env 或 Secrets 中配置")
         api_key = st.text_input("API 密钥", type="password")
 
     left, right = st.columns([1, 1])
 
     with left:
+        # 拍照示例
+        st.image(
+            os.path.join(_BASE_DIR, "test_images", "example_label.jpg"),
+            caption="像这样正对配料表拍照，识别率更高",
+            use_container_width=True,
+        )
+
+        # 输入方式选择
+        input_method = st.radio(
+            "输入方式",
+            ["拍照", "从相册选择"],
+            horizontal=True,
+            label_visibility="collapsed",
+            key=f"scan_input_method_desktop_{uploader_key}",
+        )
+
         st.markdown(
             "<div class='scan-card-marker'></div>"
             "<div class='scan-card-header'>"
-            "<div class='scan-card-title'>📷 拍照或上传配料表</div>"
+            f"<div class='scan-card-title'>{_ICON_CAMERA} 拍照或上传配料表</div>"
             "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
             "</div>"
             "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>",
             unsafe_allow_html=True,
         )
-        uploaded = st.file_uploader(
-            "点击选择或拍照上传配料表图片",
-            type=["jpg", "jpeg", "png"],
-            label_visibility="collapsed",
-            help="支持 jpg/png，大图会自动压缩",
-            key=uploader_key,
-        )
+        uploaded = None
+        if input_method == "拍照":
+            uploaded = st.camera_input(
+                "对准配料表拍照",
+                key=f"camera_desktop_{uploader_key}",
+                help="点击快门拍摄配料表",
+            )
+        else:
+            uploaded = st.file_uploader(
+                "点击选择或拍照上传配料表图片",
+                type=["jpg", "jpeg", "png"],
+                accept_multiple_files=False,
+                label_visibility="collapsed",
+                help="支持 jpg/png，大图会自动压缩",
+                key=uploader_key,
+            )
 
     with right:
         if uploaded is not None:
@@ -2203,12 +2407,12 @@ def render_scan_desktop():
             st.image(uploaded, use_container_width=True)
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("↻ 重新选择", use_container_width=True, key="scan_retake_desktop"):
+                if st.button(f"{_ICON_REFRESH} 重新选择", use_container_width=True, key="scan_retake_desktop"):
                     st.session_state["scan_upload_key"] += 1
                     st.rerun()
             with col2:
-                if st.button("✓ 使用照片", type="primary", use_container_width=True, key="scan_confirm_desktop"):
-                    _scan_validate_and_recognize(uploaded, api_key, model, groups)
+                if st.button(f"{_ICON_CHECK} 使用照片", type="primary", use_container_width=True, key="scan_confirm_desktop"):
+                    _scan_validate_and_recognize(uploaded, api_key, groups)
         else:
             st.markdown(
                 "<div class='empty-state'>"
@@ -2310,7 +2514,7 @@ def render_history_page():
                 "</div>",
                 unsafe_allow_html=True,
             )
-            if st.button("📷 开始扫描", type="primary", use_container_width=True, key="hist_empty_scan"):
+            if st.button(f"{_ICON_CAMERA} 开始扫描", type="primary", use_container_width=True, key="hist_empty_scan"):
                 switch_page("scan")
         else:
             st.info("没有匹配的记录")
@@ -2368,7 +2572,6 @@ def render_detail_page():
     # 扫描信息卡片
     ts = fallback.get("timestamp", "") or (record.get("timestamp", "") if record else "")
     type_label = "保健食品" if fallback.get("type") == "supplement" else "食品"
-    engine_name = record.get("engine", fallback.get("engine", MODEL_NAME)) if record else fallback.get("engine", MODEL_NAME)
     st.markdown(
         "<div class='result-card detail-scan-card'>"
         "<div class='result-card-title'>扫描信息</div>"
@@ -2378,7 +2581,7 @@ def render_detail_page():
         f"<div class='detail-scan-row'><span class='detail-scan-label'>扫描时间</span>"
         f"<span class='detail-scan-value'>{_safe(ts)}</span></div>"
         f"<div class='detail-scan-row'><span class='detail-scan-label'>识别引擎</span>"
-        f"<span class='detail-scan-value'>{_safe(engine_name)}</span></div>"
+        f"<span class='detail-scan-value'>{_safe(MODEL_NAME)}</span></div>"
         f"<div class='detail-scan-row'><span class='detail-scan-label'>产品类型</span>"
         f"<span class='detail-scan-value'>{_safe(type_label)}</span></div>"
         "</div></div></div>",
@@ -2412,10 +2615,10 @@ def render_detail_page():
     with st.container():
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("↻ 重新评分", use_container_width=True, key="detail_rescore"):
+            if st.button(f"{_ICON_REFRESH} 重新评分", use_container_width=True, key="detail_rescore"):
                 switch_page("scan")
         with col2:
-            if st.button("➤ 分享给家人", use_container_width=True, key="detail_share"):
+            if st.button(f"{_ICON_SHARE} 分享给家人", use_container_width=True, key="detail_share"):
                 st.toast("已复制结果摘要，可直接粘贴给家人")
 
 
@@ -2471,15 +2674,15 @@ def main():
     # ⚠️ 生产环境（Streamlit Cloud）严禁设置 DEBUG=1，避免泄露 API key 信息
     if os.getenv("DEBUG") == "1":
         with st.expander("🔧 调试信息（DEBUG=1）", expanded=True):
-            mimo_key = get_api_key("mimo")
-            agnes_key = get_api_key("agnes")
+            mimo_key = get_api_key()
             st.markdown(f"- **MiMo API URL**: `{API_URL}`")
             st.markdown(f"- **MiMo Model**: `{MODEL_NAME}`")
             st.markdown(f"- **MiMo API Key 已配置**: {'是' if mimo_key else '否'}")
-            st.markdown(f"- **Agnes API URL**: `{AGNES_API_URL}`")
-            st.markdown(f"- **Agnes Model**: `{AGNES_MODEL_NAME}`")
-            st.markdown(f"- **Agnes API Key 已配置**: {'是' if agnes_key else '否'}")
-            st.markdown("- **Auth Header 类型**: MiMo=`api-key`, Agnes=`Bearer`")
+            st.markdown("- **Auth Header 类型**: `api-key`")
+
+    # 默认模型选择
+    if "selected_model" not in st.session_state:
+        st.session_state["selected_model"] = "mimo"
 
     # 首次访问：先法律同意，再触发 4 步引导
     if "legal_agreed" not in st.session_state:
@@ -2503,29 +2706,29 @@ def main():
     with st.sidebar:
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("🏠 首页", use_container_width=True, key="sb_home"):
+            if st.button(f"{_ICON_HOME} 首页", use_container_width=True, key="sb_home"):
                 switch_page("home")
         with c2:
-            if st.button("📋 历史", use_container_width=True, key="sb_history"):
+            if st.button(f"{_ICON_HISTORY} 历史", use_container_width=True, key="sb_history"):
                 switch_page("history")
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
-        if st.button("👤 健康档案", use_container_width=True, key="sb_profile"):
+        if st.button(f"{_ICON_PROFILE} 健康档案", use_container_width=True, key="sb_profile"):
             switch_page("profile")
         st.divider()
-        # 模型选择对所有用户可用（A/B 对比）
-        if "model_choice" not in st.session_state:
-            st.session_state["model_choice"] = "MiMo (mimo-v2.5)"
-        model_choice = st.radio(
-            "选择识别模型",
-            ["MiMo (mimo-v2.5)", "Agnes (agnes-2.0-flash)"],
-            index=0 if st.session_state["model_choice"].startswith("MiMo") else 1,
-            key="sb_model_choice",
-        )
-        st.session_state["model_choice"] = model_choice
-        st.divider()
 
-        if os.getenv("DEBUG") == "1":
-            with st.expander("高级设置"):
+        with st.expander("高级设置"):
+            model_choice = st.radio(
+                "选择识别模型",
+                options=["mimo", "agnes"],
+                format_func=lambda x: {
+                    "mimo": "MiMo（推荐）：识别更准确",
+                    "agnes": "Agnes（更快）：速度优先",
+                }[x],
+                key="selected_model_radio",
+                index=0 if st.session_state.get("selected_model", "mimo") == "mimo" else 1,
+            )
+            st.session_state["selected_model"] = model_choice
+            if os.getenv("DEBUG") == "1":
                 if st.button("重新查看引导", use_container_width=True, key="replay_ob"):
                     st.session_state["onboarded"] = False
                     st.session_state["onboarding_step"] = 1

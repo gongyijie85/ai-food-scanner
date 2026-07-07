@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 食品配料表识别工具 - UI/UX 审查报告</title>
+<style>
+  :root {
+    --primary: #2E7D32;
+    --primary-light: #4CAF50;
+    --secondary: #1976D2;
+    --warning: #FF9800;
+    --danger: #F44336;
+    --success: #4CAF50;
+    --bg: #FAFAF5;
+    --surface: #FFFFFF;
+    --text: #212121;
+    --text-secondary: #616161;
+    --border: #E0E0E0;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 20px;
+  }
+
+  .report-container { max-width: 1100px; margin: 0 auto; }
+
+  h1 {
+    font-size: 28px; font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  
+  .meta { color: var(--text-secondary); font-size: 14px; margin-bottom: 30px; }
+  
+  .section { 
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border); padding: 28px; margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  
+  .section h2 {
+    font-size: 20px; font-weight: 600; color: var(--text);
+    display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+    padding-bottom: 12px; border-bottom: 2px solid var(--bg);
+  }
+  
+  .section h3 {
+    font-size: 16px; font-weight: 600; color: var(--primary);
+    margin: 20px 0 10px 0;
+  }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 600;
+  }
+  .badge-critical { background: #FFEBEE; color: #C62828; }
+  .badge-warning { background: #FFF3E0; color: #E65100; }
+  .badge-info { background: #E3F2FD; color: #1565C0; }
+  .badge-success { background: #E8F5E9; color: #2E7D32; }
+
+  .issue-card {
+    background: var(--bg); border-radius: 8px; padding: 16px; margin: 12px 0;
+    border-left: 4px solid var(--danger);
+  }
+  .issue-card.warning { border-left-color: var(--warning); }
+  .issue-card.info { border-left-color: var(--secondary); }
+  .issue-card.success { border-left-color: var(--success); }
+  
+  .issue-title { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+  .issue-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+  .issue-fix { 
+    font-size: 13px; margin-top: 8px; padding: 8px 12px;
+    background: #E8F5E9; border-radius: 6px; color: #1B5E20;
+  }
+  .issue-fix::before { content: "💡 建议: "; font-weight: 600; }
+
+  table {
+    width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;
+  }
+  th { background: var(--bg); text-align: left; padding: 10px 14px; font-weight: 600; border-bottom: 2px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: var(--bg); }
+
+  .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 20px 0; }
+  .score-item {
+    text-align: center; padding: 20px; border-radius: var(--radius);
+    background: var(--bg); border: 1px solid var(--border);
+  }
+  .score-value { font-size: 36px; font-weight: 700; }
+  .score-label { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+  .screenshot-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+  .screenshot-item img { width: 100%; border-radius: 8px; border: 1px solid var(--border); }
+  .screenshot-caption { font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 6px; }
+
+  .flow-step {
+    display: flex; gap: 16px; align-items: stretch; margin: 20px 0; overflow-x: auto;
+    padding: 8px;
+  }
+  .flow-step-item {
+    min-width: 160px; flex: 1; text-align: center;
+    background: var(--bg); border-radius: 8px; padding: 16px 12px;
+    border: 1px solid var(--border);
+  }
+  .flow-step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--primary); color: white;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 13px; margin-bottom: 8px;
+  }
+  .flow-step-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .flow-step-desc { font-size: 12px; color: var(--text-secondary); }
+
+  .color-swatch { display: inline-block; width: 20px; height: 20px; border-radius: 4px; vertical-align: middle; margin-right: 6px; border: 1px solid #ddd; }
+
+  @media (max-width: 768px) {
+    .screenshot-row { grid-template-columns: 1fr; }
+    body { padding: 10px; }
+    .section { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="report-container">
+
+<h1>🔍 AI 食品配料表识别工具 — UI/UX 审查报告</h1>
+<p class="meta">审查日期: 2026-07-07 | 应用地址: gongyijie85-ai-food-scanner-app | 审查范围: 全流程 UI/交互/响应式</p>
+
+<!-- 总分概览 -->
+<div class="section">
+<h2>📊 总体评分</h2>
+<div class="score-grid">
+  <div class="score-item">
+    <div class="score-value" style="color: var(--success)">7.2</div>
+    <div class="score-label">总体评分 (满分10)</div>
+  </div>
+  <div class="score-item">
+    <div class="score-value" style="color: var(--warning)">7.0</div>
+    <div class="score-label">视觉设计</div>
+  </div>
+  <div class="score-item">
+    <div class="score-value" style="color: var(--secondary)">7.5</div>
+    <div class="score-label">交互流程</div>
+  </div>
+  <div class="score-item">
+    <div class="score-value" style="color: var(--danger)">6.0</div>
+    <div class="score-label">移动端适配</div>
+  </div>
+  <div class="score-item">
+    <div class="score-value" style="color: var(--primary)">7.8</div>
+    <div class="score-label">功能完整性</div>
+  </div>
+</div>
+<p style="margin-top: 16px; color: var(--text-secondary); line-height: 1.7;">
+该应用是一个基于 Streamlit 构建的 AI 食品配料表扫描识别工具，整体设计思路清晰，采用引导式向导（Onboarding Wizard）降低新用户学习成本。
+核心功能包括：拍照/上传配料表 → AI 识别分析 → 红黄绿三色风险评级。但在视觉一致性、移动端体验、信息架构等方面存在可优化空间。
+</p>
+</div>
+
+<!-- 一、页面布局与视觉设计 -->
+<div class="section">
+<h2>🎨 一、页面布局与视觉设计</h2>
+
+<div class="screenshot-row">
+  <div class="screenshot-item">
+    <img src="02-main-app-desktop.png" alt="桌面端欢迎页">
+    <div class="screenshot-caption">桌面端 - 第1步 欢迎页 (1280×900)</div>
+  </div>
+  <div class="screenshot-item">
+    <img src="03-mobile-view.png" alt="移动端欢迎页">
+    <div class="screenshot-caption">移动端 - 第1步 欢迎页 (375×812)</div>
+  </div>
+</div>
+
+<h3>1.1 整体布局结构</h3>
+
+<div class="issue-card success">
+  <div class="issue-title">✅ 优点：清晰的向导式布局</div>
+  <div class="issue-desc">
+    采用 4 步引导式 Onboarding 流程（欢迎 → 健康设置 → 使用说明 → 准备就绪），每步都有明确的进度条指示（绿色背景 + 蓝色进度条），用户始终知道当前位置和剩余步骤数。这种设计对首次使用的新用户非常友好，降低了认知负担。
+  </div>
+</div>
+
+<div class="issue-card warning">
+  <div class="issue-title">⚠️ 问题：主界面左右分栏在窄屏下空间分配不均</div>
+  <div class="issue-desc">
+    进入主扫描界面后，左侧导航栏（首页、历史、健康档案、模型选择、法律声明、历史记录）与右侧内容区采用固定比例的左右分栏布局。在 1280px 宽度下左侧约占 280px，右侧内容区被压缩；而在 1920px 宽屏上右侧区域留白过多，缺乏最大宽度约束导致内容过度拉伸。
+  </div>
+  <div class="issue-fix">
+    建议为内容区设置 max-width 约束（如 800px），使内容在大屏幕居中显示；左侧导航栏在小屏幕时可折叠为顶部标签栏或汉堡菜单。
+  </div>
+</div>
+
+<div class="issue-card info">
+  <div class="issue-title">ℹ️ 观察：配色方案偏少但协调</div>
+  <div class="issue-desc">
+    当前使用的颜色体系非常简洁：<br>
+    <span class="color-swatch" style="background:#FAFAF5"></span>页面背景 #FAFAF5 (米白色) |
+    <span class="color-swatch" style="background:#FFFFFF"></span>卡片/表面 #FFFFFF |
+    <span class="color-swatch" style="background:#2E7D32"></span>主色调（绿色）#2E7D32 |
+    <span class="color-swatch" style="background:#1976D2"></span>辅助蓝 #1976D2 |
+    <span class="color-swatch" style="background:#FF9800"></span>警告橙 #FF9800<br><br>
+    绿色作为品牌主色贯穿全流程（进度条、按钮、扫描按钮），语义明确（= 安全/健康）。但<strong>缺少红黄绿三色风险等级的实际使用展示</strong>——虽然宣传中提到"用红黄绿三色告诉您添加剂风险"，但在引导流程和空态界面中没有预览或说明这三色的含义。
+  </div>
+  <div class="issue-fix">
+    建议在第3步（使用说明）增加一个示例截图或模拟结果面板，直观展示红/黄/绿三种颜色的含义和对应风险等级。
+  </div>
+</div>
+
+<div class="issue-card warning">
+  <div class="issue-title">⚠️ 问题：进度条视觉层次不足</div>
+  <div class="issue-desc">
+    进度条采用深绿色背景 + 蓝色填充条的双层设计，但蓝色填充部分与绿色背景之间对比度不够强烈，且没有百分比数字提示。用户只能通过文字"第 X 步 / 共 4 步"判断位置，进度条的辅助作用有限。
+  </div>
+  <div class="issue-fix">
+    建议增强进度条的可读性：(1) 在每个步骤节点上添加圆点标记；(2) 已完成步骤用更亮的绿色高亮；(3) 可选添加百分比数字。
+  </div>
+</div>
+</div>
+
+<!-- 二、用户交互流程 -->
+<div class="section">
+<h2>🔄 二、用户交互流程与易用性</h2>
+
+<div class="flow-step">
+  <div class="flow-step-item">
+    <div class="flow-step-num">1</div>
+    <div class="flow-step-title">同意协议</div>
+    <div class="flow-step-desc">用户协议<br>隐私政策</div>
+  </div>
+  <div class="flow-step-item">
+    <div class="flow-step-num">2</div>
+    <div class="flow-step-title">欢迎介绍</div>
+    <div class="flow-step-desc">功能说明<br>3大特性</div>
+  </div>
+  <div class="flow-step-item">
+    <div class="flow-step-num">3</div>
+    <div class="flow-step-title">健康档案</div>
+    <div class="flow-step-desc">选择健康状况<br>个性化建议</div>
+  </div>
+  <div class="flow-step-item">
+    <div class="flow-step-num">4</div>
+    <div class="flow-step-title">使用说明</div>
+    <div class="flow-step-desc">拍照→识别→<br>看结果</div>
+  </div>
+  <div class="flow-step-item">
+    <div class="flow-step-num">5</div>
+    <div class="flow-step-title">开始扫描</div>
+    <div class="flow-step-desc">主功能入口<br>选择模型</div>
+  </div>
+</div>
+
+<div class="screenshot-row">
+  <div class="screenshot-item">
+    <img src="step2.png" alt="第2步 健康状况选择">
+    <div class="screenshot-caption">第2步 - 健康状况选择（多选）</div>
+  </div>
+  <div class="screenshot-item">
+    <img src="step3.png" alt="第3步 使用说明">
+    <div class="screenshot-caption">第3步 - 三步使用说明（图标卡片）</div>
+  </div>
+</div>
+
+<h3>2.1 协议同意页</h3>
+<div class="issue-card success">
+  <div class="issue-title">✅ 优点：合规性设计完善</div>
+  <div class="issue-desc">
+    首次访问必须经过协议同意页面，包含《用户协议及免责声明》和《隐私政策》两个展开项，以及两个独立复选框：
+    (1) 同意协议 (2) 同意收集敏感健康信息并知悉数据可能传输至境外 AI 服务。<br>
+    第二个选项特别说明了数据出境情况，符合中国个人信息保护法要求。
+  </div>
+</div>
+
+<div class="issue-card warning">
+  <div class="issue-title">⚠️ 问题：协议页无法跳过，重复访问时仍需重新同意</div>
+  <div class="issue-desc">
+    每次新会话都需要重新勾选协议，对于已同意过的用户来说增加了操作摩擦。Streamlit 的状态管理特性导致刷新页面后状态丢失。
+  </div>
+  <div class="issue-fix">
+    建议使用 localStorage 或 Cookie 记录用户已同意状态，在有效期内自动跳过协议页。或在 Streamlit 中使用 st.session_state 结合浏览器存储。
+  </div>
+</div>
+
+<h3>2.2 引导流程各步骤</h3>
+<table>
+  <tr>
+    <th width="80">步骤</th>
+    <th width="140">名称</th>
+    <th>评价</th>
+    <th>改进建议</th>
+  </tr>
+  <tr>
+    <td><strong>Step 1</strong></td>
+    <td>欢迎使用</td>
+    <td><span class="badge badge-success">优秀</span></td>
+    <td>标题清晰，副标题"拍照配料表，3秒读懂添加剂风险"直击痛点。三个功能点用 ✅ 列出，一目了然。</td>
+  </tr>
+  <tr>
+    <td><strong>Step 2</strong></td>
+    <td>健康状况</td>
+    <td><span class="badge badge-warning">良好</span></td>
+    <td>默认勾选了"脑梗/心血管"和"高血压"，有"跳过"选项。但可选的健康状况项目未完全展示，需要点击下拉箭头展开查看全部选项，且没有搜索功能。</td>
+  </tr>
+  <tr>
+    <td><strong>Step 3</strong></td>
+    <td>使用说明</td>
+    <td><span class="badge badge-success">优秀</span></td>
+    <td>三列卡片布局（拍照→识别→看结果），每个卡片有 emoji 图标+标题+描述，浅色背景区分（蓝→黄→绿渐变暗示安全递进）。设计感好。</td>
+  </tr>
+  <tr>
+    <td><strong>Step 4</strong></td>
+    <td>准备就绪</td>
+    <td><span class="badge badge-info">一般</span></td>
+    <td>只有一个庆祝 emoji + "准备好了！"文字和一个"开始使用"按钮。此步骤信息量偏少，可以考虑在此处做一个简单的动画或总结回顾。</td>
+  </tr>
+</table>
+
+<h3>2.3 导航与操作反馈</h3>
+<div class="issue-card warning">
+  <div class="issue-title">⚠️ 问题：底部按钮布局不一致</div>
+  <div class="issue-desc">
+    在引导步骤中，底部按钮有两种模式：<br>
+    • Step 2/3："上一步"(白底橙边) + "下一步"(绿底) 并排双按钮<br>
+    • Step 4："上一步"(白底橙边) + "开始使用"(绿底) 双按钮<br>
+    • 但 Step 2 还有额外的"⏭️ 跳过，稍后设置"独立按钮<br>
+    这导致按钮区域的视觉权重在不同步骤间不一致，尤其是"跳过"按钮的位置和样式与其他按钮差异较大。
+  </div>
+  <div class="issue-fix">
+    统一按钮区域布局规范：主操作（下一步/开始使用）始终靠右且为实心填充色，次要操作（上一步/跳过）统一为文字链接样式放在下方或左侧。
+  </div>
+</div>
+
+<div class="issue-card info">
+  <div class="issue-title">ℹ️ 观察：缺少加载状态和错误处理展示</div>
+  <div class="issue-desc">
+    由于网络原因未能完整测试 AI 识别后的结果页面，但从当前界面来看，没有看到明确的 loading spinner 设计、错误重试机制、或空状态（无图片上传时）的设计。Streamlit 默认的加载指示器是顶部的小圆圈旋转，自定义程度较低。
+  </div>
+</div>
+</div>
+
+<!-- 三、扫描功能输入输出 -->
+<div class="section">
+<h2>📷 三、食品扫描功能的输入与结果展示</h2>
+
+<div class="screenshot-row">
+  <div class="screenshot-item">
+    <img src="scanner-main.png" alt="扫描主界面桌面端">
+    <div class="screenshot-caption">桌面端 - 扫描主界面（左侧导航 + 右侧扫描区）</div>
+  </div>
+  <div class="screenshot-item">
+    <img src="mobile-scanner-main.png" alt="扫描主界面移动端">
+    <div class="screenshot-caption">移动端 - 扫描主界面（全宽扫描按钮）</div>
+  </div>
+</div>
+
+<h3>3.1 输入方式</h3>
+<div class="issue-card success">
+  <div class="issue-title">✅ 优点：核心操作极简 — 一个大按钮搞定</div>
+  <div class="issue-desc">
+    主界面的核心操作是一个醒目的圆形绿色大按钮"📷 扫描配料表"。这种设计极大地简化了用户的操作路径——目标用户群体包含老年人（产品定位中提到"老人也能轻松用"），一个大按钮比复杂的表单或多个小按钮友好得多。<br>
+    按钮上方还有"点击大按钮开始"的橙色气泡提示（tooltip 样式），进一步引导操作。
+  </div>
+</div>
+
+<div class="issue-card warning">
+  <div class="issue-title">⚠️ 问题：仅支持一种输入方式（图片上传）</div>
+  <div class="issue-desc">
+    从界面来看，只提供了图片上传/拍照一种输入方式。没有看到以下常见需求的入口：
+    <ul style="margin-left: 20px; margin-top: 6px;">
+      <li>手动输入配料文本（当图片模糊或用户已有文字版配料表时）</li>
+      <li>摄像头实时拍摄 vs 相册选择 的区分（移动端尤其重要）</li>
+      <li>批量上传多张图片的能力</li>
+      <li>拖拽上传区域的视觉提示（桌面端）</li>
+    </ul>
+  </div>
+  <div class="issue-fix">
+    建议至少增加：(1) 手动文本输入作为备选方案；(2) 移动端区分"拍照"和"从相册选取"；(3) 桌面端增加虚线边框的拖拽上传区域。
+  </div>
+</div>
+
+<h3>3.2 模型选择</h3>
+<div class="issue-card info">
+  <div class="issue-title">ℹ️ 观察：提供两种 AI 模型可选</div>
+  <div class="issue-desc">
+    主界面左侧提供模型选择器：
+    <ul style="margin-left: 20px; margin-top: 6px;">
+      <li><strong>MiMo (mimo-v2.5)</strong> — 默认选中（单选框蓝色实心）</li>
+      <li><strong>Agnes (agnes-2.0-flash)</strong> — 可选替代方案</li>
+    </ul>
+    这是一个很好的设计决策——给高级用户选择权，同时给普通用户一个合理的默认值。但两个模型的区别（速度？准确率？成本？适用场景？）没有做任何说明，用户不知道该如何选择。
+  </div>
+  <div class="issue-fix">
+    建议在每个模型名称旁添加简短说明（如 MiMo = 更准确 / Agnes = 更快），或提供一个"?"提示图标展示详细对比信息。
+  </div>
+</div>
+
+<h3>3.3 结果展示（推测）</h3>
+<table>
+  <tr>
+    <th>预期展示内容</th>
+    <th>当前状态</th>
+    <th>建议</th>
+  </tr>
+  <tr>
+    <td>原始图片预览</td>
+    <td>未确认是否显示</td>
+    <td>应显示缩略图供用户对照</td>
+  </tr>
+  <tr>
+    <td>识别出的配料列表</td>
+    <td>未确认格式</td>
+    <td>建议表格形式，含名称/含量/风险等级</td>
+  </tr>
+  <tr>
+    <td>红黄绿三色风险标注</td>
+    <td>产品亮点，但未见实际效果演示</td>
+    <td>确保色彩对比度满足 WCAG AA 标准</td>
+  </tr>
+  <tr>
+    <td>个性化健康建议</td>
+    <td>依赖 Step 2 的健康状况选择</td>
+    <td>根据选择的疾病给出针对性提醒</td>
+  </tr>
+  <tr>
+    <td>语音播报功能</td>
+    <td>产品提到但未见入口</td>
+    <td>应在结果页明显位置放置播放按钮</td>
+  </tr>
+  <tr>
+    <td>历史记录保存</td>
+    <td>显示"最近50条记录保存在本地"</td>
+    <td>✅ 有本地持久化设计</td>
+  </tr>
+</table>
+</div>
+
+<!-- 四、一致性问题 -->
+<div class="section">
+<h2>🎯 四、元素一致性审查</h2>
+
+<h3>4.1 字体系统</h3>
+<table>
+  <tr><th>元素</th><th>字号</th><th>字重</th><th>一致性</th></tr>
+  <tr><td>主标题 H1 ("欢迎使用")</td><td>30px</td><td>Bold</td><td><span class="badge badge-success">一致</span></td></tr>
+  <tr><td>副标题 H2 ("AI 食品配料表...")</td><td>24px</td><td>Semi-Bold</td><td><span class="badge badge-success">一致</span></td></tr>
+  <tr><td>章节标题 H3 ("这个工具能做什么?")</td><td>20px</td><td>Medium</td><td><span class="badge badge-success">一致</span></td></tr>
+  <tr><td>正文</td><td>~15px</td><td>Regular</td><td><span class="badge badge-success">一致</span></td></tr>
+  <tr><td>按钮文字</td><td>~15-16px</td><td>Medium</td><td><span class="badge badge-success">一致</span></td></tr>
+</table>
+<p style="font-size: 13px; color: var(--text-secondary); margin-top: 8px;">
+字体层级清晰：H1 > H2 > H3 > 正文，差距合理（≥4px 差异）。使用系统默认 sans-serif 字体栈，中英文混排正常。
+</p>
+
+<h3>4.2 色彩一致性</h3>
+<div class="issue-card warning">
+  <div class="issue-title">⚠️ 问题：健康标签颜色使用不规范</div>
+  <div class="issue-desc">
+    在扫描主界面顶部，用户选择的健康状况以<span style="background:#FFF3E0;color:#E65100;padding:2px 8px;border-radius:12px;font-size:12px;">橙色药丸标签</span>的形式展示（如"脑梗/心血管""高血压"）。这个橙色 (#FF9800) 在整个应用中的语义角色不清晰——它既用于"跳过"按钮的边框，又用于健康标签的背景，可能导致用户困惑。
+  </div>
+  <div class="issue-fix">
+    建议将健康标签改为蓝色系（与医疗/信息相关联）或保持中性灰色，让橙色专门用于"警告/注意"场景。
+  </div>
+</div>
+
+<div class="issue-card warning">
+  <div class="issue-title">⚠️ 问题：按钮样式存在多种变体</div>
+  <div class="issue-desc">
+    当前至少存在以下按钮变体：<br>
+    ① <strong>主要操作按钮</strong>：绿色填充 (#2E7D32)，白色文字，圆角胶囊形 — 用于"开始使用""下一步"<br>
+    ② <strong>次要操作按钮</strong>：白色填充，橙色边框 (#FF9800)，橙色文字 — 用于"上一步"<br>
+    ③ <strong>跳过按钮</strong>：白色填充，细灰边框，蓝色图标 + 文字 — 用于"跳过，稍后设置"<br>
+    ④ <strong>导航标签按钮</strong>：白色填充，橙色/绿色边框切换 — 用于"首页""历史""健康档案"<br>
+    ⑤ <strong>Fork 按钮</strong>：纯文字链接样式 — Streamlit 内置<br>
+    <br>
+    变体数量偏多（5种以上），且② 和 ④ 都用了橙色边框但语义不同。
+  </div>
+  <div class="issue-fix">
+    建议精简为 3 种按钮类型：Primary（绿底白字）、Secondary（灰底/白底黑字）、Tertiary（纯文字链接）。导航标签不应使用按钮样式。
+  </div>
+</div>
+
+<h3>4.3 间距与留白</h3>
+<div class="issue-card info">
+  <div class="issue-title">ℹ️ 观察：整体留白充足，但局部间距不均</div>
+  <div class="issue-desc">
+    页面四周有较好的边距（约 20-28px），卡片内边距也较舒适（16-28px）。但观察到：
+    <ul style="margin-left: 20px; margin-top: 6px;">
+      <li>"已选：脑梗/心血管、高血压"提示框与上方多选组件之间的距离偏大</li>
+      <li>Step 3 的三张卡片之间间距均匀（良好）</li>
+      <li>底部按钮组与上方内容的间距在不同步骤间不一致</li>
+      <li>移动端底部 Streamlit 自带的浮动按钮可能与页面内容重叠</li>
+    </ul>
+  </div>
+</div>
+
+<h3>4.4 Emoji 与图标混用</h3>
+<div class="issue-card warning">
+  <div class="issue-title">⚠️ 问题：Emoji 和图标风格不统一</div>
+  <div class="issue-desc">
+    应用中混合使用了多种图形元素：
+    <ul style="margin-left: 20px; margin-top: 6px;">
+      <li>Unicode Emoji：🥫 🎯 📖 👴 📷 🤖 📊 🎉 🏠 📋 👤 ❤️</li>
+      <li>Material Design 图标：keyboard_arrow_right, keyboard_double_arrow_left</li>
+      <li>Streamlit 内置 SVG 图标：stImage, stCamera 等</li>
+      <li>自定义插图/emoji 图形：🥫罐头图、🎉庆祝图</li>
+    </ul>
+    不同平台的 Emoji 渲染效果不同（Windows/macOS/Android 显示有差异），且与 Material Icons 的线条风格形成视觉冲突。
+  </div>
+  <div class="issue-fix">
+    建议统一使用一套图标系统——推荐全部使用 Iconify/Lucide 等矢量图标库，或至少将功能性图标统一为同一种风格，Emoji 仅用于装饰性点缀。
+  </div>
+</div>
+</div>
+
+<!-- 五、移动端响应式 -->
+<div class="section">
+<h2>📱 五、移动端响应式适配</h2>
+
+<div class="screenshot-row">
+  <div class="screenshot-item">
+    <img src="mobile-step2.png" alt="移动端第2步">
+    <div class="screenshot-caption">移动端 - 健康选择 (375px)</div>
+  </div>
+  <div class="screenshot-item">
+    <img src="mobile-step3.png" alt="移动端第3步">
+    <div class="screenshot-caption">移动端 - 使用说明 (375px)</div>
+  </div>
+</div>
+
+<h3>5.1 布局适配情况</h3>
+<table>
+  <tr>
+    <th>页面/组件</th>
+    <th>桌面端</th>
+    <th>移动端 (375px)</th>
+    <th>评分</th>
+  </tr>
+  <tr>
+    <td>协议同意页</td>
+    <td>全宽居中</td>
+    <td>自适应良好，按钮全宽</td>
+    <td><span class="badge badge-success">A</span></td>
+  </tr>
+  <tr>
+    <td>Step 1 欢迎</td>
+    <td>居中卡片</td>
+    <td>垂直堆叠，内容完整</td>
+    <td><span class="badge badge-success">A</span></td>
+  </tr>
+  <tr>
+    <td>Step 2 健康选择</td>
+    <td>多选标签横排</td>
+    <td>标签换行正常，但下拉箭头可能误触</td>
+    <td><span class="badge badge-warning">B+</span></td>
+  </tr>
+  <tr>
+    <td>Step 3 使用说明</td>
+    <td>三列横向卡片</td>
+    <td>变为垂直堆叠！失去横向对比效果</td>
+    <td><span class="badge badge-warning">B</span></td>
+  </tr>
+  <tr>
+    <td>Step 4 准备就绪</td>
+    <td>居中大按钮</td>
+    <td>基本一致</td>
+    <td><span class="badge badge-success">A</span></td>
+  </tr>
+  <tr>
+    <td>主扫描界面</td>
+    <td>左右分栏</td>
+    <td>隐藏侧边栏，全宽扫描区 ✅</td>
+    <td><span class="badge badge-success">A-</span></td>
+  </tr>
+  <tr>
+    <td>底部操作按钮</td>
+    <td>双按钮并排</td>
+    <td>变为上下堆叠 ✅</td>
+    <td><span class="badge badge-success">A</span></td>
+  </tr>
+</table>
+
+<h3>5.2 关键移动端问题</h3>
+
+<div class="issue-card warning">
+  <div class="issue-title" style="color: #E65100;">⚠️ P1 - Streamlit 底部工具栏遮挡内容</div>
+  <div class="issue-desc">
+    在所有移动端截图中，右下角都有 Streamlit 框架自带的浮动工具栏（包含"部署"图标和"菜单"按钮）。这个半透明浮动层可能会：
+    <ul style="margin-left: 20px; margin-top: 6px;">
+      <li>遮挡页面底部的重要内容（如"AI识别仅供参考，请以包装原文为准"的免责声明）</li>
+      <li>与应用自身的底部按钮产生视觉竞争</li>
+      <li>用户误认为是应用的一部分而感到困惑</li>
+    </ul>
+  </div>
+  <div class="issue-fix">
+    通过 CSS 隐藏 Streamlit 底部工具栏：<code>[data-testid="stToolbar"] { display: none; }</code> 或使用 st.config 禁用。如果需要保留菜单功能，改用自定义的顶部导航。
+  </div>
+</div>
+
+<div class="issue-card warning">
+  <div class="issue-title" style="color: #E65100;">⚠️ P1 - 扫描按钮尺寸在移动端可能不够大</div>
+  <div class="issue-desc">
+    主扫描按钮虽然是圆形大按钮设计，但在 375px 宽度的屏幕上，其直径约为屏幕宽度的 55%。考虑到目标用户包含老年人（手指灵活性较低、视力可能下降），建议触摸目标尺寸至少 48×48dp（Apple HIG 推荐最小 44×44pt）。当前按钮尺寸勉强达标，但周围留白空间可以更大。
+  </div>
+  <div class="issue-fix">
+    将扫描按钮直径增加到屏幕宽度的 65-70%，并确保按钮周围至少有 16px 的安全触摸区。
+  </div>
+</div>
+
+<div class="issue-card info">
+  <div class="issue-title" style="color: #1565C0;">ℹ️ P2 - Step 3 三步说明卡片在小屏体验下降</div>
+  <div class="issue-desc">
+    桌面端的三张并列卡片（拍照→识别→看结果）在 375px 屏幕上变为垂直堆叠。虽然内容不会丢失，但失去了"三步流程"的视觉连贯性，用户需要滚动才能看完三步。建议在移动端使用水平滑动手势或保持缩小版的水平排列。
+  </div>
+</div>
+
+<div class="issue-card info">
+  <div class="issue-title" style="color: #1565C0;">ℹ️ P2 - 文字大小在移动端未做调整</div>
+  <div class="issue-desc">
+    从截图来看，移动端的文字尺寸与桌面端基本相同。对于正文 15px 左右的字体在 iPhone 上尚可接受，但如果用户是老年人群体（产品的目标用户之一），可能需要更大的基础字号（建议 16-18px）和更高的行高（1.8-2.0）。
+  </div>
+</div>
+
+<h3>5.3 性能表现</h3>
+<div class="issue-card info">
+  <div class="issue-title">ℹ️ 性能观察</div>
+  <div class="issue-desc">
+    <ul style="margin-left: 20px; margin-top: 6px;">
+      <li>首屏加载时间：Streamlit Cloud 冷启动约 5-8 秒（框架特性）</li>
+      <li>页面切换流畅度：向导步骤间切换无明显卡顿（Streamlit 全页重渲染机制）</li>
+      <li>图片上传：未成功测试（连接超时），但预计 AI 处理时间 5-15 秒</li>
+      <li>内存占用：单页面 DOM 节点适中，Streamlit iframe 架构带来一定开销</li>
+    </ul>
+    <br>
+    <strong>注意：</strong> 测试过程中遇到两次 net::ERR_CONNECTION_CLOSED 错误，可能是 Streamlit Cloud 免费层的休眠/冷启动机制导致的连接不稳定。生产环境建议考虑稳定性保障。
+  </div>
+</div>
+</div>
+
+<!-- 六、优先级改进清单 -->
+<div class="section">
+<h2>📋 六、改进优先级清单</h2>
+
+<table>
+  <tr>
+    <th width="60">P</th>
+    <th width="220">改进项</th>
+    <th>类别</th>
+    <th>工作量</th>
+    <th>影响</th>
+  </tr>
+  <tr>
+    <td><span class="badge badge-critical">P0</span></td>
+    <td><strong>隐藏/替换 Streamlit 底部工具栏</strong></td>
+    <td>移动端</td>
+    <td>小 (CSS 1行)</td>
+    <td>消除遮挡，提升专业感</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-critical">P0</span></td>
+    <td><strong>增大移动端扫描按钮触控面积</strong></td>
+    <td>移动端/可用性</td>
+    <td>小</td>
+    <td>核心操作，直接影响转化率</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-warning">P1</span></td>
+    <td><strong>统一按钮样式至 3 种以内</strong></td>
+    <td>一致性</td>
+    <td>中</td>
+    <td>减少视觉噪音，提升品质感</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-warning">P1</span></td>
+    <td><strong>增加红黄绿三色风险说明/示例</strong></td>
+    <td>信息传达</td>
+    <td>小</td>
+    <td>核心卖点应有直观展示</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-warning">P1</span></td>
+    <td><strong>模型选择增加说明文案</strong></td>
+    <td>易用性</td>
+    <td>小</td>
+    <td>消除用户选择困难</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-warning">P1</span></td>
+    <td><strong>协议同意状态持久化</strong></td>
+    <td>易用性</td>
+    <td>中</td>
+    <td>减少回访用户操作步骤</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-info">P2</span></td>
+    <td><strong>统一图标系统 (去 Emoji 化)</strong></td>
+    <td>一致性/跨平台</td>
+    <td>大</td>
+    <td>解决跨平台渲染差异</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-info">P2</span></td>
+    <td><strong>增加手动输入配料文本的功能</strong></td>
+    <td>功能完整性</td>
+    <td>中</td>
+    <td>覆盖更多使用场景</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-info">P2</span></td>
+    <td><strong>移动端增大基础字号</strong></td>
+    <td>适老化</td>
+    <td>小</td>
+    <td>服务老年用户群体</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-info">P2</span></td>
+    <td><strong>内容区增加 max-width 约束</strong></td>
+    <td>响应式/大屏</td>
+    <td>小</td>
+    <td>改善大屏阅读体验</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-info">P2</span></td>
+    <td><strong>增加 Loading/Error/Empty 状态设计</strong></td>
+    <td>健壮性</td>
+    <td>中</td>
+    <td>提升用户体验完整性</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-info">P3</span></td>
+    <td><strong>进度条增强视觉效果</strong></td>
+    <td>视觉细节</td>
+    <td>小</td>
+    <td>锦上添花</td>
+  </tr>
+  <tr>
+    <td><span class="badge badge-info">P3</span></td>
+    <td><strong>Step 4 增加回顾/动画</strong></td>
+    <td>愉悦感</td>
+    <td>小</td>
+    <td>提升期待感</td>
+  </tr>
+</table>
+</div>
+
+<!-- 总结 -->
+<div class="section">
+<h2>💡 总结</h2>
+<p style="font-size: 15px; line-height: 1.8;">
+这是一个<strong>产品思路清晰、目标用户定位准确</strong>的应用。4 步引导式 Onboarding 是最大的亮点——它有效地降低了 AI 工具的使用门槛，特别是对不太熟悉科技的老年用户群体。"一个绿色大按钮"的核心交互设计也非常出色，体现了<strong>渐进式披露（Progressive Disclosure）</strong>的设计原则。<br><br>
+主要的改进方向集中在三个层面：<br>
+<strong>(1) 移动端体验打磨</strong> — 隐藏框架元素、增大触控目标、优化字号；<br>
+<strong>(2) 视觉一致性收敛</strong> — 减少按钮变体数量、统一图标系统、明确色彩语义；<br>
+<strong>(3) 信息完整性补充</strong> — 补充风险等级示例、模型说明、多输入方式支持。<br><br>
+这些改进不需要重构现有架构，大部分可以通过 CSS 调整和小幅功能迭代完成。总体而言，这是一个<strong>值得继续优化的好产品</strong>。
+</p>
+</div>
+
+<hr style="border:none; border-top:1px solid var(--border); margin: 24px 0;">
+<p style="text-align:center; color: var(--text-secondary); font-size: 13px;">
+报告生成时间: 2026-07-07 | 基于 Playwright 自动化截图 + 人工分析 | 截图来源: Streamlit Cloud 部署实例
+</p>
+
+</div>
+
+</body>
+</html>

@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.5.7-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.5.9-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 一句话介绍
 
@@ -11,6 +11,8 @@
 
 ## 最新更新
 
+- **v0.5.9（2026-07-07）**：同事反馈 P0/P1 快速收尾。关键位置 emoji 统一替换为内联 SVG（返回、健康档案、首页、历史、健康档案、扫描、再扫一个、返回首页、语音播报、重新选择、使用照片、重新评分、分享给家人），避免跨平台渲染差异；统一 secondary 按钮为绿色主题；修复健康档案页 HTML 标签直接显示为文本的问题；修复结果页营养成分条字段别名；扫描页增加「拍照 / 从相册选择」入口；模型选择折叠到「高级设置」并加中文说明；移动端 body 字号从 18px 提升至 19px；补齐 `test_label.jpg` 示例图。`py_compile` 与 `pytest` 51 项全量通过。
+- **v0.5.8（2026-07-07）**：加回 Agnes 作为降级备用模型（仅 MiMo 失败时自动切换，正常流程不增加延迟）；`call_api()` 参数化支持双端点；新增 `call_api_with_fallback()` + `st.toast` 切换提示；新增 `TestBuildSystemPrompt` 和 `TestCallApiWithFallback` 共 8 项测试；恢复 `.env.example` 和 CI 中的 `AGNES_API_KEY` 环境变量配置；文档统一说明 Agnes 降级定位；版本号同步到 v0.5.8。
 - **v0.5.7（2026-07-07）**：执行 ponytail-audit 生产就绪清理。删除 GBT/、pages/、pages-redesign/ 等废弃目录与 README_PROTOTYPE.md、colors_and_type.css、download_test_images.py、diag_verify_ui.py；合并 `load_css()` + `inject_elder_css()` 为 `inject_css()`；内联 `_clip_path()` 与 `_show_friendly_error()`；删除 `render_home_page` 等四个单转发函数并内联设备分发；移除 `?test=1` / `?mock=1` 调试入口和 `_inject_mock_result`；`_js_attr_safe()` 改用标准库 `_safe()`；移除历史页无功能麦克风按钮。同步更新 .gitignore，py_compile、pytest 30 项全量通过。
 - **v0.5.6（2026-07-07）**：双端独立页面重构。新增 `detect_device_type()`，支持 URL 参数、session_state 缓存、User-Agent 判断，默认 mobile；首页、扫描页、结果页拆分为 `*_mobile()` / `*_desktop()` 两套渲染函数，桌面端左右双栏、最大宽度 900px，移动端单列堆叠；CSS 新增 `.device-mobile` / `.device-desktop` 设备类名规则；新增 7 个 `detect_device_type()` 单元测试。py_compile、pytest 全量通过。
 - **v0.5.4（2026-07-06）**：修复结果页语音按钮仍无声音问题：voice_control_panel() 与慢速重听按钮均改为 MutationObserver + data-* 属性绑定，彻底移除内联 onclick（React hydration 会剥离 onclick）；同时清理 3 处未使用变量；py_compile、pytest、diag_verify_ui、真实浏览器 TTS 出声验证全部通过。
@@ -86,6 +88,7 @@ Yuka（8000 万用户）、薄荷健康、营养盒子、Foodvisor、MyFitnessPa
 | 层 | 选型 | 原因 |
 |----|------|------|
 | 多模态 API | MiMo Vision (mimo-v2.5) | 小米自研，Token Plan 价格低，已验证支持图片输入 |
+| 降级备用 | Agnes-2.0-Flash | MiMo 失败时自动切换，免费额度兜底 |
 | 框架 | Streamlit | Python 一键 Web 化，开发快，演示友好 |
 | 适老化样式 | 自研 CSS | 18pt 最小字号、48pt 触摸区域、高对比度 |
 | 语音播报 | 浏览器原生 SpeechSynthesis | 零依赖，Microsoft Yaoyao 女声 |
@@ -160,7 +163,7 @@ streamlit run app.py
 ## 法律合规提示
 
 - **服务定位**：本仓库当前为参赛技术展示 Demo，不构成医疗诊断、治疗建议或消费推荐。
-- **跨境传输**：识别服务部署于境外服务器（Streamlit Cloud / MiMo / Agnes），上传图片及识别结果可能涉及跨境数据传输。
+- **跨境传输**：识别服务部署于境外服务器（Streamlit Cloud / MiMo / Agnes 备用），上传图片及识别结果可能涉及跨境数据传输。
 - **备案评估**：初赛 Demo 阶段通常无需 ICP 备案、算法备案、互联网药品信息服务备案；详见 `LEGAL_REVIEW.md`。
 - **数据保护**：Demo 不保存用户上传图片，健康档案与历史记录仅在当前浏览器会话中使用，关闭页面后自动清空。
 - **正式运营前**：务必聘请专业律师或合规顾问重新评估。

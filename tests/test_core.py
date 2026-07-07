@@ -20,6 +20,10 @@ from app import (
     load_gb2760_risk,
     normalize_model_output,
     detect_device_type,
+    _is_blocklisted,
+    _generate_advice,
+    C_LEVEL_DENSITY_PENALTY,
+    C_LEVEL_DENSITY_THRESHOLD,
 )
 
 
@@ -47,6 +51,17 @@ class TestNormalizeAdditive:
         level, ins, note = normalize_additive("某种未知物质")
         assert level == "B"
         assert "未在 GB 2760" in note
+
+    def test_blocklisted_basic_ingredient(self):
+        """黑名单基础配料应返回 level='A'，避免误扣分"""
+        level, ins, note = normalize_additive("白砂糖")
+        assert level == "A"
+        assert "基础配料" in note
+
+    def test_blocklisted_water(self):
+        """水应返回 level='A'"""
+        level, ins, note = normalize_additive("水")
+        assert level == "A"
 
 
 class TestComputeScoreFromAdditives:
@@ -81,6 +96,28 @@ class TestComputeScoreFromAdditives:
         score = compute_score_from_additives(additives)
         assert score == 92  # 100 - 8
 
+    def test_c_level_density_penalty(self):
+        """C 级添加剂超过阈值应额外扣分"""
+        # 构造 3 个 C 级添加剂（利用已知的 TBHQ/特丁基对苯二酚）
+        additives = [
+            {"name": "TBHQ"},
+            {"name": "特丁基对苯二酚"},
+            {"name": "亚硝酸钠"},
+        ]
+        score = compute_score_from_additives(additives)
+        expected = 100 - 25 * 3 - C_LEVEL_DENSITY_PENALTY
+        assert score == max(0, expected)
+
+    def test_blocklisted_not_penalized(self):
+        """黑名单基础配料不应扣分"""
+        additives = [
+            {"name": "水"},
+            {"name": "食用盐"},
+            {"name": "白砂糖"},
+        ]
+        score = compute_score_from_additives(additives)
+        assert score == 100
+
 
 class TestCheckDrugFoodConflicts:
     """测试 check_drug_food_conflicts 函数"""
@@ -114,7 +151,6 @@ class TestParseResult:
         result = parse_result(raw)
         assert result is not None
         assert result["product_name"] == "测试产品"
-        assert result["score"] == 85
 
     def test_json_with_markdown_code_block(self):
         """带 markdown code block 的 JSON 应正确解析"""
@@ -136,6 +172,20 @@ class TestParseResult:
         result = parse_result(raw)
         assert result is None
 
+    def test_advice_template_fallback(self):
+        """advice 为空或含禁用词时应使用本地模板兜底"""
+        raw = '{"type": "food", "product_name": "测试", "additives": [], "advice": ""}'
+        result = parse_result(raw, health_groups=["糖尿病"])
+        assert "糖尿病" in result["advice"]
+        assert "请咨询" in result["advice"]
+
+    def test_advice_template_forbidden_words(self):
+        """advice 含医学疗效词时应被模板替换"""
+        raw = '{"type": "food", "product_name": "测试", "additives": [], "advice": "本品可降三高"}'
+        result = parse_result(raw, health_groups=["高血压"])
+        assert "降三高" not in result["advice"]
+        assert "高血压" in result["advice"]
+
 
 class TestNormalizeModelOutput:
     """测试 normalize_model_output 函数"""
@@ -143,7 +193,7 @@ class TestNormalizeModelOutput:
     def test_strip_markdown_code_block(self):
         """应去掉 Markdown 代码块标记"""
         raw = '```json\n{"type": "food", "product_name": "测试", "additives": []}\n```'
-        out = normalize_model_output(raw, "mimo")
+        out = normalize_model_output(raw)
         data = json.loads(out)
         assert data["type"] == "food"
         assert data["product_name"] == "测试"
@@ -151,29 +201,16 @@ class TestNormalizeModelOutput:
     def test_ensure_additives_is_list(self):
         """additives 非 list 时应强制为空 list"""
         raw = '{"type": "food", "product_name": "测试", "additives": "无"}'
-        out = normalize_model_output(raw, "mimo")
+        out = normalize_model_output(raw)
         data = json.loads(out)
         assert data["additives"] == []
 
     def test_english_product_name_fallback(self):
         """纯英文 product_name 应替换为「该产品」"""
         raw = '{"type": "food", "product_name": "Pure English", "additives": []}'
-        out = normalize_model_output(raw, "mimo")
+        out = normalize_model_output(raw)
         data = json.loads(out)
         assert data["product_name"] == "该产品"
-
-    def test_agnes_field_alias_mapping(self):
-        """Agnes 别名字段应映射为标准名"""
-        raw = json.dumps({
-            "type": "food",
-            "product_name": "测试",
-            "additive": [{"name": "山梨酸钾"}],
-        })
-        out = normalize_model_output(raw, "agnes")
-        data = json.loads(out)
-        assert "additives" in data
-        assert data["additives"] == [{"name": "山梨酸钾"}]
-        assert "additive" not in data
 
     def test_model_score_is_removed(self):
         """模型自带 score / level 应被删除"""
@@ -183,7 +220,7 @@ class TestNormalizeModelOutput:
             "score": 95,
             "additives": [{"name": "山梨酸钾", "level": "A", "score": 95}],
         })
-        out = normalize_model_output(raw, "agnes")
+        out = normalize_model_output(raw)
         data = json.loads(out)
         assert "score" not in data
         assert "level" not in data["additives"][0]
@@ -191,8 +228,71 @@ class TestNormalizeModelOutput:
     def test_invalid_json_returns_raw(self):
         """非法 JSON 应原样返回"""
         raw = "这不是 JSON"
-        out = normalize_model_output(raw, "mimo")
+        out = normalize_model_output(raw)
         assert out == raw
+
+    def test_blocklisted_additive_filtered(self):
+        """黑名单基础配料应从 additives 中过滤"""
+        raw = json.dumps({
+            "type": "food",
+            "product_name": "测试",
+            "additives": [
+                {"name": "水"},
+                {"name": "白砂糖"},
+                {"name": "山梨酸钾"},
+            ],
+        })
+        out = normalize_model_output(raw)
+        data = json.loads(out)
+        assert len(data["additives"]) == 1
+        assert data["additives"][0]["name"] == "山梨酸钾"
+
+    def test_empty_and_abnormal_additive_filtered(self):
+        """空名称、过短、过长条目应被过滤"""
+        raw = json.dumps({
+            "type": "food",
+            "product_name": "测试",
+            "additives": [
+                {"name": ""},
+                {"name": "a"},
+                {"name": "x" * 35},
+                {"name": "山梨酸钾"},
+            ],
+        })
+        out = normalize_model_output(raw)
+        data = json.loads(out)
+        assert len(data["additives"]) == 1
+        assert data["additives"][0]["name"] == "山梨酸钾"
+
+
+class TestIsBlocklisted:
+    """测试 _is_blocklisted 辅助函数"""
+
+    def test_water_is_blocklisted(self):
+        assert _is_blocklisted("水") is True
+
+    def test_sugar_is_blocklisted(self):
+        assert _is_blocklisted("白砂糖") is True
+
+    def test_additive_not_blocklisted(self):
+        assert _is_blocklisted("山梨酸钾") is False
+
+
+class TestGenerateAdvice:
+    """测试 _generate_advice 辅助函数"""
+
+    def test_default_advice(self):
+        advice = _generate_advice([])
+        assert advice == "普通人群可适量食用，建议保持均衡饮食。"
+
+    def test_diabetes_advice(self):
+        advice = _generate_advice(["糖尿病"])
+        assert "糖尿病" in advice
+
+    def test_multiple_groups(self):
+        advice = _generate_advice(["糖尿病", "高血压"])
+        assert "糖尿病" in advice
+        assert "高血压" in advice
 
 
 class TestDetectDeviceType:
@@ -268,6 +368,101 @@ class TestDataLoading:
         from app import _load_json, _CONFLICTS_PATH
         conflicts = _load_json(_CONFLICTS_PATH).get("conflicts", [])
         assert isinstance(conflicts, list)
+
+
+class TestBuildSystemPrompt:
+    """測試 build_system_prompt 的關鍵約束是否穩定存在"""
+
+    def test_prompt_requires_json_only(self):
+        """提示詞應要求純 JSON 輸出"""
+        from app import build_system_prompt
+        prompt = build_system_prompt([])
+        assert "純 JSON" in prompt or "不要 Markdown" in prompt
+
+    def test_prompt_forbids_basic_ingredients_in_additives(self):
+        """提示詞應禁止把基礎配料列入 additives"""
+        from app import build_system_prompt
+        prompt = build_system_prompt([])
+        assert "白砂糖" in prompt
+        assert "食用盐" in prompt
+
+    def test_prompt_has_output_examples(self):
+        """提示詞應包含輸出示例"""
+        from app import build_system_prompt
+        prompt = build_system_prompt([])
+        assert '"type":"food"' in prompt
+        assert '"type":"supplement"' in prompt
+
+    def test_prompt_requires_no_model_level_or_score(self):
+        """提示詞應要求模型不要輸出 level/score"""
+        from app import build_system_prompt
+        prompt = build_system_prompt([])
+        assert "不要输出 level" in prompt
+        assert "不要给 score" in prompt
+
+
+class TestCallApiWithFallback:
+    """測試 call_api_with_fallback 的降級邏輯"""
+
+    def test_mimo_success_no_fallback(self, monkeypatch):
+        """MiMo 成功時不應調用 Agnes"""
+        from app import call_api_with_fallback
+        call_count = {"mimo": 0, "agnes": 0}
+
+        def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
+            if url and "agnes" in url:
+                call_count["agnes"] += 1
+                return "agnes_result"
+            call_count["mimo"] += 1
+            return "mimo_result"
+
+        monkeypatch.setattr("app.call_api", mock_call_api)
+        result = call_api_with_fallback("mimo_key", "img", "prompt", agnes_key="agnes_key")
+        assert result == "mimo_result"
+        assert call_count["mimo"] == 1
+        assert call_count["agnes"] == 0
+
+    def test_mimo_fail_fallback_to_agnes(self, monkeypatch):
+        """MiMo 失敗時應降級到 Agnes"""
+        from app import call_api_with_fallback
+        call_count = {"mimo": 0, "agnes": 0}
+
+        def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
+            if url and "agnes" in url:
+                call_count["agnes"] += 1
+                return "agnes_result"
+            call_count["mimo"] += 1
+            return None  # MiMo 失敗
+
+        monkeypatch.setattr("app.call_api", mock_call_api)
+        monkeypatch.setattr("streamlit.toast", lambda *a, **kw: None)
+        result = call_api_with_fallback("mimo_key", "img", "prompt", agnes_key="agnes_key")
+        assert result == "agnes_result"
+        assert call_count["mimo"] == 1
+        assert call_count["agnes"] == 1
+
+    def test_mimo_fail_no_agnes_key_returns_none(self, monkeypatch):
+        """MiMo 失敗且無 Agnes key 時應返回 None"""
+        from app import call_api_with_fallback
+
+        def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
+            return None
+
+        monkeypatch.setattr("app.call_api", mock_call_api)
+        result = call_api_with_fallback("mimo_key", "img", "prompt", agnes_key="")
+        assert result is None
+
+    def test_mimo_fail_agnes_also_fail_returns_none(self, monkeypatch):
+        """MiMo 和 Agnes 都失敗時應返回 None"""
+        from app import call_api_with_fallback
+
+        def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
+            return None
+
+        monkeypatch.setattr("app.call_api", mock_call_api)
+        monkeypatch.setattr("streamlit.toast", lambda *a, **kw: None)
+        result = call_api_with_fallback("mimo_key", "img", "prompt", agnes_key="agnes_key")
+        assert result is None
 
 
 if __name__ == "__main__":

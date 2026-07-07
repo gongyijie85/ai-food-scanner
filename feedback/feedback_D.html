@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 食品配料表识别工具 — UI/UX 改进分析报告</title>
+<style>
+  :root {
+    --color-primary: #2E7D32;
+    --color-primary-light: #E8F5E9;
+    --color-primary-dark: #1B5E20;
+    --color-secondary: #FF9800;
+    --color-secondary-light: #FFF3E0;
+    --color-success: #43A047;
+    --color-warning: #FDD835;
+    --color-error: #E53935;
+    --color-info: #1E88E5;
+    --color-bg: #FAFAF5;
+    --color-bg-card: #FFFFFF;
+    --color-text-primary: #212121;
+    --color-text-secondary: #616161;
+    --color-text-tertiary: #9E9E9E;
+    --color-border: #E0E0E0;
+    --color-border-light: #F0F0F0;
+    --color-divider: #EEEEEE;
+    --shadow-card: 0 2px 8px rgba(0,0,0,0.08);
+    --shadow-elevated: 0 8px 24px rgba(0,0,0,0.15);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --space-base: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: "PingFang SC", "Source Han Sans CN", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.7;
+    color: var(--color-text-primary);
+    background: var(--color-bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Layout ── */
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+
+  /* ── Header ── */
+  .doc-header {
+    background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+    color: white;
+    padding: 56px 32px;
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-xl);
+    box-shadow: var(--shadow-elevated);
+    position: relative;
+    overflow: hidden;
+  }
+  .doc-header::before, .doc-header::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+  }
+  .doc-header::before { width: 200px; height: 200px; top: -60px; right: -60px; }
+  .doc-header::after  { width: 120px; height: 120px; bottom: -40px; left: 30%; }
+
+  .doc-header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .doc-header .subtitle {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .doc-header .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    font-size: 14px;
+    opacity: 0.85;
+    position: relative;
+  }
+  .doc-header .meta-item { display: flex; align-items: center; gap: 6px; }
+  .doc-header .meta-item::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background: #FDD835;
+    border-radius: 50%;
+  }
+
+  /* ── Summary cards ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: var(--space-xl);
+  }
+  .summary-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    box-shadow: var(--shadow-card);
+    border-left: 4px solid var(--color-primary);
+  }
+  .summary-card.crit { border-left-color: var(--color-error); }
+  .summary-card.high { border-left-color: var(--color-secondary); }
+  .summary-card.med  { border-left-color: var(--color-warning); }
+  .summary-card.low  { border-left-color: var(--color-info); }
+  .summary-card .num {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--color-primary);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .summary-card.crit .num { color: var(--color-error); }
+  .summary-card.high .num { color: var(--color-secondary); }
+  .summary-card.med  .num { color: #B58A00; }
+  .summary-card.low  .num { color: var(--color-info); }
+  .summary-card .label {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+  }
+
+  /* ── Sections ── */
+  .section {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-card);
+  }
+  .section h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-primary-dark);
+    margin-bottom: 8px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--color-primary-light);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section h2 .icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+    border-radius: 10px;
+    font-size: 20px;
+  }
+  .section .lead {
+    color: var(--color-text-secondary);
+    font-size: 15px;
+    margin-bottom: 24px;
+    margin-top: 4px;
+  }
+
+  .section h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-top: 28px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section h3::before {
+    content: "";
+    width: 4px;
+    height: 18px;
+    background: var(--color-primary);
+    border-radius: 2px;
+  }
+  .section h3:first-of-type { margin-top: 0; }
+
+  .section p { margin-bottom: 12px; color: var(--color-text-primary); }
+  .section ul, .section ol { margin: 12px 0 12px 24px; }
+  .section li { margin-bottom: 8px; }
+  .section li::marker { color: var(--color-primary); }
+
+  /* ── Pros / Cons split ── */
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 16px;
+  }
+  @media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
+
+  .pros, .cons {
+    border-radius: var(--radius-md);
+    padding: 20px;
+  }
+  .pros {
+    background: linear-gradient(135deg, #E8F5E9 0%, #F1F8E9 100%);
+    border-left: 4px solid var(--color-success);
+  }
+  .cons {
+    background: linear-gradient(135deg, #FFF3E0 0%, #FFECB3 100%);
+    border-left: 4px solid var(--color-secondary);
+  }
+  .pros h4, .cons h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .pros h4 { color: var(--color-primary-dark); }
+  .cons h4 { color: #E65100; }
+  .pros li, .cons li { font-size: 14px; line-height: 1.6; }
+  .pros li::marker { color: var(--color-success); }
+  .cons li::marker { color: var(--color-secondary); }
+
+  /* ── Bug cards ── */
+  .bug {
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    border-left: 4px solid;
+    background: var(--color-bg-card);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .bug.crit { border-left-color: var(--color-error); background: linear-gradient(90deg, #FFEBEE 0%, #FFFFFF 30%); }
+  .bug.high { border-left-color: var(--color-secondary); background: linear-gradient(90deg, #FFF3E0 0%, #FFFFFF 30%); }
+  .bug.med  { border-left-color: var(--color-warning); background: linear-gradient(90deg, #FFFDE7 0%, #FFFFFF 30%); }
+  .bug.low  { border-left-color: var(--color-info); background: linear-gradient(90deg, #E3F2FD 0%, #FFFFFF 30%); }
+
+  .bug-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    letter-spacing: 0.5px;
+  }
+  .badge.p0 { background: var(--color-error); }
+  .badge.p1 { background: var(--color-secondary); }
+  .badge.p2 { background: #B58A00; }
+  .badge.p3 { background: var(--color-info); }
+  .bug-title { font-weight: 600; font-size: 16px; }
+  .bug-where { font-size: 13px; color: var(--color-text-tertiary); }
+  .bug-desc { font-size: 14px; color: var(--color-text-primary); }
+  .bug-fix {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: rgba(46,125,50,0.08);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--color-primary-dark);
+  }
+  .bug-fix strong { color: var(--color-primary-dark); }
+
+  /* ── Code block ── */
+  .code {
+    font-family: "Roboto Mono", "SF Mono", "Consolas", monospace;
+    font-size: 13px;
+    background: #263238;
+    color: #ECEFF1;
+    padding: 14px 18px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 10px 0;
+    line-height: 1.5;
+  }
+  .code .tag { color: #80CBC4; }
+  .code .attr { color: #FFB74D; }
+  .code .str { color: #A5D6A7; }
+
+  /* ── Table ── */
+  .priority-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .priority-table th {
+    text-align: left;
+    padding: 12px 16px;
+    background: var(--color-primary);
+    color: white;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .priority-table th:first-child { border-top-left-radius: 8px; }
+  .priority-table th:last-child  { border-top-right-radius: 8px; }
+  .priority-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--color-border-light);
+    vertical-align: top;
+  }
+  .priority-table tr:nth-child(even) td { background: #FAFAFA; }
+  .priority-table tr:hover td { background: var(--color-primary-light); }
+  .priority-table .p { font-weight: 700; }
+  .p.p0 { color: var(--color-error); }
+  .p.p1 { color: var(--color-secondary); }
+  .p.p2 { color: #B58A00; }
+  .p.p3 { color: var(--color-info); }
+
+  /* ── Mockup cards ── */
+  .mockup {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin: 14px 0;
+    padding: 16px;
+    background: #F5F5F0;
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--color-border);
+  }
+  .mockup-label {
+    flex-shrink: 0;
+    width: 80px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .mockup-content { flex: 1; font-size: 14px; }
+
+  /* ── Footnote ── */
+  .doc-footer {
+    text-align: center;
+    color: var(--color-text-tertiary);
+    font-size: 13px;
+    padding-top: 24px;
+    border-top: 1px solid var(--color-border);
+    margin-top: 32px;
+  }
+
+  /* ── Print ── */
+  @media print {
+    body { background: white; }
+    .page { padding: 24px; max-width: 100%; }
+    .section { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+    .doc-header { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Header ── -->
+  <header class="doc-header">
+    <h1>AI 食品配料表识别工具</h1>
+    <div class="subtitle">UI/UX 改进分析报告 · 适老化移动端 Web 应用</div>
+    <div class="meta">
+      <span class="meta-item">应用 URL: gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app</span>
+      <span class="meta-item">测试日期: 2026-07-07</span>
+      <span class="meta-item">目标用户: 3.1 亿中国老年人 + 8300 万慢病人群</span>
+      <span class="meta-item">核心 Slogan: 拍了就懂 · 3 步 3 秒</span>
+    </div>
+  </header>
+
+  <!-- ── Executive summary ── -->
+  <div class="summary-grid">
+    <div class="summary-card crit">
+      <div class="num">3</div>
+      <div class="label">P0 严重问题<br>（用户被完全阻塞）</div>
+    </div>
+    <div class="summary-card high">
+      <div class="num">3</div>
+      <div class="label">P1 高优先级问题<br>（核心功能受损）</div>
+    </div>
+    <div class="summary-card med">
+      <div class="num">3</div>
+      <div class="label">P2 中等问题<br>（可用性缺陷）</div>
+    </div>
+    <div class="summary-card low">
+      <div class="num">2</div>
+      <div class="label">P3 优化建议<br>（细节打磨）</div>
+    </div>
+  </div>
+
+  <!-- ── Section 1: Critical bugs ── -->
+  <section class="section">
+    <h2><span class="icon">!</span>关键 Bug — 立即修复</h2>
+    <p class="lead">这三个问题会完全阻塞用户或使核心页面无法使用，必须在下一版本修复。</p>
+
+    <div class="bug crit">
+      <div class="bug-head">
+        <span class="badge p0">P0</span>
+        <span class="bug-title">"开始使用" 按钮在勾选协议后无法跳转</span>
+      </div>
+      <div class="bug-where">📍 入口：法律协议页（首页默认入口）</div>
+      <p class="bug-desc">勾选两个必读复选框后，"开始使用" 按钮的视觉状态看起来正常（无 disabled 灰色），但点击后页面不跳转、Streamlit 也不重渲染。DOM 验证显示 <code>disabled: false</code>，但事件回调未触发路由切换。</p>
+      <div class="bug-fix"><strong>建议修复：</strong>事件回调可能绑定在了 label 而非 button 元素，或 session_state 键引用了过期变量。直接将 on_change 绑定到 checkbox 状态并强制 <code>st.rerun()</code>。</div>
+    </div>
+
+    <div class="bug crit">
+      <div class="bug-head">
+        <span class="badge p0">P0</span>
+        <span class="bug-title">健康档案页出现未渲染的原始 HTML 字符串</span>
+      </div>
+      <div class="bug-where">📍 健康档案 → "我的健康状况" 与 "过敏原" 区段标题</div>
+      <p class="bug-desc">页面正文直接显示了 HTML 源码：</p>
+      <div class="code"><span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">'profile-section-title'</span><span class="tag">&gt;</span>我的健康状况<span class="tag">&lt;/div&gt;</span>
+<span class="tag">&lt;div</span> <span class="attr">class</span>=<span class="str">'profile-section-desc'</span><span class="tag">&gt;</span>可多选，帮助我们提供更准确的建议<span class="tag">&lt;/div&gt;</span></div>
+      <p class="bug-desc">这些本应是带样式的 section 标题，但以纯文本形式泄露在页面上。</p>
+      <div class="bug-fix"><strong>建议修复：</strong>检查 <code>st.markdown(html, unsafe_allow_html=True)</code> 是否被错误转义，或占位符 <code>{}</code> 字符串未替换成实际 DOM 元素。</div>
+    </div>
+
+    <div class="bug crit">
+      <div class="bug-head">
+        <span class="badge p0">P0</span>
+        <span class="bug-title">首页 "点击大按钮开始" 提示气泡遮挡扫描按钮</span>
+      </div>
+      <div class="bug-where">📍 首页 → 居中绿色大圆形扫描按钮</div>
+      <p class="bug-desc">橙色提示气泡 <code>点击大按钮开始</code> 直接覆盖在绿色扫描按钮上，文字被截断为 <code>点击大按钮开</code>。在 tablet / mobile 视口下问题更严重，气泡几乎完全隐藏。</p>
+      <div class="bug-fix"><strong>建议修复：</strong>将气泡定位从 absolute top:0 改为 absolute top:-50px（按钮上方）或使用 CSS pointer-events + 浮动动画配合 transform: translateY(-100%)。</div>
+    </div>
+  </section>
+
+  <!-- ── Section 2: Layout & visual design ── -->
+  <section class="section">
+    <h2><span class="icon">▦</span>整体布局与视觉设计</h2>
+    <p class="lead">应用采用了鲜明的品牌色彩体系和卡片化布局，但在信息密度、留白和导航层级上还有改进空间。</p>
+
+    <div class="split">
+      <div class="pros">
+        <h4>✓ 做得好的部分</h4>
+        <ul>
+          <li><strong>三色风险系统</strong>（绿/黄/红 + 圆/三角/方块 + 文字）兼顾老年人与色盲用户，图例清晰</li>
+          <li><strong>品牌色统一</strong>：绿色 <code>#2E7D32</code> + 橙色 <code>#FF9800</code> 贯穿全应用</li>
+          <li><strong>结果页评分 Hero 卡</strong>视觉冲击力强，大字号分数 + 可放心食用 pill 极为清晰</li>
+          <li><strong>装饰性圆角元素</strong>（如分数卡角部圆形装饰）增加质感而不嘈杂</li>
+          <li><strong>卡片化布局</strong>节奏良好：分数 → 添加剂 → 健康建议 → 语音</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>✗ 需要改进</h4>
+        <ul>
+          <li><strong>侧边栏占用桌面约 20% 宽度</strong>，混合了导航、模型选择、历史记录预览，应拆分为独立区域</li>
+          <li><strong>"选择识别模型"</strong> 暴露 Agnes 2.0-flash 等技术信息，给老年用户造成认知负担，应折叠到"高级设置"</li>
+          <li><strong>首页中间大量留白</strong>：扫描按钮居中但内容左对齐，视觉重心失衡</li>
+          <li><strong>Streamlit 浏览器工具栏泄露</strong>：右上角 Fork、GitHub 图标、Connecting 状态指示器稀释品牌</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Section 3: User flow ── -->
+  <section class="section">
+    <h2><span class="icon">↗</span>用户交互流程与易用性</h2>
+    <p class="lead">3 步 3 秒的核心 Slogan 深入人心，但进入流程存在阻断、加载态缺失等问题。</p>
+
+    <h3>流程优势</h3>
+    <ul>
+      <li><strong>3 步极简流程</strong>（拍照 → 识别 → 听结果）是设计最强资产，全程贯彻</li>
+      <li><strong>"+ 添加健康状况"</strong> 胶囊是复杂表单的轻量入口</li>
+      <li><strong>底部双按钮</strong>（再扫一个 / 返回首页）符合老年用户决策习惯</li>
+      <li><strong>语音播报 + 0.7x/1.0x/1.3x 语速调节</strong>对视障/阅读困难用户极其友好</li>
+    </ul>
+
+    <h3>流程缺陷</h3>
+    <ul>
+      <li><strong>法律协议门禁过严</strong>：必须勾选两个复选框才能进入，且按钮本身有 Bug（见 P0 #1）。建议 MVP 阶段默认勾选，用户主动 opt-out</li>
+      <li><strong>协议展开后无视觉提示</strong>：用户不知道必须先展开才能勾选，应加"请展开阅读"提示</li>
+      <li><strong>扫描过程无明确 Loading</strong>：10-15 秒识别期间仅出现右上角"Stop"按钮，缺少"正在识别"遮罩</li>
+      <li><strong>缺少相机拍照入口</strong>：README 提到支持 <code>st.camera_input</code>，但部署版本只有文件上传，移动端用户体验不完整</li>
+      <li><strong>未提供相机权限引导</strong>：若启用相机调用，需要清晰的"允许使用相机"教程</li>
+    </ul>
+  </section>
+
+  <!-- ── Section 4: Scanner input & result ── -->
+  <section class="section">
+    <h2><span class="icon">⊙</span>扫描输入与结果显示</h2>
+    <p class="lead">扫描页输入控件有溢出问题；结果页评分卡优秀但缺少营养数据。</p>
+
+    <h3>输入页（拍照/上传）</h3>
+    <ul>
+      <li>✅ 标题 "📷 拍照或上传配料表" 配图标清晰</li>
+      <li>✅ 拍摄提示 "对准包装上的配料表，保证光线充足、文字清晰"</li>
+      <li>✅ 文件约束 "支持 jpg / png，最大 5MB" 明确</li>
+      <li>❌ <strong>Upload 按钮溢出卡片</strong>右侧边框，文字 "Upload" 与 "MB per f..." 被截断。Streamlit 默认 file_uploader 未做容器宽度适配</li>
+      <li>❌ <strong>"Browse files" 为英文</strong>，与全中文 UI 不一致，应自定义 label</li>
+      <li>❌ <strong>选择文件后布局突变</strong>：上传控件移到右侧、预览在左侧的并排布局显得割裂，预览应在下方或替换原控件</li>
+    </ul>
+
+    <h3>结果页（识别结果）</h3>
+    <ul>
+      <li>✅ 大号分数 "84" 是视觉焦点</li>
+      <li>✅ 产品名 + "慢速重听" 按钮在 Hero 卡内即可触发，操作路径短</li>
+      <li>✅ 添加剂清单 + 色盲图例（圆=安全 三角=中等 方块=高风险）</li>
+      <li>❌ <strong>缺少营养成分条</strong>：测试图片中明确包含营养成分表（能量 2406 千焦、蛋白质 4.4g、脂肪 43.6g、钠 109mg），但结果页未显示任何 NRV% 进度条。README 中提到的 <code>render_nutrition_bars</code> 似乎未生效</li>
+      <li>❌ <strong>"特定人群注意" 标签太笼统</strong>：山梨糖醇和甜菊糖苷都标同一标签，应区分 "糖尿病慎用"/"肠胃敏感慎用"/"孕妇儿童慎用"</li>
+      <li>❌ <strong>"查看全部配料" 折叠区被埋</strong>：应作为主按钮放在添加剂清单后，因为老年用户最想看完整配料表</li>
+      <li>❌ <strong>"评分仅供参考..." 免责声明出现两次</strong>（Hero 卡下方 + 页脚），重复</li>
+    </ul>
+
+    <div class="mockup">
+      <div class="mockup-label">测试素材</div>
+      <div class="mockup-content">使用图片：北田 99+ 能量蛋白棒无糖黑芝麻口味包装（膨化食品），含完整配料表 + 营养成分表 + 致敏物质提示</div>
+    </div>
+  </section>
+
+  <!-- ── Section 5: Consistency ── -->
+  <section class="section">
+    <h2><span class="icon">≡</span>页面元素一致性</h2>
+    <p class="lead">字体、颜色、间距在大多数场景下保持一致，但按钮形态、导航组件仍有局部冲突。</p>
+
+    <h3>字体</h3>
+    <ul>
+      <li>✅ 中文 PingFang SC / Noto Sans SC + 数字 Roboto 字体栈合理</li>
+      <li>❌ <strong>标题字号不统一</strong>：首页"食品配料表识别"~24px，法律页"用户协议及隐私政策"~22px，扫描页"扫描识别"~20px，应统一</li>
+      <li>❌ <strong>侧边栏导航带 emoji 前缀</strong>（🏠/📋/👤）但主内容页标题没有，应统一</li>
+      <li>❌ 中英文标点混用（如文件名省略号 "test_image..."）</li>
+    </ul>
+
+    <h3>颜色</h3>
+    <ul>
+      <li>✅ 绿/橙/红三级体系含义清晰</li>
+      <li>❌ <strong>橙色被过度使用</strong>：操作按钮、再扫一个、筛选 pill、添加健康状况、模型选择边框、历史卡片边框全是橙色，应仅用于主 CTA，其他使用中性灰</li>
+      <li>❌ 浅黄背景的"可放心食用"Hero 与白色卡片容器对比稍弱，可加深边框色</li>
+    </ul>
+
+    <h3>间距与圆角</h3>
+    <ul>
+      <li>✅ 16-20px 卡片内边距合理</li>
+      <li>❌ <strong>按钮圆角不统一</strong>：开始使用是全圆胶囊、添加健康状况是胶囊、再扫一个是 4px 直角，应标准化</li>
+      <li>❌ 首页元素之间的间距不均（扫描按钮上方大空白、下方小空白）</li>
+    </ul>
+
+    <h3>组件复用</h3>
+    <ul>
+      <li>❌ <strong>两个"返回"指示器</strong>：扫描/结果页用顶部 ← 箭头，首页用"返回首页"按钮，应统一为粘性左上角返回</li>
+      <li>❌ <strong>两个"健康档案"入口</strong>：首页有 "+ 添加健康状况" pill + 顶部 ♥ 心形图标，应只保留一个</li>
+      <li>❌ <strong>语音控制分裂</strong>：结果页既有大号"一键播报全部结果"按钮，又有"语速调整"折叠器，应合并为单一语音面板</li>
+    </ul>
+  </section>
+
+  <!-- ── Section 6: Mobile ── -->
+  <section class="section">
+    <h2><span class="icon">▢</span>移动端响应式与性能</h2>
+    <p class="lead">3 个视口（桌面 1280、tablet 768、移动 375）均无水平滚动，但布局策略在移动端显得"被动折叠"而非"主动重设计"。</p>
+
+    <h3>响应式表现</h3>
+    <ul>
+      <li>✅ 触摸目标 48-56px，符合适老化标准</li>
+      <li>✅ 卡片在移动端正确堆叠</li>
+      <li>✅ 结果页文字在 375px 宽度下仍清晰可读</li>
+    </ul>
+
+    <h3>移动端问题</h3>
+    <ul>
+      <li>❌ <strong>顶部标题栏布局不一致</strong>：桌面端标题居中、心形在右；移动端标题左对齐、心形换到第二行。移动端像 fallback，不像有意设计</li>
+      <li>❌ <strong>汉堡菜单 (>>) 太小且灰色</strong>，难以发现。但侧边栏隐藏了关键导航（首页/历史/档案/模型/法律），用户必须盲点</li>
+      <li>❌ <strong>历史记录卡片在移动端单列展示</strong>，浪费大量空间，应改为 2 列网格或更紧凑布局</li>
+      <li>❌ <strong>"点击大按钮开始" 提示气泡在移动端完全遮挡扫描按钮上 1/3 区域</strong></li>
+      <li>❌ <strong>侧边栏历史区域比主内容卡片还宽</strong>，移动端横向空间分配失衡</li>
+    </ul>
+
+    <h3>性能数据</h3>
+    <table class="priority-table">
+      <thead>
+        <tr><th>指标</th><th>值</th><th>评价</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>TTFB（首字节）</td><td>583 ms</td><td>可接受</td></tr>
+        <tr><td>总加载时间</td><td>1914 ms</td><td>良好</td></tr>
+        <tr><td>WebSocket 重连</td><td>ERR_CONNECTION_CLOSED 多次</td><td>Streamlit Cloud 闲置后掉线，需优化 reconnect UX</td></tr>
+        <tr><td>图片懒加载</td><td>未启用</td><td>结果页装饰圆点等应延迟加载</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── Section 7: Priority summary ── -->
+  <section class="section">
+    <h2><span class="icon">✓</span>优先级总览</h2>
+    <p class="lead">按修复优先级排列，P0 阻塞所有用户，P1 影响核心功能，P2 削弱体验，P3 是细节打磨。</p>
+
+    <table class="priority-table">
+      <thead>
+        <tr>
+          <th style="width:60px">优先级</th>
+          <th>问题</th>
+          <th style="width:35%">影响</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="p p0">P0</span></td>
+          <td>法律页"开始使用"按钮无法跳转</td>
+          <td>所有用户被阻塞，无法进入主功能</td>
+        </tr>
+        <tr>
+          <td><span class="p p0">P0</span></td>
+          <td>健康档案页泄露原始 HTML 字符串</td>
+          <td>页面不可用</td>
+        </tr>
+        <tr>
+          <td><span class="p p0">P0</span></td>
+          <td>首页提示气泡遮挡扫描按钮</td>
+          <td>核心 CTA 被遮盖</td>
+        </tr>
+        <tr>
+          <td><span class="p p1">P1</span></td>
+          <td>结果页缺少营养成分条（钠/糖/脂肪 NRV%）</td>
+          <td>关键功能缺失（包装图片含数据）</td>
+        </tr>
+        <tr>
+          <td><span class="p p1">P1</span></td>
+          <td>扫描页只有文件上传，无相机拍照</td>
+          <td>移动端核心用例受损</td>
+        </tr>
+        <tr>
+          <td><span class="p p1">P1</span></td>
+          <td>Upload 控件溢出 + 英文 "Browse files" 标签</td>
+          <td>UI 破损、国际化不一致</td>
+        </tr>
+        <tr>
+          <td><span class="p p2">P2</span></td>
+          <td>"特定人群注意" 标签过于笼统</td>
+          <td>个性化建议弱</td>
+        </tr>
+        <tr>
+          <td><span class="p p2">P2</span></td>
+          <td>Streamlit 浏览器工具栏（Fork/Connecting）泄露</td>
+          <td>品牌稀释、用户困惑</td>
+        </tr>
+        <tr>
+          <td><span class="p p2">P2</span></td>
+          <td>侧边栏导航在移动端难以发现</td>
+          <td>导航可达性问题</td>
+        </tr>
+        <tr>
+          <td><span class="p p3">P3</span></td>
+          <td>模型选择器对所有用户可见</td>
+          <td>老年用户认知负担</td>
+        </tr>
+        <tr>
+          <td><span class="p p3">P3</span></td>
+          <td>历史记录卡片在移动端排版浪费空间</td>
+          <td>细节打磨</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── Closing note ── -->
+  <section class="section">
+    <h2><span class="icon">★</span>总结</h2>
+    <p>应用拥有清晰的设计哲学（适老化 + 三色风险 + 语音优先），结果页的评分 Hero 卡是真正出色的组件。然而，三个 P0 Bug 集中爆发在<strong>入口门</strong>（法律页、健康档案、首页 CTA），表明开发流程可能缺少完整的端到端走查测试——尤其是 <code>?test=1</code> 这种开发者 URL 之外的真实入口路径。</p>
+    <p style="margin-top:12px">移动端的扫描流程是真正的核心场景，但目前缺少 <code>st.camera_input</code> 拍照支持，这是产品定位（"3 步 3 秒"）与实现之间的最大差距。建议下一版本优先完成 P0 + P1 的修复，并补一个真实用户测试（让一位 65 岁老人独立完成一次扫描），验证完整闭环。</p>
+  </section>
+
+  <footer class="doc-footer">
+    报告生成于 2026-07-07 · 基于 Streamlit Cloud 部署版本 · 测试视口：1280×800 / 768×1024 / 375×812
+  </footer>
+
+</div>
+</body>
+</html>

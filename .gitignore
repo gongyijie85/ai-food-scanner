@@ -67,3 +67,8 @@ push.ps1
 
 # Git worktrees
 .worktrees/
+
+# 本地诊断截图与计划文档（仓库外协作/个人工作区）
+diag_shots/
+docs/
+.streamlit/documents/

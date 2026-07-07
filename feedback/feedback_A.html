@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI食品配料表识别工具 - UI/UX审计报告</title>
+<style>
+  /* ===== 基础重置 ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ===== 设计变量（适老化：大字号、高对比度） ===== */
+  :root {
+    --color-primary: #2E7D32;          /* 主色：深绿 */
+    --color-primary-light: #E8F5E9;    /* 主色浅：背景 */
+    --color-danger: #C62828;           /* P0：红 */
+    --color-danger-bg: #FFEBEE;
+    --color-warning: #F57F17;          /* P1：橙 */
+    --color-warning-bg: #FFF8E1;
+    --color-info: #1565C0;             /* P2：蓝 */
+    --color-info-bg: #E3F2FD;
+    --color-success: #2E7D32;
+    --color-success-bg: #E8F5E9;
+    --color-text: #1A1A1A;
+    --color-text-light: #555;
+    --color-border: #DDD;
+    --color-bg: #FAFAFA;
+    --color-card: #FFF;
+    --font-size-base: 17px;            /* 适老化：17px基础字号 */
+    --font-size-lg: 20px;
+    --font-size-xl: 24px;
+    --font-size-xxl: 30px;
+    --radius: 8px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    --max-width: 960px;
+  }
+
+  body {
+    font-family: -apple-system, "PingFang SC", "Source Han Sans CN", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+    font-size: var(--font-size-base);
+    line-height: 1.8;
+    color: var(--color-text);
+    background: var(--color-bg);
+    padding: 24px 16px;
+  }
+
+  /* ===== 容器 ===== */
+  .container { max-width: var(--max-width); margin: 0 auto; }
+
+  /* ===== 报告头部 ===== */
+  .report-header {
+    background: linear-gradient(135deg, var(--color-primary) 0%, #1B5E20 100%);
+    color: #FFF;
+    padding: 40px 32px;
+    border-radius: var(--radius);
+    margin-bottom: 32px;
+    box-shadow: var(--shadow);
+  }
+  .report-header h1 { font-size: var(--font-size-xxl); margin-bottom: 16px; }
+  .report-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: var(--font-size-base); opacity: 0.95; }
+  .report-meta span { display: inline-flex; align-items: center; }
+  .report-meta span::before { content: ""; display: inline-block; width: 6px; height: 6px; background: rgba(255,255,255,0.7); border-radius: 50%; margin-right: 8px; }
+
+  /* ===== 评分概览卡片 ===== */
+  .score-overview {
+    background: var(--color-card);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: var(--shadow);
+  }
+  .score-overview h2 { font-size: var(--font-size-xl); margin-bottom: 20px; color: var(--color-primary); border-bottom: 3px solid var(--color-primary-light); padding-bottom: 12px; }
+  .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .score-card { background: var(--color-primary-light); border-radius: var(--radius); padding: 16px 20px; border-left: 4px solid var(--color-primary); }
+  .score-card .label { font-size: 15px; color: var(--color-text-light); margin-bottom: 4px; }
+  .score-card .value { font-size: var(--font-size-lg); font-weight: 700; color: var(--color-primary); }
+  .score-summary { background: var(--color-primary-light); border-radius: var(--radius); padding: 16px 20px; font-size: var(--font-size-lg); font-weight: 700; color: var(--color-primary); text-align: center; }
+  .score-comment { margin-top: 12px; color: var(--color-text-light); font-size: 15px; text-align: center; }
+
+  /* ===== 章节通用样式 ===== */
+  .section {
+    background: var(--color-card);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .section h2 {
+    font-size: var(--font-size-xl);
+    color: var(--color-primary);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 3px solid var(--color-primary-light);
+  }
+  .section h3 {
+    font-size: var(--font-size-lg);
+    color: var(--color-text);
+    margin: 24px 0 12px;
+  }
+  .section h4 {
+    font-size: var(--font-size-base);
+    color: var(--color-primary);
+    margin: 16px 0 8px;
+  }
+  .section p { margin-bottom: 12px; }
+  .section ul, .section ol { margin: 12px 0 12px 24px; }
+  .section li { margin-bottom: 6px; }
+
+  /* ===== 优先级标签 ===== */
+  .priority-badge {
+    display: inline-block;
+    padding: 2px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .priority-p0 { background: var(--color-danger-bg); color: var(--color-danger); }
+  .priority-p1 { background: var(--color-warning-bg); color: var(--color-warning); }
+  .priority-p2 { background: var(--color-info-bg); color: var(--color-info); }
+
+  /* ===== 问题详情块 ===== */
+  .issue-detail {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 16px 0;
+    background: #FAFAFA;
+  }
+  .issue-detail.p0 { border-left: 4px solid var(--color-danger); }
+  .issue-detail.p1 { border-left: 4px solid var(--color-warning); }
+  .issue-detail.p2 { border-left: 4px solid var(--color-info); }
+  .issue-detail h4 { margin-top: 0; }
+  .issue-detail .field { margin-bottom: 8px; }
+  .issue-detail .field-label { font-weight: 700; color: var(--color-text); }
+
+  /* ===== 表格 ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 15px;
+  }
+  th {
+    background: var(--color-primary);
+    color: #FFF;
+    padding: 12px 14px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--color-primary-light); }
+  tbody tr:hover { background: #E0F2E0; }
+
+  /* ===== 状态标签 ===== */
+  .status-ok { color: var(--color-success); font-weight: 700; }
+  .status-warn { color: var(--color-warning); font-weight: 700; }
+  .status-fail { color: var(--color-danger); font-weight: 700; }
+
+  /* ===== 亮点卡片 ===== */
+  .highlight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .highlight-card {
+    background: var(--color-success-bg);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    border-left: 4px solid var(--color-success);
+  }
+  .highlight-card .title { font-weight: 700; color: var(--color-primary); margin-bottom: 6px; font-size: var(--font-size-base); }
+  .highlight-card .desc { font-size: 15px; color: var(--color-text-light); }
+
+  /* ===== 修复路线图 ===== */
+  .roadmap-phase {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin: 16px 0;
+  }
+  .roadmap-phase h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 0;
+    margin-bottom: 12px;
+  }
+  .phase-tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    background: var(--color-primary);
+    color: #FFF;
+  }
+  .task-list { list-style: none; margin-left: 0; }
+  .task-list li {
+    padding: 8px 0 8px 28px;
+    position: relative;
+    border-bottom: 1px dashed var(--color-border);
+  }
+  .task-list li:last-child { border-bottom: none; }
+  .task-list li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 14px;
+    width: 16px; height: 16px;
+    border: 2px solid var(--color-primary);
+    border-radius: 3px;
+  }
+  .task-list li .task-tag {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    margin-left: 8px;
+  }
+
+  /* ===== 代码链接 ===== */
+  a { color: var(--color-info); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code {
+    background: #F0F0F0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+    font-size: 14px;
+  }
+
+  /* ===== 引用块 ===== */
+  blockquote {
+    border-left: 4px solid var(--color-primary);
+    background: var(--color-primary-light);
+    padding: 12px 20px;
+    margin: 16px 0;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    color: var(--color-text-light);
+  }
+
+  /* ===== 页脚 ===== */
+  .report-footer {
+    text-align: center;
+    padding: 24px;
+    color: var(--color-text-light);
+    font-size: 15px;
+  }
+
+  /* ===== 目录导航 ===== */
+  .toc {
+    background: var(--color-card);
+    border-radius: var(--radius);
+    padding: 20px 28px;
+    margin-bottom: 32px;
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 16px;
+    z-index: 10;
+  }
+  .toc h3 { font-size: var(--font-size-base); color: var(--color-primary); margin-bottom: 10px; }
+  .toc ul { display: flex; flex-wrap: wrap; gap: 8px 20px; list-style: none; margin: 0; }
+  .toc a { font-size: 15px; }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 768px) {
+    body { padding: 12px 8px; font-size: 16px; }
+    .report-header, .score-overview, .section { padding: 20px 16px; }
+    .report-header h1 { font-size: 24px; }
+    .section h2 { font-size: 20px; }
+    .score-grid { grid-template-columns: 1fr; }
+    table { font-size: 14px; }
+    th, td { padding: 8px 10px; }
+    .toc { position: static; }
+    .toc ul { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ========== 报告头部 ========== -->
+  <div class="report-header">
+    <h1>AI食品配料表识别工具 - UI/UX审计报告</h1>
+    <div class="report-meta">
+      <span>报告日期：2026-07-07</span>
+      <span>评估版本：v0.5.8（线上部署版）</span>
+      <span>报告人：同事A</span>
+      <span>文档版本：v1.0</span>
+    </div>
+  </div>
+
+  <!-- ========== 目录导航 ========== -->
+  <nav class="toc">
+    <h3>目录导航</h3>
+    <ul>
+      <li><a href="#score">一、整体评估</a></li>
+      <li><a href="#issues">二、关键问题清单</a></li>
+      <li><a href="#layout">三、页面布局与视觉设计</a></li>
+      <li><a href="#interaction">四、交互流程与易用性</a></li>
+      <li><a href="#scanner">五、扫描功能输入与结果</a></li>
+      <li><a href="#consistency">六、页面元素一致性</a></li>
+      <li><a href="#responsive">七、响应式与移动端</a></li>
+      <li><a href="#code">八、代码质量</a></li>
+      <li><a href="#highlights">九、亮点肯定</a></li>
+      <li><a href="#roadmap">十、修复路线图</a></li>
+      <li><a href="#compliance">十一、合规性检查</a></li>
+    </ul>
+  </nav>
+
+  <!-- ========== 一、整体评估 ========== -->
+  <div class="section" id="score">
+    <h2>一、整体评估</h2>
+    <div class="score-grid">
+      <div class="score-card"><div class="label">功能完整性</div><div class="value">8 / 10</div></div>
+      <div class="score-card"><div class="label">视觉设计</div><div class="value">7 / 10</div></div>
+      <div class="score-card"><div class="label">适老化设计</div><div class="value">8 / 10</div></div>
+      <div class="score-card"><div class="label">交互流畅度</div><div class="value">6 / 10</div></div>
+      <div class="score-card"><div class="label">响应式适配</div><div class="value">7 / 10</div></div>
+      <div class="score-card"><div class="label">代码可维护性</div><div class="value">6 / 10</div></div>
+    </div>
+    <div class="score-summary">综合得分：7 / 10</div>
+    <p class="score-comment">功能可用，体验合格。核心流程通顺，适老化做得不错，但有几个明显的bug和优化空间需要处理。</p>
+  </div>
+
+  <!-- ========== 二、关键问题清单 ========== -->
+  <div class="section" id="issues">
+    <h2>二、关键问题清单</h2>
+
+    <!-- P0 -->
+    <h3><span class="priority-badge priority-p0">P0 - 必须立即修复</span></h3>
+
+    <div class="issue-detail p0">
+      <h4>问题1：健康档案页HTML标签直接显示为文本</h4>
+      <div class="field"><span class="field-label">所在位置：</span><a href="file:///d:/GBT/ai-food-scanner/app.py#L1875-L1894">app.py 第1875-1894行</a></div>
+      <div class="field"><span class="field-label">影响程度：</span><span class="status-fail">严重</span></div>
+      <div class="field"><span class="field-label">修复成本：</span>极低（5分钟）</div>
+      <div class="field">
+        <span class="field-label">现象：</span>健康档案页面中，"我的健康状况"、"过敏原"等标题显示为
+        <code>&lt;div class='profile-section-title'&gt;我的健康状况&lt;/div&gt;</code> 这样的原始HTML代码。
+      </div>
+      <div class="field">
+        <span class="field-label">根因：</span>以下4处 <code>st.markdown()</code> 调用缺少 <code>unsafe_allow_html=True</code> 参数：
+        <ul>
+          <li>第1875行：<code>st.markdown("&lt;div class='profile-section-title'&gt;我的健康状况&lt;/div&gt;")</code></li>
+          <li>第1876行：<code>st.markdown("&lt;div class='profile-section-desc'&gt;可多选...&lt;/div&gt;")</code></li>
+          <li>第1893行：<code>st.markdown("&lt;div class='profile-section-title'&gt;过敏原&lt;/div&gt;")</code></li>
+          <li>第1894行：<code>st.markdown("&lt;div class='profile-section-desc'&gt;如有过敏请勾选&lt;/div&gt;")</code></li>
+        </ul>
+      </div>
+      <div class="field"><span class="field-label">修复方案：</span>给这4处调用都加上 <code>unsafe_allow_html=True</code>。</div>
+    </div>
+
+    <div class="issue-detail p0">
+      <h4>问题2：config主题色与CSS主题色不一致</h4>
+      <div class="field"><span class="field-label">所在位置：</span><a href="file:///d:/GBT/ai-food-scanner/.streamlit/config.toml#L13">config.toml 第13行</a></div>
+      <div class="field"><span class="field-label">影响程度：</span><span class="status-warn">中等</span></div>
+      <div class="field"><span class="field-label">修复成本：</span>极低（2分钟）</div>
+      <div class="field">
+        <span class="field-label">现象：</span>进度条等Streamlit原生组件显示蓝色，而整体设计是绿色主题。
+      </div>
+      <div class="field">
+        <span class="field-label">根因：</span>config.toml 中 <code>primaryColor = "#1976D2"</code>（蓝色），但 style.css 中主色是 <code>#2E7D32</code>（绿色）。
+      </div>
+      <div class="field"><span class="field-label">修复方案：</span>将 config.toml 的 <code>primaryColor</code> 改为 <code>#2E7D32</code>。</div>
+    </div>
+
+    <!-- P1 -->
+    <h3><span class="priority-badge priority-p1">P1 - 建议本迭代修复</span></h3>
+
+    <table>
+      <thead>
+        <tr><th>编号</th><th>问题描述</th><th>影响程度</th><th>修复成本</th><th>优先级理由</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>3</td>
+          <td>导航系统混乱（侧边栏+顶部返回+页面内跳转，三套并存）</td>
+          <td><span class="status-warn">高</span></td>
+          <td>中</td>
+          <td>影响用户理解成本，尤其是老年人</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>识别过程缺少分步进度反馈</td>
+          <td><span class="status-warn">中</span></td>
+          <td>低</td>
+          <td>用户等待焦虑，不知道还要等多久</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>移动端无底部导航栏</td>
+          <td><span class="status-warn">中</span></td>
+          <td>中</td>
+          <td>移动端切页需要开侧边栏，操作繁琐</td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>侧边栏历史与历史页面功能重复</td>
+          <td><span class="status-warn">中</span></td>
+          <td>低</td>
+          <td>功能冗余，维护成本高</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="issue-detail p1">
+      <h4>问题3详情：导航系统不统一</h4>
+      <div class="field"><span class="field-label">现状：</span></div>
+      <ul>
+        <li>侧边栏有：首页、历史、健康档案 三个按钮</li>
+        <li>顶部导航栏有：返回按钮</li>
+        <li>页面内还有：各种跳转按钮</li>
+      </ul>
+      <div class="field"><span class="field-label">问题：</span>三套导航并存，用户容易困惑；侧边栏在移动端默认展开会遮挡内容；返回按钮逻辑不够直观。</div>
+      <div class="field">
+        <span class="field-label">建议方案：</span>
+        <ul>
+          <li><strong>移动端：</strong>底部Tab栏（首页 / 历史 / 我的），顶部只保留返回按钮</li>
+          <li><strong>桌面端：</strong>保留侧边栏，但简化内容（只放导航+模型选择）</li>
+          <li>统一顶部导航栏的交互逻辑</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="issue-detail p1">
+      <h4>问题4详情：识别过程缺少反馈</h4>
+      <div class="field"><span class="field-label">现状：</span>点击识别后只有一个加载动画，用户不知道当前在做什么。</div>
+      <div class="field">
+        <span class="field-label">建议方案：</span>增加三步提示：
+        <ol>
+          <li>"正在上传图片..."</li>
+          <li>"正在分析配料表..."</li>
+          <li>"正在计算评分..."</li>
+        </ol>
+        每个步骤配一个小进度条或图标动画，让等待过程有预期。
+      </div>
+    </div>
+
+    <div class="issue-detail p1">
+      <h4>问题5详情：移动端导航成本高</h4>
+      <div class="field"><span class="field-label">现状：</span>移动端用户要切换页面，必须先点左上角的汉堡菜单打开侧边栏，再选按钮，至少两步操作。</div>
+      <div class="field"><span class="field-label">建议方案：</span>移动端增加底部固定导航栏（3-4个Tab），符合移动端用户习惯，一步到达。</div>
+    </div>
+
+    <div class="issue-detail p1">
+      <h4>问题6详情：历史记录功能重复</h4>
+      <div class="field"><span class="field-label">现状：</span>侧边栏有完整的历史记录列表，还有一个单独的"历史"页面，带搜索和筛选。</div>
+      <div class="field"><span class="field-label">问题：</span>功能重叠，用户不知道该用哪个；维护两套代码，改一个容易忘另一个。</div>
+      <div class="field">
+        <span class="field-label">建议方案：</span>
+        <ul>
+          <li>侧边栏只显示最近3条历史（快捷访问），加一个"查看全部"链接跳到历史页面</li>
+          <li>完整的搜索、筛选、删除功能都放在历史页面</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- P2 -->
+    <h3><span class="priority-badge priority-p2">P2 - 后续迭代优化</span></h3>
+
+    <table>
+      <thead>
+        <tr><th>编号</th><th>问题描述</th><th>影响程度</th><th>修复成本</th><th>建议版本</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>7</td><td>桌面/移动端两套代码，重复度高</td><td>低（用户无感知）</td><td>高</td><td>v0.6.0</td></tr>
+        <tr><td>8</td><td>按钮样式不统一</td><td>低</td><td>中</td><td>v0.5.9</td></tr>
+        <tr><td>9</td><td>缺少拍照示例参考图</td><td>中</td><td>低</td><td>v0.5.9</td></tr>
+        <tr><td>10</td><td>结果页添加剂列表太长时缺少折叠</td><td>低</td><td>低</td><td>v0.6.0</td></tr>
+        <tr><td>11</td><td>评分含义不够明确</td><td>低</td><td>低</td><td>v0.5.9</td></tr>
+        <tr><td>12</td><td>空状态页面较简陋</td><td>低</td><td>低</td><td>v0.6.0</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 三、页面布局与视觉设计 ========== -->
+  <div class="section" id="layout">
+    <h2>三、页面布局与视觉设计</h2>
+
+    <h3>做得好的</h3>
+    <ol>
+      <li><strong>绿色主题契合：</strong>主色调 #2E7D32（深绿）搭配浅绿背景，与"健康/食品"主题高度契合</li>
+      <li><strong>卡片式布局清晰：</strong>各功能模块用白色卡片分隔，层次分明</li>
+      <li><strong>大圆形扫描按钮醒目：</strong>首页的圆形扫描按钮设计很有辨识度，符合适老化要求</li>
+      <li><strong>设计系统完整：</strong>CSS中定义了完整的变量系统（色彩、字体、间距、圆角、阴影、动效）</li>
+    </ol>
+
+    <h3>需要改进的</h3>
+    <ol>
+      <li><strong>主题色分裂：</strong>config是蓝色，CSS是绿色，原生组件与自定义组件风格不统一（P0）</li>
+      <li><strong>按钮风格混杂：</strong>主按钮绿色渐变圆角、次按钮橙色边框、侧边栏按钮默认样式+图标 — 建议统一样式规范，最多3种按钮类型</li>
+      <li><strong>图标风格不统一：</strong>emoji、文字图标、SVG 混用，建议统一用 emoji 保持简单</li>
+    </ol>
+  </div>
+
+  <!-- ========== 四、交互流程与易用性 ========== -->
+  <div class="section" id="interaction">
+    <h2>四、交互流程与易用性</h2>
+
+    <h3>做得好的</h3>
+    <ol>
+      <li><strong>引导流程清晰：</strong>4步式引导，每步内容简洁，用户快速上手</li>
+      <li><strong>核心路径短：</strong>首页 → 点大按钮 → 传图 → 看结果，三步完成核心任务</li>
+      <li><strong>适老化到位：</strong>18pt基础字号、56px最小按钮高度、高对比度配色、语音播报功能</li>
+      <li><strong>错误处理完善：</strong>API失败有重试、有降级提示，不直接甩技术错误给用户</li>
+    </ol>
+
+    <h3>需要改进的</h3>
+    <ol>
+      <li><strong>导航系统混乱：</strong>三套导航并存，用户容易迷路（P1）</li>
+      <li><strong>等待缺少反馈：</strong>识别过程只有转圈，用户心里没底（P1）</li>
+      <li><strong>返回逻辑不清晰：</strong>顶部返回按钮有时候回上一页，有时候回首页，逻辑不一致</li>
+      <li><strong>缺少快捷操作：</strong>结果页没有"再扫一张"的快捷按钮，用户得返回首页重新来</li>
+    </ol>
+  </div>
+
+  <!-- ========== 五、扫描功能 ========== -->
+  <div class="section" id="scanner">
+    <h2>五、扫描功能输入与结果展示</h2>
+
+    <h3>做得好的</h3>
+    <ol>
+      <li><strong>上传区域直观：</strong>虚线边框 + 浅绿色背景 + 相机图标，一眼就知道能传图</li>
+      <li><strong>评分英雄区醒目：</strong>大字号分数 + 背景色编码（绿/黄/红）+ 形状图标（圆/三角/方块）+ 文字标签，多重编码确保老年人也能快速理解</li>
+      <li><strong>添加剂列表清晰：</strong>左侧色条快速区分等级、形状图标辅助识别、等级标签明确、底部图例说明</li>
+      <li><strong>语音播报实用：</strong>结果页有语音播报按钮，语速可调，针对浏览器兼容性做了处理</li>
+    </ol>
+
+    <h3>需要改进的</h3>
+    <ol>
+      <li><strong>缺少拍照示例：</strong>用户不知道什么样的照片识别率高（P2）— 建议在上传区域加一张"正确拍照示例"缩略图</li>
+      <li><strong>上传提示字偏小：</strong>"支持 jpg/png，最大 5MB" 等提示文字字号偏小</li>
+      <li><strong>添加剂列表缺少折叠：</strong>如果有十几二十种添加剂，页面会很长 — 建议默认显示前5种，超过部分"查看全部 X 种"展开</li>
+      <li><strong>评分含义不够直观：</strong>80分具体意味着什么？建议分数旁边加一句简短说明，如"80分 = 添加剂较少，可放心食用"</li>
+      <li><strong>缺少重新扫描入口：</strong>结果页底部建议加一个"再扫一张"按钮</li>
+    </ol>
+  </div>
+
+  <!-- ========== 六、页面元素一致性 ========== -->
+  <div class="section" id="consistency">
+    <h2>六、页面元素一致性</h2>
+
+    <h3>字体</h3>
+    <ul>
+      <li><span class="status-ok">达标</span> 中文字体栈完整：PingFang SC → Source Han Sans CN → Noto Sans SC → Microsoft YaHei</li>
+      <li><span class="status-ok">达标</span> 字号分级清晰：display / h1 / h2 / h3 / body-lg / body / body-sm / caption</li>
+      <li><span class="status-warn">注意</span> 实际渲染中部分Streamlit原生组件字体没有被覆盖，导致偶尔出现字体不一致</li>
+    </ul>
+
+    <h3>颜色</h3>
+    <ul>
+      <li><span class="status-ok">达标</span> CSS变量定义了完整的色彩系统（主色、状态色、背景色、文字色、边框色）</li>
+      <li><span class="status-fail">问题</span> config.toml 主题色与 CSS 不一致，导致原生组件颜色跑偏（P0）</li>
+      <li><span class="status-warn">注意</span> 按钮颜色种类偏多（绿色渐变、橙色边框、纯文字按钮等），建议收敛</li>
+    </ul>
+
+    <h3>间距</h3>
+    <ul>
+      <li><span class="status-ok">达标</span> 有完整的间距变量体系（xs/sm/md/base/lg/xl/2xl/3xl）</li>
+      <li><span class="status-warn">注意</span> 实际使用中部分页面间距不够统一，有的卡片间距大有的小，建议严格使用变量</li>
+    </ul>
+
+    <h3>圆角</h3>
+    <ul>
+      <li><span class="status-ok">达标</span> 圆角体系完整（sm/md/lg/xl/full）</li>
+      <li><span class="status-warn">注意</span> 不同组件的圆角选择略随意，建议制定更明确的使用规范</li>
+    </ul>
+  </div>
+
+  <!-- ========== 七、响应式与移动端 ========== -->
+  <div class="section" id="responsive">
+    <h2>七、响应式与移动端表现</h2>
+
+    <h3>做得好的</h3>
+    <ol>
+      <li><strong>有设备检测机制：</strong><code>detect_device_type()</code> 函数区分 mobile/desktop，兼顾 URL 参数、缓存、User-Agent</li>
+      <li><strong>三端都有覆盖：</strong>CSS媒体查询覆盖了手机（&lt;768px）、平板（768-1023px）、桌面（&ge;1024px）</li>
+      <li><strong>移动端单列布局：</strong>手机端单列，适合单手操作</li>
+      <li><strong>安全区适配：</strong>考虑了底部安全区（<code>--safe-area-bottom</code>）</li>
+    </ol>
+
+    <h3>需要改进的</h3>
+    <ol>
+      <li><strong>代码重复度高：</strong>四对函数（<code>render_home_mobile</code> vs <code>render_home_desktop</code> 等），逻辑大同小异，只是布局不同。建议合并成一套，用CSS控制布局差异。</li>
+      <li><strong>移动端导航体验差：</strong>没有底部Tab栏，切页要开侧边栏（P1）</li>
+      <li><strong>平板端适配较粗糙：</strong>768-1023px 这个区间，很多布局是直接复用手机或桌面的，没有专门优化</li>
+      <li><strong>侧边栏在移动端默认展开：</strong>会遮挡主要内容，建议默认收起</li>
+    </ol>
+  </div>
+
+  <!-- ========== 八、代码质量 ========== -->
+  <div class="section" id="code">
+    <h2>八、代码质量观察</h2>
+
+    <h3>优点</h3>
+    <ol>
+      <li><strong>日志系统完善：</strong>有 logging 配置，关键路径都有日志</li>
+      <li><strong>缓存策略合理：</strong><code>@st.cache_data</code> 和 <code>@st.cache_resource</code> 使用得当</li>
+      <li><strong>安全意识到位：</strong>API Key 走环境变量/secrets、有 <code>_safe()</code> 函数做 XSS 防护、生产环境关闭 DEBUG</li>
+      <li><strong>错误处理健壮：</strong>API调用有指数退避重试，区分可重试/不可重试错误</li>
+      <li><strong>注释比较充分：</strong>关键函数都有 docstring，复杂逻辑有行内注释</li>
+    </ol>
+
+    <h3>改进建议</h3>
+    <ol>
+      <li><strong>单文件过大：</strong>app.py 快 2600 行了，建议拆分为 pages/、components/、utils/、api/ 等模块</li>
+      <li><strong>移动端/桌面端代码重复：</strong>建议合并，用CSS控制布局</li>
+      <li><strong>魔法数字较多：</strong>部分硬编码的数值（如间距、颜色值）建议统一用变量或常量</li>
+      <li><strong>测试覆盖率：</strong>只有 test_core.py 测了核心函数，UI 相关的没有测试</li>
+    </ol>
+  </div>
+
+  <!-- ========== 九、亮点肯定 ========== -->
+  <div class="section" id="highlights">
+    <h2>九、亮点肯定</h2>
+    <div class="highlight-grid">
+      <div class="highlight-card">
+        <div class="title">适老化设计扎实</div>
+        <div class="desc">18pt字体、56px按钮、高对比度、语音播报，在同类产品里算第一梯队</div>
+      </div>
+      <div class="highlight-card">
+        <div class="title">评分可视化优秀</div>
+        <div class="desc">颜色+形状+文字多重编码，老年人一眼能看懂</div>
+      </div>
+      <div class="highlight-card">
+        <div class="title">语音播报功能完善</div>
+        <div class="desc">浏览器原生API零依赖，针对iOS/微信/各种边界情况都做了兼容</div>
+      </div>
+      <div class="highlight-card">
+        <div class="title">设计系统完整</div>
+        <div class="desc">CSS变量定义了全套规范，有做设计系统的意识</div>
+      </div>
+      <div class="highlight-card">
+        <div class="title">错误处理到位</div>
+        <div class="desc">API重试、降级提示、用户友好文案，不是直接甩技术错误</div>
+      </div>
+      <div class="highlight-card">
+        <div class="title">安全意识强</div>
+        <div class="desc">XSS防护、Key管理、生产环境配置，都考虑到了</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 十、修复路线图 ========== -->
+  <div class="section" id="roadmap">
+    <h2>十、修复路线图</h2>
+
+    <div class="roadmap-phase">
+      <h4><span class="phase-tag">本周内</span> v0.5.8.1 补丁版</h4>
+      <ul class="task-list">
+        <li>修复健康档案页HTML标签泄露 <span class="task-tag" style="background:#FFEBEE;color:#C62828;">P0</span></li>
+        <li>统一主题色 <span class="task-tag" style="background:#FFEBEE;color:#C62828;">P0</span></li>
+        <li>识别过程增加分步提示 <span class="task-tag" style="background:#FFF8E1;color:#F57F17;">P1</span></li>
+      </ul>
+    </div>
+
+    <div class="roadmap-phase">
+      <h4><span class="phase-tag">下周迭代</span> v0.5.9</h4>
+      <ul class="task-list">
+        <li>历史记录功能梳理：侧边栏只显示最近3条 <span class="task-tag" style="background:#FFF8E1;color:#F57F17;">P1</span></li>
+        <li>增加拍照示例图 <span class="task-tag" style="background:#E3F2FD;color:#1565C0;">P2</span></li>
+        <li>按钮样式统一规范 <span class="task-tag" style="background:#E3F2FD;color:#1565C0;">P2</span></li>
+        <li>结果页增加"再扫一张"快捷按钮 <span class="task-tag" style="background:#E3F2FD;color:#1565C0;">P2</span></li>
+      </ul>
+    </div>
+
+    <div class="roadmap-phase">
+      <h4><span class="phase-tag">下版本大改</span> v0.6.0</h4>
+      <ul class="task-list">
+        <li>导航系统重构：移动端底部Tab + 桌面端简化侧边栏 <span class="task-tag" style="background:#FFF8E1;color:#F57F17;">P1</span></li>
+        <li>合并移动端/桌面端重复代码，统一响应式方案 <span class="task-tag" style="background:#E3F2FD;color:#1565C0;">P2</span></li>
+        <li>结果页添加剂列表折叠功能 <span class="task-tag" style="background:#E3F2FD;color:#1565C0;">P2</span></li>
+        <li>代码文件拆分，降低单文件复杂度 <span class="task-tag" style="background:#E3F2FD;color:#1565C0;">P2</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ========== 十一、合规性检查 ========== -->
+  <div class="section" id="compliance">
+    <h2>十一、合规性检查</h2>
+    <table>
+      <thead>
+        <tr><th>检查项</th><th>状态</th><th>说明</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>适老化18pt字体</td><td><span class="status-ok">达标</span></td><td>CSS中 --font-size-body: 18px</td></tr>
+        <tr><td>按钮最小56px</td><td><span class="status-ok">达标</span></td><td>.stButton &gt; button min-height: 56px</td></tr>
+        <tr><td>高对比度</td><td><span class="status-ok">达标</span></td><td>主色文字对比充足</td></tr>
+        <tr><td>语音播报</td><td><span class="status-ok">有</span></td><td>浏览器原生Web Speech API</td></tr>
+        <tr><td>XSS防护</td><td><span class="status-ok">有</span></td><td>_safe() 函数统一转义</td></tr>
+        <tr><td>API Key安全</td><td><span class="status-ok">达标</span></td><td>走环境变量/secrets，不写死</td></tr>
+        <tr><td>生产环境XSRF/CORS</td><td><span class="status-ok">开启</span></td><td>config.toml 中已配置</td></tr>
+        <tr><td>文件上传大小限制</td><td><span class="status-ok">5MB</span></td><td>config.toml 中 maxUploadSize = 5</td></tr>
+        <tr><td>DEBUG模式关闭</td><td><span class="status-ok">生产关闭</span></td><td>仅本地 DEBUG=1 时开启</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ========== 页脚 ========== -->
+  <div class="report-footer">
+    <p>本报告基于 v0.5.8 线上版本评估 | 报告生成时间：2026-07-07 | 如有疑问欢迎讨论</p>
+  </div>
+
+</div>
+</body>
+</html>

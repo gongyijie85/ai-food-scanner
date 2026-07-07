@@ -1,5 +1,35 @@
 # 变更日志
 
+## v0.5.9 - 2026-07-07
+
+### 同事反馈优化（P0/P1 快速收尾）
+
+- **文件**：`app.py`、`.streamlit/style.css`、`test_label.jpg`、`test_images/example_label.jpg`
+- **关键位置 emoji 替换为 SVG**：在 `app.py` 顶部定义 12 个内联 SVG 常量（`_ICON_BACK` / `_ICON_HEART` / `_ICON_CAMERA` / `_ICON_HOME` / `_ICON_SPEAKER` / `_ICON_HISTORY` / `_ICON_PROFILE` / `_ICON_CHECK` / `_ICON_REFRESH` / `_ICON_SHARE` / `_ICON_EMPTY` / `_ICON_FOOD`）及 2 个 JS 嵌入版（`_ICON_SPEAKER_JS` / `_ICON_MUTE_JS`）。替换范围覆盖：顶部导航返回/健康档案、侧边栏首页/历史/健康档案、首页扫描按钮、历史页开始扫描按钮、扫描页「重新选择」/「使用照片」、结果页「再扫一个」/「返回首页」/语音播报按钮、详情页「重新评分」/「分享给家人」，以及 JS 中语音播报状态图标；避免跨平台/跨浏览器 emoji 渲染差异。修复 `render_food_desktop()` 中遗漏的语音播报 emoji。
+- **按钮样式统一**：`.streamlit/style.css` 中 `button[kind="secondary"]` 已改为绿色主题（主色 `#2E7D32`、悬停 `#E8F5E9`），移除橙色边框变体；新增 `.icon-svg` 样式控制 SVG 图标大小与对齐。
+- **结果页评分含义说明**：`_render_score_hero()` 根据分数增加含义文案（≥80「添加剂少，适合日常食用」/ ≥60「含少量需注意的成分」/ <60「添加剂较多，请谨慎选择」），并在 `.streamlit/style.css` 新增 `.result-score-meaning` 样式。
+- **扫描页增加相机拍照入口**：`render_scan_mobile()` 与 `render_scan_desktop()` 增加「拍照 / 从相册选择」横向单选；选择「拍照」时展示 `st.camera_input()`，选择「从相册选择」时保留 `st.file_uploader()`；两种方式选择后进入同一预览/识别流程。
+- **修复结果页营养成分条**：在 `normalize_model_output()` 的字段别名映射中增加 `nutrition` / `nrv` / `营养成分` → `nutrition_nrv`，兼容模型可能返回的不同字段名。
+- **模型选择折叠到「高级设置」**：侧边栏新增始终可见的「高级设置」expander，内含模型选择单选（MiMo 推荐 / Agnes 更快）；`_scan_validate_and_recognize()` 根据 `selected_model` 决定调用 MiMo fallback 或直接调用 Agnes。
+- **修复健康档案页 HTML 渲染 bug**：`render_health_profile()` 中若干 `st.markdown()` 调用补充 `unsafe_allow_html=True`，解决 HTML 标签直接显示为文本的问题（同事反馈 P0）。
+- **补齐测试图片**：生成 `test_label.jpg` 与 `test_images/example_label.jpg` 示例配料表图片，用于本地回归与扫描页示例展示。
+- **移动端字号优化**：`@media (max-width: 767px)` 中 `--font-size-body` 调至 19px、`--font-size-body-lg` 调至 21px，提升手机端可读性。
+- **版本同步**：`app.py`、`.streamlit/style.css`、`README.md` 统一升级到 v0.5.9。
+- **验证**：`python -m py_compile app.py` 通过，`pytest tests/` 51 项全量通过。
+
+## v0.5.8 - 2026-07-07
+
+### 加回 Agnes 降级备用 + 提示词测试补充
+
+- **文件**：`app.py`、`tests/test_core.py`、`.env.example`、`.github/workflows/ci.yml`、`.streamlit/style.css`、`README.md`、`HANDOFF.md`、`LEGAL_REVIEW.md`、`PRIVACY_POLICY.md`、`USER_AGREEMENT.md`
+- **Agnes 降级备用**：新增 `AGNES_API_URL` / `AGNES_MODEL_NAME` 常量；`call_api()` 参数化 `url` / `model`，支持任意 OpenAI 兼容端点；新增 `call_api_with_fallback()`，MiMo 返回 None 时自动调用 Agnes 兜底，正常流程不增加延迟。
+- **降级触发条件**：仅当 MiMo 返回 None（超时/网络错误/5xx/4xx）且配置了 `AGNES_API_KEY` 时触发；用户会看到 `st.toast` 提示「主识别服务繁忙，已自动切换备用服务」。
+- **提示词测试补充**：新增 `TestBuildSystemPrompt`（4 项），覆盖 JSON 格式要求、基础配料禁止、输出示例存在性、禁止模型自带 level/score；新增 `TestCallApiWithFallback`（4 项），覆盖 MiMo 成功不降级、MiMo 失败降级 Agnes、无 Agnes key 返回 None、双失败返回 None。
+- **配置恢复**：`.env.example` 加回 `AGNES_API_KEY`（标注降级备用）；CI 加回 `AGNES_API_KEY` 环境变量。
+- **文档更新**：README/HANDOFF/LEGAL_REVIEW/PRIVACY/USER_AGREEMENT 统一说明 Agnes 作为降级备用（非双模型并行）。
+- **版本同步**：`app.py`、`.streamlit/style.css`、`README.md` 统一升级到 v0.5.8。
+- **验证**：`python -m py_compile app.py` 通过，`pytest tests/` 全量通过。
+
 ## v0.5.7 - 2026-07-07
 
 ### ponytail-audit 生产就绪清理

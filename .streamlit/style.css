@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.5.7 | 更新时间: 2026-07-07 */
+/* 版本: v0.5.9 | 更新时间: 2026-07-07 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -225,6 +225,7 @@ section[data-testid="stMain"],
   width: 100% !important;
   min-width: 100% !important;
   max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .stFileUploader > div,
@@ -232,9 +233,28 @@ section[data-testid="stMain"],
   width: 100% !important;
   min-width: 100% !important;
   max-width: 100% !important;
+  box-sizing: border-box !important;
   white-space: normal !important;
   overflow: visible !important;
   text-overflow: clip !important;
+}
+
+/* 隐藏 Streamlit 原生 "Browse files" 英文按钮文字，替换为中文提示 */
+.stFileUploader button[data-testid="stBaseButton-secondary"] {
+  color: transparent !important;
+  position: relative !important;
+  min-width: 80px !important;
+}
+.stFileUploader button[data-testid="stBaseButton-secondary"]::after {
+  content: "选择文件";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--color-primary);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
 }
 
 /* 标题层级 */
@@ -354,12 +374,22 @@ div[data-testid="stHorizontalBlock"]:has(.top-nav-title) {
 
 .stButton > button[kind="secondary"] {
   background: var(--color-bg-card) !important;
-  color: var(--color-secondary-dark) !important;
-  border: 2px solid var(--color-secondary) !important;
+  color: var(--color-primary) !important;
+  border: 2px solid var(--color-primary) !important;
+  border-radius: var(--radius-xl) !important;
 }
 
 .stButton > button[kind="secondary"]:hover {
-  background: var(--color-secondary-light) !important;
+  background: var(--color-primary-light) !important;
+}
+
+/* ========== SVG 图标样式（关键位置替代 emoji） ========== */
+.icon-svg {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+  display: inline-block;
+  margin-right: 0.25em;
 }
 
 /* ========== 主扫描按钮（首页大按钮） ========== */
@@ -433,7 +463,7 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton > butto
 /* 首次提示气泡 */
 .hint-bubble {
   position: absolute;
-  top: 0;
+  bottom: calc(100% + 12px);
   left: 50%;
   transform: translateX(-50%);
   background: var(--color-secondary);
@@ -443,6 +473,7 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton > butto
   font-size: var(--font-size-body-sm);
   font-weight: var(--font-weight-medium);
   white-space: nowrap;
+  max-width: 90vw;
   box-shadow: var(--shadow-elevated);
   animation: hint-bounce 2s ease-in-out infinite;
 }
@@ -583,6 +614,15 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton > butto
   position: relative;
   z-index: 1;
   background: rgba(0, 0, 0, 0.15);
+}
+
+.result-score-meaning {
+  font-size: var(--font-size-body);
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+  margin-top: var(--spacing-sm);
+  position: relative;
+  z-index: 1;
 }
 
 .result-score-shape {
@@ -1533,6 +1573,8 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
   :root {
     --page-padding: 16px;
     --font-size-display: 56px;
+    --font-size-body: 19px;
+    --font-size-body-lg: 21px;
   }
 
   .stMainBlockContainer {
@@ -2606,6 +2648,13 @@ div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker) .stButton > bu
   .camera-page {
     min-height: calc(100vh - var(--spacing-2xl));
   }
+}
+
+/* ========== 隐藏 Streamlit 默认工具栏 ========== */
+[data-testid="stToolbar"],
+[data-testid="stToolbarActions"],
+header[data-testid="stHeader"] {
+  display: none !important;
 }
 
 /* ========== 打印样式 ========== */

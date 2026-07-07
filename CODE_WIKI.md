@@ -42,7 +42,6 @@
 |------|------|------|
 | 前端框架 | Streamlit 1.58+ | Python 一键 Web 化 |
 | 多模态 API | MiMo Vision (mimo-v2.5) | 小米自研，新加坡集群 |
-| 备选模型 | Agnes-2.0-Flash | A/B 对比用 |
 | 语音播报 | 浏览器原生 SpeechSynthesis | 零依赖，Microsoft Yaoyao 女声 |
 | 样式 | 自研 CSS（.streamlit/style.css） | 适老化主题 |
 | 图片处理 | Pillow | 压缩、格式转换、base64 编码 |
@@ -143,7 +142,7 @@ ai-food-scanner/
                          │
 ┌────────────────────────▼────────────────────────────┐
 │                  核心服务层                           │
-│  API 调用（MiMo/Agnes）/ 图片编码 / 结果解析          │
+│  API 调用（MiMo）/ 图片编码 / 结果解析          │
 │  GB 2760 权威判定 / 评分计算 / 语音播报                │
 └────────────────────────┬────────────────────────────┘
                          │
@@ -195,8 +194,6 @@ render_food() / render_supplement()  渲染结果页
 |--------|----|------|
 | `API_URL` | `https://token-plan-sgp.xiaomimimo.com/v1/chat/completions` | MiMo 新加坡集群端点 |
 | `MODEL_NAME` | `mimo-v2.5` | 多模态模型名称 |
-| `AGNES_API_URL` | `https://apihub.agnes-ai.com/v1/chat/completions` | Agnes 备选模型端点 |
-| `AGNES_MODEL_NAME` | `agnes-2.0-flash` | Agnes 模型名 |
 | `HEALTH_GROUPS` | 6 类人群列表 | 糖尿病/高血压/脑梗/减脂/过敏/孕妇儿童 |
 | `SCORE_PENALTY` | `{A:0, B:8, C:25}` | 添加剂扣分规则 |
 | `SUPPLEMENT_EXCIPIENTS` | 8 种辅料集合 | 保健品辅料白名单（不扣分） |
@@ -292,10 +289,9 @@ render_food() / render_supplement()  渲染结果页
 
 ### 5.6 API 调用模块
 
-#### `get_api_key(model)` — 获取 API 密钥
+#### `get_api_key()` — 获取 API 密钥
 
-- **位置**：[app.py#L489-L504](file:///d:/GBT/ai-food-scanner/app.py#L489-L504)
-- **参数**：`model` — "mimo" 或 "agnes"
+- **位置**：[app.py#L545-L556](file:///d:/GBT/ai-food-scanner/app.py#L545-L556)
 - **读取顺序**：环境变量 → `st.secrets`
 - **安全原则**：密钥不在代码中硬编码，不输出到日志
 
@@ -320,14 +316,13 @@ render_food() / render_supplement()  渲染结果页
   4. type=food 的 5 个必填字段说明
   5. 强制规则（中文产品名、原文引用、禁止医疗措辞等）
 
-#### `call_api(api_key, image_b64, system_prompt, model="mimo")` — API 调用
+#### `call_api(api_key, image_b64, system_prompt)` — API 调用
 
-- **位置**：[app.py#L566-L670](file:///d:/GBT/ai-food-scanner/app.py#L566-L670)
+- **位置**：[app.py#L615-L723](file:///d:/GBT/ai-food-scanner/app.py#L615-L723)
 - **参数**：
   - `api_key`：API 密钥
   - `image_b64`：base64 编码图片
   - `system_prompt`：系统提示词
-  - `model`："mimo" / "agnes"
 - **重试策略**：
   - 最多 3 次尝试（1 次初始 + 2 次重试）
   - 指数退避：第 1 次等 2s，第 2 次等 4s
@@ -786,7 +781,6 @@ streamlit run app.py
 | 变量名 | 必填 | 说明 |
 |--------|------|------|
 | `MIMO_API_KEY` | 是 | MiMo Token Plan API 密钥 |
-| `AGNES_API_KEY` | 否 | Agnes API 密钥（A/B 对比用） |
 | `DEBUG` | 否 | 设为 1 开启调试模式（生产环境禁用） |
 
 ---
