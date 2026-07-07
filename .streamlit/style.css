@@ -1608,11 +1608,29 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
 .empty-state-icon {
   font-size: 64px;
   margin-bottom: var(--spacing-md);
+  color: var(--color-text-tertiary);
+}
+
+.empty-state-icon svg {
+  width: 1em;
+  height: 1em;
 }
 
 .empty-state-text {
   font-size: var(--font-size-body-lg);
   margin-bottom: var(--spacing-sm);
+  color: var(--color-text-secondary);
+}
+
+.empty-state-desc {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.empty-state-error .empty-state-icon,
+.empty-state-error .empty-state-text {
+  color: var(--state-error);
 }
 
 /* ========== 动画 ========== */

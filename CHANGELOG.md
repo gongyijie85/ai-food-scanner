@@ -41,6 +41,16 @@
   - `pages/__init__.py` 统一暴露新的自适应函数；旧函数名保留为别名，确保现有调用兼容。
   - `app.py` 的 `_dispatch_page()` 改为直接调用 `render_home_page()` / `render_scan_page()` / `render_result_page()`，设备判断下沉到页面函数内部。
   - 合并后保留所有原有内容、按钮 key、样式 class 与业务逻辑。
+- **添加剂清单折叠（同事反馈 P2）**：
+  - `components/additive_card.py` 中 `_render_additive_card()` 默认展示前 5 项，超过 5 项时提供「展开全部 / 收起」按钮。
+  - 按风险等级排序（C > B > A），高风险项优先可见；复用既有色盲友好图例（圆/三角/方块）。
+- **统一 Loading / Error / Empty 状态组件（同事反馈 P2）**：
+  - 新增 `components/state.py`：提供 `render_empty_state()`、`render_error()`、`render_loading()` 三个统一状态组件。
+  - `components/icons.py` 新增 `_ICON_ALERT` 警告三角形 SVG，用于错误态。
+  - 替换 `pages/home.py`、`pages/history.py`、`pages/scan.py`、`pages/result.py` 中重复的空状态 HTML 与 emoji（📭 / 🥫 / 📷），改用统一 SVG 空态组件。
+  - `pages/scan.py` 识别失败后的页面级错误由 `st.error()` 切换为 `render_error()`，保持与空态一致的视觉风格。
+  - `.streamlit/style.css` 新增 `.empty-state-desc`、`.empty-state-error` 样式，统一描述文字字号与错误态红色主题。
+- **验证**：`python -m py_compile app.py`、`py_compile pages/*.py`、`py_compile components/*.py`、`py_compile utils/*.py` 均通过；`pytest tests/test_core.py -q` 51 项全量通过。
 
 ## v0.5.9 - 2026-07-07
 
