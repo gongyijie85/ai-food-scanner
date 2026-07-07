@@ -27,6 +27,17 @@ from PIL import Image
 from utils.data import _load_markdown, load_gb2760_risk, load_health_data
 from utils.helpers import detect_device_type, switch_page
 from utils.history import add_history, load_history, load_history_full, save_history, save_history_full, show_history
+from utils.score import (
+    ADDITIVE_BLOCKLIST,
+    C_LEVEL_DENSITY_PENALTY,
+    C_LEVEL_DENSITY_THRESHOLD,
+    SCORE_PENALTY,
+    SUPPLEMENT_EXCIPIENTS,
+    check_drug_food_conflicts,
+    compute_score_from_additives,
+    is_supplement_excipient,
+    normalize_additive,
+)
 from utils.security import _safe
 
 # ========== 日志配置 ==========
@@ -76,25 +87,6 @@ CONDITION_NAME_MAP = {k: v for k, v, _ in CONDITION_ITEMS}
 
 _DATA_DIR = os.path.join(_BASE_DIR, "data")
 
-# 评分公式常量（A=绿/B=黄/C=红）
-SCORE_PENALTY = {"A": 0, "B": 8, "C": 25}
-
-# C 级添加剂密度惩罚：当 C 级数量 >=3 时额外扣分
-C_LEVEL_DENSITY_PENALTY = 5
-C_LEVEL_DENSITY_THRESHOLD = 3
-
-# 不应被识别为食品添加剂的基础配料黑名单（避免 AI 误判导致分数虚低）
-ADDITIVE_BLOCKLIST = {
-    "水", "饮用水", "纯净水", "蒸馏水", "矿泉水",
-    "白砂糖", "白糖", "冰糖", "红糖", "绵白糖", "蔗糖",
-    "食用盐", "食盐", "精盐", "海盐", "岩盐",
-    "食用油", "植物油", "菜籽油", "花生油", "大豆油", "玉米油", "葵花籽油", "橄榄油", "棕榈油", "调和油",
-    "面粉", "小麦粉", "大米", "糯米粉", "淀粉", "小麦淀粉", "玉米淀粉", "马铃薯淀粉",
-    "食品用香精", "食用香精", "香精",
-    "酵母", "酵母抽提物",
-    "蜂蜜", "麦芽糖浆", "果葡糖浆", "葡萄糖浆", "乳糖",
-}
-
 # 建议文案模板（降低模型随机性，统一兜底）
 ADVICE_TEMPLATES = {
     "default": "普通人群可适量食用，建议保持均衡饮食。",
@@ -107,9 +99,6 @@ ADVICE_TEMPLATES = {
     "儿童": "儿童请谨慎选择，具体请咨询医生或营养师。",
     "孕妇": "孕妇请谨慎选择，具体请咨询医生或营养师。",
 }
-
-# 保健品辅料白名单（不参与扣分）
-SUPPLEMENT_EXCIPIENTS = {"鱼油", "明胶", "甘油", "蜂蜡", "卵磷脂", "淀粉", "麦芽糊精", "羧甲基纤维素钠"}
 
 # 内联 SVG 图标（关键位置替代 emoji，保证跨平台一致）
 _ICON_BACK = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M19 12H5M12 19l-7-7 7-7'/></svg>"
