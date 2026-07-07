@@ -12,14 +12,15 @@ import streamlit as st
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+from utils.data import load_gb2760_risk
+from utils.helpers import detect_device_type
+
 from app import (
     normalize_additive,
     compute_score_from_additives,
     check_drug_food_conflicts,
     parse_result,
-    load_gb2760_risk,
     normalize_model_output,
-    detect_device_type,
     _is_blocklisted,
     _generate_advice,
     C_LEVEL_DENSITY_PENALTY,
