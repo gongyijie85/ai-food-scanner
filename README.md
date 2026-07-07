@@ -173,23 +173,16 @@ streamlit run app.py
 ai-food-scanner/
 ├── app.py                  # 主程序（Streamlit）
 ├── requirements.txt        # Python 依赖
+├── CHANGELOG.md            # 版本变更记录
 ├── LEGAL_REVIEW.md         # 法律合规评估记录
 ├── USER_AGREEMENT.md       # 用户协议及免责声明
 ├── PRIVACY_POLICY.md       # 隐私政策
 ├── .streamlit/
-│   └── config.toml         # Streamlit 配置
-├── pages/                  # UI 设计稿（HTML）
-│   ├── home.html
-│   ├── camera.html
-│   ├── result.html
-│   ├── health-profile.html
-│   ├── history.html
-│   ├── detail.html
-│   └── onboarding.html
-├── test_images/            # 真实配料表测试图片（gitignore 排除）
-│   └── README.md           # 图片来源说明
-├── download_test_images.py # 测试图片下载脚本
-└── README.md
+│   ├── config.toml         # Streamlit 配置
+│   └── style.css           # 适老化自定义样式
+├── data/                   # 本地数据（GB 2760、疾病、过敏原、历史记录等）
+├── tests/                  # 核心函数单元测试
+└── test_images/            # 真实配料表测试图片（gitignore 排除）
 ```
 
 ---
