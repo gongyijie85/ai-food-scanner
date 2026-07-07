@@ -24,6 +24,8 @@ import streamlit as st
 import streamlit.components.v1 as components
 from PIL import Image
 
+from utils.data import _load_markdown, load_gb2760_risk, load_health_data
+
 # ========== 日志配置 ==========
 # 生产环境 INFO，本地 DEBUG=1 时 DEBUG
 _log_level = logging.DEBUG if os.getenv("DEBUG") == "1" else logging.INFO
@@ -70,11 +72,6 @@ CONDITION_NAME_MAP = {k: v for k, v, _ in CONDITION_ITEMS}
 # ========== GB 2760 + 健康档案数据加载 ==========
 
 _DATA_DIR = os.path.join(_BASE_DIR, "data")
-_GB2760_RISK_PATH = os.path.join(_DATA_DIR, "gb2760_risk.csv")
-_DISEASES_PATH = os.path.join(_DATA_DIR, "common_diseases.json")
-_ALLERGENS_PATH = os.path.join(_DATA_DIR, "allergens.json")
-_DRUGS_PATH = os.path.join(_DATA_DIR, "common_drugs.json")
-_CONFLICTS_PATH = os.path.join(_DATA_DIR, "drug_food_conflicts.json")
 
 # 评分公式常量（A=绿/B=黄/C=红）
 SCORE_PENALTY = {"A": 0, "B": 8, "C": 25}
@@ -136,58 +133,6 @@ _ICON_MUTE_JS = "<svg class='icon-svg' viewBox='0 0 24 24' fill='none' stroke='c
 def _safe(text: str) -> str:
     """对动态文本做 HTML 转义，防止 XSS."""
     return html.escape(str(text), quote=True)
-
-
-def _load_json(path):
-    """读取 JSON 文件，失败返回空 dict."""
-    try:
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-
-@st.cache_data
-def _load_markdown(path):
-    """读取 Markdown 文件，失败返回提示文本."""
-    try:
-        with open(path, encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        return "文件暂未找到，请稍后刷新页面重试。"
-
-
-@st.cache_resource
-def load_health_data():
-    """加载所有健康档案数据（疾病/过敏原/药物/冲突），缓存一次."""
-    return {
-        "diseases": _load_json(_DISEASES_PATH).get("categories", []),
-        "allergens": _load_json(_ALLERGENS_PATH).get("categories", []),
-        "drugs": _load_json(_DRUGS_PATH).get("categories", []),
-        "conflicts": _load_json(_CONFLICTS_PATH).get("conflicts", []),
-    }
-
-
-@st.cache_resource
-def load_gb2760_risk():
-    """加载 GB 2760 添加剂风险分级表，返回 dict[中文名] -> {level, adi, warnings, note}."""
-    risk_map = {}
-    try:
-        with open(_GB2760_RISK_PATH, encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                key = row["cn_name"].strip()
-                if key:
-                    risk_map[key] = {
-                        "level": row.get("risk_level", "B").strip(),
-                        "adi": row.get("adi_value", "").strip(),
-                        "warnings": row.get("health_warnings", "").strip(),
-                        "note": row.get("note", "").strip(),
-                    }
-    except FileNotFoundError:
-        pass
-    return risk_map
-
 
 
 # ========== 页面路由工具 ==========

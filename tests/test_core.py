@@ -365,7 +365,8 @@ class TestDataLoading:
 
     def test_load_drug_food_conflicts(self):
         """应成功加载药物-食物冲突数据"""
-        from app import _load_json, _CONFLICTS_PATH
+        from utils.data import _CONFLICTS_PATH, _load_json
+
         conflicts = _load_json(_CONFLICTS_PATH).get("conflicts", [])
         assert isinstance(conflicts, list)
 
