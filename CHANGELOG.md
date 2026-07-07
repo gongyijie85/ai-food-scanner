@@ -1,5 +1,15 @@
 # 变更日志
 
+## v0.6.1 - 2026-07-08
+
+### 修复 Streamlit Cloud 模块导入错误
+
+- **文件**：`app.py`
+- **问题**：Streamlit Cloud 部署后反复报错 `ModuleNotFoundError: No module named 'pages'`，导致应用无法访问。
+- **修复**：在 `app.py` 顶部通过 `Path(__file__).resolve().parent` 获取项目根目录，并在 `sys.path` 中不存在时将其插入首位，确保 Cloud 环境运行 `app.py` 时能正确解析 `pages`、`components`、`utils` 等同级模块的相对导入。
+- **版本同步**：`app.py` 顶部注释版本从 `v0.6.0` 更新为 `v0.6.1`。
+- **验证**：`python -m py_compile app.py`、`py_compile pages/*.py`、`py_compile components/*.py`、`py_compile utils/*.py` 均通过；`pytest tests/test_core.py -q` 51 项全量通过。
+
 ## v0.6.0 - 2026-07-07
 
 ### 组件化 + 页面模块化架构重构

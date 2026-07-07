@@ -1,4 +1,4 @@
-"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.6.0
+"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.6.1
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 三端适配
 运行环境：Python 3.10+
@@ -8,6 +8,13 @@
 
 import logging
 import os
+import sys
+from pathlib import Path
+
+# 将项目根目录加入 sys.path，确保 Streamlit Cloud 运行 app.py 时能正确导入 pages/components/utils
+_PROJECT_ROOT = Path(__file__).resolve().parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 from dotenv import load_dotenv
 
