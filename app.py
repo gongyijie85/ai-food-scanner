@@ -30,15 +30,13 @@ from pages import (
     render_detail_page,
     render_health_profile_page,
     render_history_page,
-    render_home_desktop,
-    render_home_mobile,
+    render_home_page,
     render_legal_consent,
     render_legal_pp,
     render_legal_ua,
     render_onboarding,
     render_result_page,
-    render_scan_desktop,
-    render_scan_mobile,
+    render_scan_page,
 )
 
 # ========== 日志配置 ==========
@@ -74,15 +72,9 @@ def inject_css():
 def _dispatch_page(page: str):
     """根据当前页面名称分发到对应渲染函数."""
     if page == "home":
-        if detect_device_type() == "mobile":
-            render_home_mobile()
-        else:
-            render_home_desktop()
+        render_home_page()
     elif page == "scan":
-        if detect_device_type() == "mobile":
-            render_scan_mobile()
-        else:
-            render_scan_desktop()
+        render_scan_page()
     elif page == "result":
         render_result_page()
     elif page == "history":

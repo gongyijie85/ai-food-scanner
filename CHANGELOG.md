@@ -34,6 +34,13 @@
   - 移动端使用底部固定 4 tab 导航（首页 / 扫描 / 历史 / 我的），当前页高亮主色绿色；桌面端保留侧边栏并新增「扫描」入口。
   - `app.py` 移除原侧边栏代码，改为调用 `render_navigation(switch_page, _safe, show_history)`，功能与模型选择、法律声明、历史记录保持完全一致。
   - `.streamlit/style.css` 新增 `.mobile-bottom-nav-marker`、`.mobile-bottom-nav-item` 等样式，并调整移动端主内容区底部内边距，避免内容被底部导航遮挡。
+- **合并移动端/桌面端渲染函数**：
+  - `pages/home.py`：`render_home_mobile()` + `render_home_desktop()` → `render_home_page()`，内部通过 `detect_device_type()` 区分左右分栏与单列堆叠布局。
+  - `pages/scan.py`：`render_scan_mobile()` + `render_scan_desktop()` → `render_scan_page()`，保留拍照/相册选择、预览、重新选择/使用照片按钮与 `_scan_validate_and_recognize()` 调用。
+  - `pages/result.py`：`render_food_mobile()` + `render_food_desktop()` + `render_supplement_mobile()` + `render_supplement_desktop()` → `render_food_page(result)` + `render_supplement_page(result)`，`render_result_page()` 按结果类型分发。
+  - `pages/__init__.py` 统一暴露新的自适应函数；旧函数名保留为别名，确保现有调用兼容。
+  - `app.py` 的 `_dispatch_page()` 改为直接调用 `render_home_page()` / `render_scan_page()` / `render_result_page()`，设备判断下沉到页面函数内部。
+  - 合并后保留所有原有内容、按钮 key、样式 class 与业务逻辑。
 
 ## v0.5.9 - 2026-07-07
 
