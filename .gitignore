@@ -52,7 +52,6 @@ download_test_images.py
 generation-tree.json
 orchestration-summary.json
 GBT/
-pages/
 pages-redesign/
 colors_and_type.css
 README_PROTOTYPE.md

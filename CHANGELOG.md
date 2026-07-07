@@ -1,5 +1,14 @@
 # 变更日志
 
+## v0.6.2 - 2026-07-08
+
+### 修复 Streamlit Cloud `ModuleNotFoundError: No module named 'pages'` 部署错误
+
+- **根因**：`.gitignore` 第 55 行仍保留 `pages/`，导致 v0.6.0 重构后新建的 `pages/` 生产模块未被 Git 跟踪，Streamlit Cloud 拉取仓库后找不到该模块。
+- **修复**：从 `.gitignore` 中删除 `pages/`，并将 `pages/__init__.py`、`pages/history.py`、`pages/home.py`、`pages/legal.py`、`pages/onboarding.py`、`pages/profile.py`、`pages/result.py`、`pages/scan.py` 加入 Git 跟踪。
+- **验证**：`python -m py_compile app.py`、`py_compile pages/*.py`、`py_compile components/*.py`、`py_compile utils/*.py` 均通过；`pytest tests/test_core.py -q` 51 项全量通过。
+- **版本同步**：`app.py`、`CHANGELOG.md`、`README.md` 同步更新到 v0.6.2。
+
 ## v0.6.1 - 2026-07-08
 
 ### 修复 Streamlit Cloud 模块导入错误

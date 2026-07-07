@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.6.1-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.6.2-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 一句话介绍
 
@@ -11,7 +11,8 @@
 
 ## 最新更新
 
-- **v0.6.1（2026-07-08）**：修复 Streamlit Cloud 部署后 `ModuleNotFoundError: No module named 'pages'` 致命错误。在 `app.py` 顶部动态将项目根目录加入 `sys.path`，确保 Cloud 运行 `app.py` 时能正确导入 `pages`、`components`、`utils` 等同级模块；版本号同步到 v0.6.1。`py_compile` 与 `pytest` 51 项全量通过。
+- **v0.6.2（2026-07-08）**：真正修复 Streamlit Cloud `ModuleNotFoundError: No module named 'pages'` 部署错误。根因是 `.gitignore` 仍忽略 `pages/`，导致生产页面模块未进入 Git 仓库；已移除该忽略规则并将 `pages/` 全部文件加入跟踪。`py_compile` 与 `pytest` 51 项全量通过。
+- **v0.6.1（2026-07-08）**：尝试修复 Streamlit Cloud 部署后 `ModuleNotFoundError: No module named 'pages'` 错误。在 `app.py` 顶部动态将项目根目录加入 `sys.path`，确保 Cloud 运行 `app.py` 时能正确导入 `pages`、`components`、`utils` 等同级模块；版本号同步到 v0.6.1。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.6.0（2026-07-07）**：组件化 + 页面模块化架构重构。新增 `components/` 模块，将 `app.py` 中 7 个可复用 UI 组件与 14 个 SVG 图标常量抽离到独立文件；新增 `components/state.py` 统一空态/错误态/加载态组件，替换页面中重复的空状态 HTML 与 emoji；`components/additive_card.py` 实现添加剂清单折叠（默认前 5 项、高风险优先）。新增 `pages/` 模块，将 15 个页面渲染函数拆分为 7 个文件；新增 `utils/constants.py` 集中存放项目级常量；`app.py` 从约 1489 行精简至约 230 行。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.5.9（2026-07-07）**：同事反馈 P0/P1 快速收尾。关键位置 emoji 统一替换为内联 SVG（返回、健康档案、首页、历史、健康档案、扫描、再扫一个、返回首页、语音播报、重新选择、使用照片、重新评分、分享给家人），避免跨平台渲染差异；统一 secondary 按钮为绿色主题；修复健康档案页 HTML 标签直接显示为文本的问题；修复结果页营养成分条字段别名；扫描页增加「拍照 / 从相册选择」入口；模型选择折叠到「高级设置」并加中文说明；移动端 body 字号从 18px 提升至 19px；补齐 `test_label.jpg` 示例图。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.5.8（2026-07-07）**：加回 Agnes 作为降级备用模型（仅 MiMo 失败时自动切换，正常流程不增加延迟）；`call_api()` 参数化支持双端点；新增 `call_api_with_fallback()` + `st.toast` 切换提示；新增 `TestBuildSystemPrompt` 和 `TestCallApiWithFallback` 共 8 项测试；恢复 `.env.example` 和 CI 中的 `AGNES_API_KEY` 环境变量配置；文档统一说明 Agnes 降级定位；版本号同步到 v0.5.8。
