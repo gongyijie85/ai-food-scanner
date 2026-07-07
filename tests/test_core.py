@@ -12,19 +12,16 @@ import streamlit as st
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
+from utils.api import _generate_advice, normalize_model_output, parse_result
 from utils.data import load_gb2760_risk
 from utils.helpers import detect_device_type
-
-from app import (
-    normalize_additive,
-    compute_score_from_additives,
-    check_drug_food_conflicts,
-    parse_result,
-    normalize_model_output,
-    _is_blocklisted,
-    _generate_advice,
+from utils.score import (
     C_LEVEL_DENSITY_PENALTY,
     C_LEVEL_DENSITY_THRESHOLD,
+    _is_blocklisted,
+    check_drug_food_conflicts,
+    compute_score_from_additives,
+    normalize_additive,
 )
 
 
@@ -377,27 +374,27 @@ class TestBuildSystemPrompt:
 
     def test_prompt_requires_json_only(self):
         """提示詞應要求純 JSON 輸出"""
-        from app import build_system_prompt
+        from utils.api import build_system_prompt
         prompt = build_system_prompt([])
         assert "純 JSON" in prompt or "不要 Markdown" in prompt
 
     def test_prompt_forbids_basic_ingredients_in_additives(self):
         """提示詞應禁止把基礎配料列入 additives"""
-        from app import build_system_prompt
+        from utils.api import build_system_prompt
         prompt = build_system_prompt([])
         assert "白砂糖" in prompt
         assert "食用盐" in prompt
 
     def test_prompt_has_output_examples(self):
         """提示詞應包含輸出示例"""
-        from app import build_system_prompt
+        from utils.api import build_system_prompt
         prompt = build_system_prompt([])
         assert '"type":"food"' in prompt
         assert '"type":"supplement"' in prompt
 
     def test_prompt_requires_no_model_level_or_score(self):
         """提示詞應要求模型不要輸出 level/score"""
-        from app import build_system_prompt
+        from utils.api import build_system_prompt
         prompt = build_system_prompt([])
         assert "不要输出 level" in prompt
         assert "不要给 score" in prompt
@@ -408,7 +405,7 @@ class TestCallApiWithFallback:
 
     def test_mimo_success_no_fallback(self, monkeypatch):
         """MiMo 成功時不應調用 Agnes"""
-        from app import call_api_with_fallback
+        from utils.api import call_api_with_fallback
         call_count = {"mimo": 0, "agnes": 0}
 
         def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
@@ -418,7 +415,7 @@ class TestCallApiWithFallback:
             call_count["mimo"] += 1
             return "mimo_result"
 
-        monkeypatch.setattr("app.call_api", mock_call_api)
+        monkeypatch.setattr("utils.api.call_api", mock_call_api)
         result = call_api_with_fallback("mimo_key", "img", "prompt", agnes_key="agnes_key")
         assert result == "mimo_result"
         assert call_count["mimo"] == 1
@@ -426,7 +423,7 @@ class TestCallApiWithFallback:
 
     def test_mimo_fail_fallback_to_agnes(self, monkeypatch):
         """MiMo 失敗時應降級到 Agnes"""
-        from app import call_api_with_fallback
+        from utils.api import call_api_with_fallback
         call_count = {"mimo": 0, "agnes": 0}
 
         def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
@@ -436,7 +433,7 @@ class TestCallApiWithFallback:
             call_count["mimo"] += 1
             return None  # MiMo 失敗
 
-        monkeypatch.setattr("app.call_api", mock_call_api)
+        monkeypatch.setattr("utils.api.call_api", mock_call_api)
         monkeypatch.setattr("streamlit.toast", lambda *a, **kw: None)
         result = call_api_with_fallback("mimo_key", "img", "prompt", agnes_key="agnes_key")
         assert result == "agnes_result"
@@ -445,23 +442,23 @@ class TestCallApiWithFallback:
 
     def test_mimo_fail_no_agnes_key_returns_none(self, monkeypatch):
         """MiMo 失敗且無 Agnes key 時應返回 None"""
-        from app import call_api_with_fallback
+        from utils.api import call_api_with_fallback
 
         def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
             return None
 
-        monkeypatch.setattr("app.call_api", mock_call_api)
+        monkeypatch.setattr("utils.api.call_api", mock_call_api)
         result = call_api_with_fallback("mimo_key", "img", "prompt", agnes_key="")
         assert result is None
 
     def test_mimo_fail_agnes_also_fail_returns_none(self, monkeypatch):
         """MiMo 和 Agnes 都失敗時應返回 None"""
-        from app import call_api_with_fallback
+        from utils.api import call_api_with_fallback
 
         def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
             return None
 
-        monkeypatch.setattr("app.call_api", mock_call_api)
+        monkeypatch.setattr("utils.api.call_api", mock_call_api)
         monkeypatch.setattr("streamlit.toast", lambda *a, **kw: None)
         result = call_api_with_fallback("mimo_key", "img", "prompt", agnes_key="agnes_key")
         assert result is None

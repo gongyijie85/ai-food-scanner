@@ -14,6 +14,8 @@
 - **修复健康档案页 HTML 渲染 bug**：`render_health_profile()` 中若干 `st.markdown()` 调用补充 `unsafe_allow_html=True`，解决 HTML 标签直接显示为文本的问题（同事反馈 P0）。
 - **补齐测试图片**：生成 `test_label.jpg` 与 `test_images/example_label.jpg` 示例配料表图片，用于本地回归与扫描页示例展示。
 - **移动端字号优化**：`@media (max-width: 767px)` 中 `--font-size-body` 调至 19px、`--font-size-body-lg` 调至 21px，提升手机端可读性。
+- **模块提取完成**：新增 `utils/api.py`，将 API 密钥读取、图片压缩、`build_system_prompt()`、`call_api()`、`call_api_with_fallback()`、`normalize_model_output()`、`parse_result()` 从 `app.py` 迁出；删除 `app.py` 中对应的 490+ 行重复实现，避免与 `utils/api.py`、`utils/score.py` 的同名函数冲突；补回 `from PIL import Image` 以支持扫描页图片校验。
+- **测试同步**：`tests/test_core.py` 中相关导入统一指向 `utils.api` 与 `utils.score`；fallback 测试的 monkeypatch 目标改为 `utils.api.call_api`。
 - **版本同步**：`app.py`、`.streamlit/style.css`、`README.md` 统一升级到 v0.5.9。
 - **验证**：`python -m py_compile app.py` 通过，`pytest tests/` 51 项全量通过。
 
