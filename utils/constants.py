@@ -14,13 +14,14 @@ _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HEALTH_GROUPS = ["糖尿病", "高血压", "脑梗/心血管", "减脂", "过敏", "儿童", "孕妇"]
 
 # 健康档案疾病选项（模块级常量，避免每次渲染重复构造）
+# 第三个字段使用语义化 emoji 小图标，避免与疾病名首字重复
 CONDITION_ITEMS = [
-    ("diabetes", "糖尿病", "糖"),
-    ("hypertension", "高血压", "压"),
-    ("stroke", "脑梗/心血管", "脑"),
-    ("fat-loss", "减脂", "减"),
-    ("allergy", "过敏", "敏"),
-    ("children", "儿童", "儿"),
-    ("pregnant", "孕妇", "孕"),
+    ("diabetes", "糖尿病", "🩺"),
+    ("hypertension", "高血压", "🫀"),
+    ("stroke", "脑梗/心血管", "🧠"),
+    ("fat-loss", "减脂", "🥗"),
+    ("allergy", "过敏", "🤧"),
+    ("children", "儿童", "🧒"),
+    ("pregnant", "孕妇", "🤰"),
 ]
 CONDITION_NAME_MAP = {k: v for k, v, _ in CONDITION_ITEMS}

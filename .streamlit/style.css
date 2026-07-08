@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.6.9 | 更新时间: 2026-07-08 */
+/* 版本: v0.7.0 | 更新时间: 2026-07-08 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -1519,6 +1519,43 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
   line-height: var(--line-height-normal);
 }
 
+/* 移动端扫描页：减少卡片内边距与说明文字，确保相机/上传区域可见 */
+@media (max-width: 767px) {
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) {
+    padding: var(--spacing-sm) var(--spacing-base);
+    margin: var(--spacing-xs) 0;
+  }
+
+  .scan-card-header {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .scan-card-title {
+    font-size: var(--font-size-body-xl);
+    margin-bottom: 0;
+  }
+
+  .scan-card-hint {
+    font-size: var(--font-size-body-sm);
+    margin-top: var(--spacing-xs);
+  }
+
+  /* 相机输入组件在移动端需要最小高度，避免被截断 */
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) [data-testid="stCameraInput"] {
+    min-height: 260px !important;
+  }
+
+  /* 文件上传器在移动端保持足够点击区域 */
+  div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader > div {
+    min-height: 160px !important;
+  }
+
+  .disclaimer-text {
+    padding: var(--spacing-sm) 0;
+    font-size: var(--font-size-body-xs);
+  }
+}
+
 /* ========== 表单输入 ========== */
 .stTextInput > div > div > input,
 .stTextArea > div > div > textarea,
@@ -2444,12 +2481,12 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
 
 .condition-card-wrapper .stButton > button {
   display: flex !important;
-  flex-direction: column !important;
+  flex-direction: row !important;
   align-items: center !important;
-  justify-content: center !important;
-  gap: var(--spacing-sm) !important;
-  min-height: 120px !important;
-  padding: var(--spacing-base) !important;
+  justify-content: flex-start !important;
+  gap: var(--spacing-base) !important;
+  min-height: 64px !important;
+  padding: var(--spacing-sm) var(--spacing-base) !important;
   border-radius: var(--radius-md) !important;
   background: var(--color-bg-card) !important;
   border: 2px solid var(--color-border-light) !important;
@@ -2491,20 +2528,22 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
 
 /* 过敏原卡片共用疾病卡片样式，高度略低 */
 .condition-card-wrapper.allergen-card .stButton > button {
-  min-height: 80px !important;
+  min-height: 56px !important;
 }
 
-/* 手机端疾病/过敏原卡片缩小 */
+/* 手机端疾病/过敏原卡片：图标+文字水平排列，保持足够点击区域 */
 @media (max-width: 767px) {
   .condition-card-wrapper .stButton > button {
-    min-height: 80px !important;
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    min-height: 56px !important;
     padding: 10px 12px !important;
     font-size: var(--font-size-body) !important;
     border-radius: var(--radius-lg) !important;
   }
 
   .condition-card-wrapper.allergen-card .stButton > button {
-    min-height: 64px !important;
+    min-height: 48px !important;
   }
 }
 

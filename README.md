@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.6.9-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.7.0-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -15,6 +15,7 @@
 
 ## 最新更新
 
+- **v0.7.0（2026-07-08）**：修复手机端拍照页显示不全与疾病图标重复问题。移动端扫描页隐藏示例图、简化说明文字、为相机/上传组件设置最小高度，确保拍照区域首屏可见；将疾病卡片从汉字首字图标（如「糖 糖尿病」）改为语义化 emoji 小图标（🩺/🫀/🧠/🥗/🤧/🧒/🤰），并改为图标+文字水平排列，消除首个字重复。`py_compile`、`pytest` 51 项全量通过。
 - **v0.6.9（2026-07-08）**：测试反馈修复 UI/UX 专项。疾病卡片增加图标，选中态改为绿底白字 + 右上角 ✓ 对勾，手机端卡片高度降至 80px；修复引导页说明卡片固定高度导致文字溢出框外；健康档案页过敏原从复选框改为与疾病卡片一致的风格；扫描页预览区单独渲染文件名并使用 ellipsis 截断，防止标签溢出；首页将健康标签与扫描大按钮聚合为白底圆角卡片，改善手机端松散感。`py_compile`、`pytest` 51 项全量通过。
 - **v0.6.8（2026-07-08）**：测试反馈修复。引导页第 2 步初始健康档案从简单 `multiselect` 改为与详细档案页一致的卡片网格布局，解决“维护过于简单”；修复健康档案页疾病按钮“糖糖尿病”“压高血压”等双字重复；优化疾病卡片 `white-space` 与换行，修复字体框体布局；为文件上传器文件名/大小标签增加截断，防止上传图片标签溢出；统一结果页语音“停止”按钮与主播报按钮的高度、圆角和配色；历史页与侧边栏历史记录标签视觉层级优化。`py_compile`、`pytest` 51 项全量通过。
 - **v0.6.7（2026-07-08）**：优化首页与历史记录交互。移除首页右侧「最近扫描」重复区域，历史记录统一由侧边栏/历史页承载；历史页与侧边栏历史记录改为整行可点击，直接跳转产品详情，移除独立「查看」大按钮；CSS 选择器精确限定扫描大按钮样式，避免误伤其他按钮。新增 `smoke_test.py` 本地冒烟测试覆盖首页、历史页、详情页关键路径。`py_compile`、`pytest` 51 项、`smoke_test` 全量通过。

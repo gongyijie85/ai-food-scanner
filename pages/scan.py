@@ -114,16 +114,17 @@ def render_scan_page():
     uploaded = None
 
     with left:
-        # 示例图可能缺失，文件存在才显示，避免页面崩溃
-        example_path = os.path.join(_BASE_DIR, "test_images", "example_label.jpg")
-        if os.path.exists(example_path):
-            st.image(
-                example_path,
-                caption="像这样正对配料表拍照，识别率更高",
-                width="stretch",
-            )
-        else:
-            st.info("📷 像这样正对配料表拍照，识别率更高")
+        # 桌面端显示示例图；移动端首屏空间有限，改用一行提示，避免挤占拍照区域
+        if is_desktop:
+            example_path = os.path.join(_BASE_DIR, "test_images", "example_label.jpg")
+            if os.path.exists(example_path):
+                st.image(
+                    example_path,
+                    caption="像这样正对配料表拍照，识别率更高",
+                    width="stretch",
+                )
+            else:
+                st.info("📷 像这样正对配料表拍照，识别率更高")
 
         input_method_key = f"scan_input_method_desktop_{uploader_key}" if is_desktop else f"scan_input_method_{uploader_key}"
         # 评委快速模式下自动选择输入方式，减少一次无意义点击
@@ -139,13 +140,19 @@ def render_scan_page():
             )
 
         with st.container():
+            if is_desktop:
+                scan_card_desc = "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
+                scan_card_hint = "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>"
+            else:
+                scan_card_desc = ""
+                scan_card_hint = "<div class='scan-card-hint'>对准配料表，光线充足更清晰</div>"
             st.markdown(
                 "<div class='scan-card-marker'></div>"
                 "<div class='scan-card-header'>"
-                f"<div class='scan-card-title'>{_ICON_CAMERA} 拍照或上传配料表</div>"
-                "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
+                f"<div class='scan-card-title'>{_ICON_CAMERA} 拍照识别</div>"
+                f"{scan_card_desc}"
                 "</div>"
-                "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>",
+                f"{scan_card_hint}",
                 unsafe_allow_html=True,
             )
             if input_method == "拍照":
