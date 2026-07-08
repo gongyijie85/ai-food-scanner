@@ -1,5 +1,16 @@
 # 变更日志
 
+## v0.6.4 - 2026-07-08
+
+### 参赛前收口整理（文档一致性、安全清理、合规口径）
+
+- **统一版本与叙事**：`README.md` 版本徽章与最新更新升级到 `v0.6.4`；`app.py` 顶部注释版本同步到 `v0.6.4`；`.streamlit/style.css` 顶部版本注释同步到 `v0.6.4`；确认 README 中父亲病史统一为“10 年以上脑梗”，仓库内无“8 年”版本；路线图将 `v2.5 公开链接部署` 标记为已完成。
+- **更新 HANDOFF.md**：修正过时的“`app.py` 2100+ 行单文件架构”描述，改为当前模块化结构（`app.py` 约 230 行 + `components/` + `pages/` + `utils/`）；更新关键函数索引，移除失效的 `app.py` 行号，指向 `utils/api.py`、`utils/score.py`、`components/voice_panel.py`；更新数据持久化说明与 TODO；文档版本升级到 `v1.1`。
+- **收紧隐私政策口径**：`PRIVACY_POLICY.md` 数据保存期限从“图片 30 天、文本 90 天”改为“本应用自身不主动持久化保存图片和识别文本，仅在当前会话中使用；第三方服务按其自身政策处理”；新增历史记录本地 JSON 的说明；最后更新日期改为 2026-07-08。
+- **处理未跟踪文件**：将 `ui_ux_report.html` 加入 `.gitignore`，确保该静态评审报告不进入最终提交。
+- **清理外层敏感信息**：删除 `D:\GBT\fill_secret.js` 与 `D:\GBT\fill_batch.json`（含真实 MiMo API key）；将 `D:\GBT\CHANGELOG.md` 与 `.trae/documents/` 中 3 处真实 key 痕迹替换为 `tp-xxx...` 占位符；已确认 `D:\GBT` 范围内无真实 key 残留。
+- **验证**：`pytest tests/ -q` 51 项全量通过；`python -m py_compile app.py` 及 `pages/`/`components/`/`utils/` 下全部 `.py` 文件通过。
+
 ## v0.6.3 - 2026-07-08
 
 ### Bug 修复：扫描页崩溃 + 过期 API 全局替换 + 按钮 SVG 乱码

@@ -71,3 +71,6 @@ push.ps1
 diag_shots/
 docs/
 .streamlit/documents/
+
+# UI/UX 评审报告（静态 HTML，不进入最终提交）
+ui_ux_report.html

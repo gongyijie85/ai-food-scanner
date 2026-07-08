@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.6.3-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.6.4-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ## 一句话介绍
 
@@ -11,6 +11,7 @@
 
 ## 最新更新
 
+- **v0.6.4（2026-07-08）**：参赛前收口整理。统一文档版本与叙事（README、HANDOFF、隐私政策），修正 HANDOFF 中过时的单文件架构/行号描述，收紧隐私政策中数据保存期限为“本应用不主动持久化，第三方服务按其政策处理”，将未跟踪的 `ui_ux_report.html` 排除在最终提交外，清理 D:\\GBT 外层含真实 API key 的脚本痕迹。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.6.3（2026-07-08）**：修复扫描页示例图缺失导致的崩溃；全局替换已过期 `use_container_width=True` 为 `width="stretch"`（10 个文件 32 处）；为 `@st.cache_data` 添加 `ttl=300` 参数；修复 `st.button` label 中内联 SVG 被显示为源码乱码的问题（移动端底部导航、侧边栏、历史页、扫描页、结果页共 16 处），并修复语音播报面板 HTML 按钮中文本被 `_safe()` 误转义的问题；在 `.streamlit/config.toml` 中禁用原生多页面侧边栏导航，避免与自定义导航重复显示；`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.6.2（2026-07-08）**：真正修复 Streamlit Cloud `ModuleNotFoundError: No module named 'pages'` 部署错误。根因是 `.gitignore` 仍忽略 `pages/`，导致生产页面模块未进入 Git 仓库；已移除该忽略规则并将 `pages/` 全部文件加入跟踪。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.6.1（2026-07-08）**：尝试修复 Streamlit Cloud 部署后 `ModuleNotFoundError: No module named 'pages'` 错误。在 `app.py` 顶部动态将项目根目录加入 `sys.path`，确保 Cloud 运行 `app.py` 时能正确导入 `pages`、`components`、`utils` 等同级模块；版本号同步到 v0.6.1。`py_compile` 与 `pytest` 51 项全量通过。
@@ -252,7 +253,7 @@ ai-food-scanner/
 - [x] v1.9 英文产品名兜底 + 默认健康档案
 - [x] v2.0 双模式（食品 + 保健食品）+ 强制免责
 - [x] v2.0.3 Phase 0.5 合规披露 + 跨境传输 + 数据保护
-- [ ] v2.5 公开链接部署
+- [x] v2.5 公开链接部署
 - [ ] v3.0 SQLite 历史记录
 - [ ] v3.5 多模态（视频配料表）
 - [ ] v4.0 微信小程序版

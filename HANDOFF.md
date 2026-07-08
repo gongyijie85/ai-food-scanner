@@ -18,30 +18,42 @@
 
 ```
 ai-food-scanner/
-├── app.py                      # 主程序（2100+ 行，单文件架构）
-├── requirements.txt            # Python 依赖（版本已锁定）
-├── .env.example                # 环境变量模板
+├── app.py                  # 主入口（约 230 行，仅负责配置、初始化与页面路由）
+├── requirements.txt        # Python 依赖
+├── .env.example            # 环境变量模板
 ├── .streamlit/
-│   ├── config.toml             # Streamlit 配置（XSRF/CORS/上传限制）
-│   └── style.css               # 适老化样式（外置，缓存加载）
-├── data/                       # 数据文件（GB 2760/疾病/过敏原/药物）
-│   ├── gb2760_risk.csv         # 添加剂风险分级表
-│   ├── common_diseases.json    # 常见疾病数据
-│   ├── allergens.json          # 过敏原数据
-│   ├── common_drugs.json       # 常见药物数据
-│   ├── drug_food_conflicts.json # 药物-食物冲突数据
-│   ├── history.json            # 最近 5 条历史记录（轻量）
-│   └── history_full.json       # 完整历史快照（最多 20 条）
-├── tests/                      # 单元测试（pytest）
-│   └── test_core.py            # 核心函数测试
-├── .github/
-│   └── workflows/
-│       └── ci.yml              # CI/CD 工作流（lint/test/security/build）
-├── README.md                   # 项目说明
-├── CHANGELOG.md                # 版本变更记录
-├── LEGAL_REVIEW.md             # 法律合规评估
-├── USER_AGREEMENT.md           # 用户协议
-└── PRIVACY_POLICY.md           # 隐私政策
+│   ├── config.toml         # Streamlit 配置（XSRF/CORS/上传限制）
+│   └── style.css           # 适老化样式（外置）
+├── components/             # 可复用 UI 组件
+│   ├── icons.py            # SVG 图标常量
+│   ├── top_nav.py          # 顶部导航栏
+│   ├── navigation.py       # 移动端底部导航 / 桌面端侧边栏
+│   ├── score_hero.py       # 评分英雄区
+│   ├── additive_card.py    # 添加剂清单卡片
+│   ├── nutrition_bars.py   # 营养成分 NRV 可视化条
+│   ├── voice_panel.py      # 语音播报面板
+│   ├── personal_warnings.py # 个性化健康档案警告
+│   └── state.py            # 统一空态 / 错误态 / 加载态
+├── pages/                  # 页面渲染模块
+│   ├── home.py             # 首页
+│   ├── scan.py             # 扫描上传页
+│   ├── result.py           # 识别结果页
+│   ├── history.py          # 历史记录与详情页
+│   ├── profile.py          # 健康档案页
+│   ├── onboarding.py       # 首次引导页
+│   └── legal.py            # 法律同意与法律文件页
+├── utils/                  # 工具模块
+│   ├── api.py              # API 调用、提示词、结果归一化
+│   ├── score.py            # 添加剂评分与药物-食物冲突检测
+│   ├── data.py             # 本地数据加载
+│   ├── history.py          # 历史记录读写
+│   ├── helpers.py          # 页面切换、设备检测
+│   ├── constants.py        # 项目级共享常量
+│   └── security.py         # HTML 转义等安全工具
+├── data/                   # 本地数据文件（GB 2760、疾病、过敏原、药物等）
+├── tests/                  # 核心函数单元测试
+├── feedback/               # 同事反馈 HTML 归档
+└── test_images/            # 真实配料表测试图片（gitignore 排除）
 ```
 
 ---
@@ -224,8 +236,9 @@ git push origin HEAD
 ### 7.1 当前方案（JSON 文件）
 
 **存储位置**：
-- `data/history.json`：最近 5 条历史记录（轻量）
-- `data/history_full.json`：完整历史快照（最多 20 条）
+- `data/history.json`：最近 50 条历史记录摘要（运行期自动生成）
+- `data/history_full.json`：完整识别结果快照（最多 20 条，运行期自动生成）
+- 健康档案信息：仅保存在当前浏览器会话的 `st.session_state` 中
 
 **限制**：
 - Streamlit Cloud 多用户共享文件系统，所有用户看到相同的历史记录
@@ -356,8 +369,8 @@ pytest tests/ --cov=app --cov-report=html
 - [x] P2：CI/CD 工作流
 - [x] P2：日志与监控
 - [x] P2：安全部署清单
-- [ ] P2：数据持久化文档（本文档已完成）
-- [ ] 优化 Streamlit Cloud 公开链接稳定性
+- [x] P2：数据持久化文档（本文档已更新）
+- [x] P2：优化 Streamlit Cloud 公开链接稳定性（已部署）
 - [ ] 收集真实用户反馈并迭代
 
 ### 10.2 中期（正式运营前）
@@ -392,13 +405,13 @@ pytest tests/ --cov=app --cov-report=html
 
 | 函数名 | 位置 | 作用 |
 |--------|------|------|
-| `normalize_additive()` | app.py:876 | 判定添加剂等级（A/B/C） |
-| `compute_score_from_additives()` | app.py:906 | 计算安全评分 |
-| `check_drug_food_conflicts()` | app.py:928 | 检测药物-食物冲突 |
-| `parse_result()` | app.py:838 | 解析 API 返回的 JSON |
-| `call_api()` | app.py:476 | 统一 API 调用入口 |
-| `encode_image_to_base64()` | app.py:417 | 图片压缩与 base64 编码 |
-| `speak_text()` | app.py:244 | 浏览器语音播报 |
+| `normalize_additive()` | `utils/score.py` | 判定添加剂等级（A/B/C） |
+| `compute_score_from_additives()` | `utils/score.py` | 计算安全评分 |
+| `check_drug_food_conflicts()` | `utils/score.py` | 检测药物-食物冲突 |
+| `parse_result()` | `utils/api.py` | 解析 API 返回的 JSON |
+| `call_api()` / `call_api_with_fallback()` | `utils/api.py` | 统一 API 调用入口与 MiMo/Agnes 降级 |
+| `encode_image_to_base64()` | `utils/api.py` | 图片压缩与 base64 编码 |
+| `speak_text()` / `voice_control_panel()` | `components/voice_panel.py` | 浏览器语音播报 |
 
 ### 12.2 数据文件说明
 
@@ -416,5 +429,5 @@ pytest tests/ --cov=app --cov-report=html
 
 ---
 
-**最后更新**：2026-07-02  
-**文档版本**：v1.0
+**最后更新**：2026-07-08  
+**文档版本**：v1.1
