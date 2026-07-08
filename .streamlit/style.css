@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.6.6 | 更新时间: 2026-07-08 */
+/* 版本: v0.6.7 | 更新时间: 2026-07-08 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -461,27 +461,21 @@ div[data-testid="stHorizontalBlock"]:has(.top-nav-title) {
 }
 
 /* ========== 主扫描按钮（首页大按钮） ========== */
-/* 兼容旧版 .scan-button-wrapper，同时支持新版 st.container + .home-scan-area-marker */
-.scan-button-wrapper,
-div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton {
+/* 通过 Streamlit 自动生成的 st-key-<key> 精确命中扫描按钮，不影响其他按钮 */
+.st-key-home_goto_scan,
+.st-key-home_goto_scan_desktop {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  padding: 0;
-  min-height: auto;
-  position: relative;
+  width: 100%;
+}
+
+.st-key-home_goto_scan .stButton,
+.st-key-home_goto_scan_desktop .stButton {
   width: auto !important;
 }
 
-/* 通过 .scan-button-wrapper 或 marker 把 Streamlit 按钮渲染成大圆形 */
-.scan-button-wrapper .stButton,
-div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton {
-  width: auto !important;
-}
-
-.scan-button-wrapper .stButton > button,
-div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton > button {
+.st-key-home_goto_scan .stButton > button,
+.st-key-home_goto_scan_desktop .stButton > button {
   width: 200px !important;
   height: 200px !important;
   border-radius: 50% !important;
@@ -500,19 +494,19 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton > butto
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.scan-button-wrapper .stButton > button:hover,
-div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton > button:hover {
+.st-key-home_goto_scan .stButton > button:hover,
+.st-key-home_goto_scan_desktop .stButton > button:hover {
   transform: scale(1.02);
 }
 
-.scan-button-wrapper .stButton > button:active,
-div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton > button:active {
+.st-key-home_goto_scan .stButton > button:active,
+.st-key-home_goto_scan_desktop .stButton > button:active {
   transform: scale(0.95);
   box-shadow: var(--shadow-card), 0 0 0 3px rgba(46, 125, 50, 0.15) !important;
 }
 
-.scan-button-wrapper .stButton > button::before,
-div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton > button::before {
+.st-key-home_goto_scan .stButton > button::before,
+.st-key-home_goto_scan_desktop .stButton > button::before {
   content: '';
   position: absolute;
   width: 100%;
@@ -1045,115 +1039,104 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton > butto
 }
 
 /* ========== 历史记录 ========== */
-.history-cards-row {
-  display: flex;
-  gap: var(--spacing-md);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: var(--spacing-xs);
-  scrollbar-width: none;
+.history-list-wrap {
+  padding: 0 var(--spacing-base) var(--spacing-xl);
 }
 
-.history-cards-row::-webkit-scrollbar {
+/* 历史页整行可点按钮（marker 控制左边状态色） */
+.history-row-btn-marker {
   display: none;
 }
 
-.history-card {
-  flex-shrink: 0;
-  width: 160px;
-  background: var(--color-bg-card);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
-  padding: var(--card-padding);
-  cursor: pointer;
-  transition: transform var(--transition-fast);
+.history-row-btn-marker.safe + div .stButton > button {
+  border-left: 6px solid #2E7D32 !important;
 }
 
-.history-card:active {
-  transform: scale(0.97);
+.history-row-btn-marker.caution + div .stButton > button {
+  border-left: 6px solid #F57F17 !important;
 }
 
-.history-card-name {
-  font-size: var(--font-size-body-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-sm);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.history-row-btn-marker.danger + div .stButton > button {
+  border-left: 6px solid #C62828 !important;
 }
 
-.history-card-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 10px;
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-body-sm);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--spacing-sm);
+.history-row-btn-marker + div .stButton {
+  width: 100%;
 }
 
-.history-card-date {
-  font-size: var(--font-size-caption);
-  color: var(--color-text-tertiary);
+.history-row-btn-marker + div .stButton > button {
+  width: 100% !important;
+  min-height: 64px !important;
+  height: auto !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  white-space: pre-line !important;
+  background: var(--color-bg-card) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 12px 16px !important;
+  font-size: var(--font-size-body) !important;
+  font-weight: var(--font-weight-regular) !important;
+  line-height: 1.45 !important;
+  box-shadow: var(--shadow-card) !important;
+  margin-bottom: var(--spacing-md) !important;
 }
 
-.history-list-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-base);
-  padding: var(--spacing-md) var(--card-padding);
-  background: var(--color-bg-card);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
-  margin-bottom: var(--spacing-md);
-  cursor: pointer;
-  transition: transform var(--transition-fast);
+.history-row-btn-marker + div .stButton > button:hover {
+  background: var(--color-primary-light) !important;
 }
 
-.history-list-item:active {
-  transform: scale(0.98);
+.history-row-btn-marker + div .stButton > button:active {
+  transform: scale(0.98) !important;
 }
 
-.history-list-score {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-family-num);
-  font-size: 22px;
-  font-weight: var(--font-weight-bold);
-  flex-shrink: 0;
+/* 侧边栏历史记录整行可点 */
+.sidebar-history-row-marker {
+  display: none;
 }
 
-.history-list-info {
-  flex: 1;
-  min-width: 0;
+.sidebar-history-row-marker.safe + div .stButton > button {
+  border-left: 4px solid #2E7D32 !important;
 }
 
-.history-list-name {
-  font-size: var(--font-size-body-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.sidebar-history-row-marker.caution + div .stButton > button {
+  border-left: 4px solid #F57F17 !important;
 }
 
-.history-list-status {
-  font-size: var(--font-size-body-sm);
-  font-weight: var(--font-weight-medium);
-  margin-top: 2px;
+.sidebar-history-row-marker.danger + div .stButton > button {
+  border-left: 4px solid #C62828 !important;
 }
 
-.history-list-date {
-  font-size: var(--font-size-caption);
-  color: var(--color-text-tertiary);
-  margin-top: 2px;
+.sidebar-history-row-marker + div .stButton {
+  width: 100%;
+}
+
+.sidebar-history-row-marker + div .stButton > button {
+  width: 100% !important;
+  min-height: 56px !important;
+  height: auto !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  white-space: pre-line !important;
+  background: var(--color-bg-card) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 10px 12px !important;
+  font-size: var(--font-size-body-sm) !important;
+  font-weight: var(--font-weight-regular) !important;
+  line-height: 1.4 !important;
+  box-shadow: var(--shadow-card) !important;
+  margin-bottom: var(--spacing-sm) !important;
+}
+
+.sidebar-history-row-marker + div .stButton > button:hover {
+  background: var(--color-primary-light) !important;
+}
+
+.sidebar-history-row-marker + div .stButton > button:active {
+  transform: scale(0.98) !important;
 }
 
 /* ========== 健康档案页 ========== */
@@ -1641,8 +1624,6 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
 
 .result-card,
 .stAlert,
-.history-card,
-.history-list-item,
 .additive-card {
   animation: fadeIn 0.3s ease-out;
 }
@@ -1711,7 +1692,8 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
   }
 
   /* 手机端：首页大按钮防止超出 */
-  div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) .stButton > button {
+  .st-key-home_goto_scan .stButton > button,
+  .st-key-home_goto_scan_desktop .stButton > button {
     width: 180px !important;
     height: 180px !important;
     font-size: 22px !important;
@@ -1733,8 +1715,8 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
 
-  .scan-button-wrapper {
-    min-height: 360px;
+  .home-scan-area {
+    min-height: 280px;
   }
 
   /* 桌面端扫描页：有预览卡时双列并排，无预览卡时单列占满 */
@@ -1871,7 +1853,8 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
   }
 
   /* 桌面端首页扫描按钮更大 */
-  .scan-button-wrapper .stButton > button {
+  .st-key-home_goto_scan .stButton > button,
+  .st-key-home_goto_scan_desktop .stButton > button {
     width: 240px !important;
     height: 240px !important;
     font-size: 28px !important;
@@ -1891,9 +1874,7 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
   }
 
   .result-card,
-  .additive-card,
-  .history-card,
-  .history-list-item {
+  .additive-card {
     border: 2px solid var(--color-text-primary) !important;
   }
 }
@@ -1931,8 +1912,7 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
   background: #C8E6C9;
 }
 
-.home-scan-area,
-div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) {
+.home-scan-area {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1941,38 +1921,6 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) {
   min-height: 240px;
   position: relative;
 }
-
-.home-history-section {
-  padding: var(--spacing-lg) var(--spacing-base);
-  padding-bottom: calc(var(--spacing-lg) + var(--safe-area-bottom));
-}
-
-.home-history-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--spacing-base);
-}
-
-.home-history-title {
-  font-size: var(--font-size-h3);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-}
-
-.home-history-more {
-  font-size: var(--font-size-body-sm);
-  color: var(--color-text-link);
-  cursor: pointer;
-  border: none;
-  background: none;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-sm);
-}
-
-.score-safe { background: #E8F5E9; color: #2E7D32; }
-.score-caution { background: #FFF8E1; color: #F57F17; }
-.score-danger { background: #FFEBEE; color: #C62828; }
 
 /* ========== 结果页浮动语音按钮 ========== */
 .voice-float-bar {
@@ -2427,49 +2375,6 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) {
   transform: none !important;
 }
 
-/* 首页大圆形扫描按钮 */
-.scan-button-wrapper .stButton > button {
-  width: 200px !important;
-  height: 200px !important;
-  min-height: 200px !important;
-  border-radius: 50% !important;
-  background: var(--color-primary-gradient) !important;
-  color: var(--color-text-inverse) !important;
-  border: none !important;
-  box-shadow: var(--shadow-button), 0 0 0 6px rgba(46, 125, 50, 0.1) !important;
-  font-size: 24px !important;
-  font-weight: var(--font-weight-bold) !important;
-  line-height: 1.3 !important;
-  white-space: pre-line !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: var(--spacing-sm) !important;
-  padding: 0 !important;
-  position: relative !important;
-  overflow: visible !important;
-}
-
-.scan-button-wrapper .stButton > button::before {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 2px solid rgba(46, 125, 50, 0.3);
-  animation: pulse-ring 2s ease-out infinite;
-}
-
-.scan-button-wrapper .stButton > button:hover {
-  transform: scale(1.02) !important;
-}
-
-.scan-button-wrapper .stButton > button:active {
-  transform: scale(0.95) !important;
-  box-shadow: var(--shadow-card), 0 0 0 3px rgba(46, 125, 50, 0.15) !important;
-}
-
 /* 健康档案状况卡片按钮桥接 */
 .condition-card-wrapper .stButton,
 .condition-card-wrapper .stButton > button {
@@ -2572,39 +2477,6 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) {
   border-color: #C62828 !important;
 }
 
-/* 历史列表项内部列对齐 */
-.history-list-item .row-widget {
-  align-items: center;
-  width: 100%;
-}
-
-/* 历史记录列表容器 */
-.history-list-wrap {
-  padding: 0 var(--spacing-base) var(--spacing-xl);
-}
-
-.history-list-wrap .stButton {
-  margin-top: calc(-1 * var(--min-list-item-height));
-  height: var(--min-list-item-height);
-  opacity: 0;
-}
-
-.history-list-wrap .stButton > button {
-  width: 100% !important;
-  height: 100% !important;
-  min-height: var(--min-list-item-height) !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: none !important;
-}
-
-.history-list-chevron {
-  font-size: 24px;
-  color: var(--color-text-tertiary);
-  flex-shrink: 0;
-  margin-left: var(--spacing-sm);
-}
-
 /* 历史搜索框内部输入框去边框 */
 .history-search-box .stTextInput > div > div > input {
   border: none !important;
@@ -2698,8 +2570,7 @@ div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker) .stButton > bu
 
 /* ========== 响应式适配增强 ========== */
 @media (max-width: 480px) {
-  .home-scan-area,
-  div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) {
+  .home-scan-area {
     min-height: 220px;
   }
 
@@ -2712,15 +2583,10 @@ div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker) .stButton > bu
     width: 48px;
     height: 48px;
   }
-
-  .history-card {
-    width: 140px;
-  }
 }
 
 @media (min-width: 768px) {
-  .home-scan-area,
-  div[data-testid="stVerticalBlock"]:has(.home-scan-area-marker) {
+  .home-scan-area {
     min-height: 280px;
   }
 

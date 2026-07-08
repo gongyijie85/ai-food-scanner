@@ -84,26 +84,20 @@ def render_history_page():
     for idx, item in filtered:
         score = item.get("score", 0)
         if score >= 80:
-            color, bg, status = "#2E7D32", "#E8F5E9", "安全"
+            status_class, status_text = "safe", "安全"
         elif score >= 60:
-            color, bg, status = "#F57F17", "#FFF8E1", "需要注意"
+            status_class, status_text = "caution", "需要注意"
         else:
-            color, bg, status = "#C62828", "#FFEBEE", "高风险"
+            status_class, status_text = "danger", "高风险"
         ts = item.get("timestamp", "")[:10]
-        name = item.get("product_name", "未知")
+        name = _safe(item.get("product_name", "未知"))
+        label = f"{name}\n{status_text} · {score}分 · {ts}"
+        # marker 提供状态色，整行按钮点击查看详情
         st.markdown(
-            f"<div class='history-list-item'>"
-            f"<div class='history-list-score' style='background:{bg};color:{color};'>{score}</div>"
-            f"<div class='history-list-info'>"
-            f"<div class='history-list-name'>{_safe(name)}</div>"
-            f"<div class='history-list-status' style='color:{color};'>{_safe(status)}</div>"
-            f"<div class='history-list-date'>{_safe(ts)}</div>"
-            f"</div>"
-            f"<div class='history-list-chevron'>›</div>"
-            f"</div>",
+            f"<div class='history-row-btn-marker {status_class}'></div>",
             unsafe_allow_html=True,
         )
-        if st.button("查看", key=f"hist_btn_{idx}", help="查看详情"):
+        if st.button(label, key=f"hist_btn_{idx}", help="查看详情"):
             st.session_state["selected_history_index"] = idx
             st.session_state["detail_fallback_record"] = item
             switch_page("detail")

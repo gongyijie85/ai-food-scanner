@@ -100,31 +100,32 @@ def add_history(result, default_engine="未知"):
 def show_history(switch_page_func, safe_func, max_items: int = 3):
     """在侧边栏展示最近 N 条历史记录（调用时需已在 sidebar 上下文内）.
 
-    完整历史记录请前往独立历史页面查看。
+    每条记录整行可点击，跳转详情页；完整历史记录请前往独立历史页面查看。
     """
     st.header("历史记录")
     history = load_history()
     if not history:
         st.caption("暂无记录")
         return
-    for item in history[:max_items]:
+    for idx, item in enumerate(history[:max_items]):
         score = item.get("score", 0)
-        color = "green" if score >= 80 else ("orange" if score >= 60 else "red")
+        status = "safe" if score >= 80 else ("caution" if score >= 60 else "danger")
         # 简短时间显示（YYYY-MM-DD HH:MM），适老化不显示秒
         ts = item.get("timestamp", "")
         time_str = ts[:16].replace("T", " ") if ts else ""
         # 类型标签：保健食品 / 食品
         type_tag = "保健食品" if item.get("type") == "supplement" else "食品"
+        name = safe_func(item.get("product_name", "未知"))
+        label = f"{name} [{type_tag}]\n{score}分 · {item.get('additives_count', 0)}种添加剂 · {time_str}"
+        # 用 marker 给样式提供状态色，整行按钮点击查看详情
         st.markdown(
-            f"<div style='border-left:4px solid {color};padding:8px 12px;margin:6px 0;background:#FAFAF5;border-radius:6px;'>"
-            f"<b>{safe_func(item.get('product_name', '未知'))}</b>"
-            f"<span style='color:#888;font-size:14px;'> [{type_tag}]</span><br>"
-            f"<span style='color:{color};font-size:20px;font-weight:bold;'>{score}分</span> "
-            f"<span style='color:#888;'>{item.get('additives_count', 0)}种添加剂</span>"
-            f"<br><span style='color:#aaa;font-size:13px;'>{time_str}</span>"
-            f"</div>",
-            unsafe_allow_html=True
+            f"<div class='sidebar-history-row-marker {status}'></div>",
+            unsafe_allow_html=True,
         )
+        if st.button(label, key=f"sb_history_{idx}", help="查看详情"):
+            st.session_state["selected_history_index"] = idx
+            st.session_state["detail_fallback_record"] = item
+            switch_page_func("detail")
     if len(history) > max_items:
         if st.button("查看全部历史记录", width="stretch", key="sb_view_all_history"):
             switch_page_func("history")
