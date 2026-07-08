@@ -2,7 +2,11 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.6.4-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.6.6-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+
+**公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
+
+**评委快速体验**（自动跳过法律同意与引导）：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/?demo=1
 
 ## 一句话介绍
 
@@ -11,6 +15,8 @@
 
 ## 最新更新
 
+- **v0.6.6（2026-07-08）**：修复 `components/navigation.py` 移动端底部导航循环解包错误（v0.6.3 SVG 清理后遗症），手机端访问不再崩溃；版本号同步到 v0.6.6。`py_compile` 与 `pytest` 51 项全量通过。
+- **v0.6.5（2026-07-08）**：参赛 Demo 体验优化。新增 `?demo=1` 评委快速模式：自动完成法律同意、跳过 4 步引导、预填默认健康档案；评委模式下隐藏侧边栏模型切换与扫描页“拍照/相册”单选，让评委 3 秒内进入核心功能。同步 README 真实公开链接与 Demo 帖资料。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.6.4（2026-07-08）**：参赛前收口整理。统一文档版本与叙事（README、HANDOFF、隐私政策），修正 HANDOFF 中过时的单文件架构/行号描述，收紧隐私政策中数据保存期限为“本应用不主动持久化，第三方服务按其政策处理”，将未跟踪的 `ui_ux_report.html` 排除在最终提交外，清理 D:\\GBT 外层含真实 API key 的脚本痕迹。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.6.3（2026-07-08）**：修复扫描页示例图缺失导致的崩溃；全局替换已过期 `use_container_width=True` 为 `width="stretch"`（10 个文件 32 处）；为 `@st.cache_data` 添加 `ttl=300` 参数；修复 `st.button` label 中内联 SVG 被显示为源码乱码的问题（移动端底部导航、侧边栏、历史页、扫描页、结果页共 16 处），并修复语音播报面板 HTML 按钮中文本被 `_safe()` 误转义的问题；在 `.streamlit/config.toml` 中禁用原生多页面侧边栏导航，避免与自定义导航重复显示；`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.6.2（2026-07-08）**：真正修复 Streamlit Cloud `ModuleNotFoundError: No module named 'pages'` 部署错误。根因是 `.gitignore` 仍忽略 `pages/`，导致生产页面模块未进入 Git 仓库；已移除该忽略规则并将 `pages/` 全部文件加入跟踪。`py_compile` 与 `pytest` 51 项全量通过。
@@ -140,6 +146,8 @@ streamlit run app.py
 
 **公开链接格式**：`https://<你的用户名>-ai-food-scanner.streamlit.app`
 
+本项目公开体验地址：**https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/**
+
 ### 安全提示（必读）
 
 - **API 密钥必须通过 Streamlit Cloud Secrets 配置**，不要把真实 key 写入代码、README、issue、commit message 或聊天记录；
@@ -192,11 +200,13 @@ ai-food-scanner/
 │   ├── __init__.py         # 统一暴露组件与图标
 │   ├── icons.py            # SVG 图标常量
 │   ├── top_nav.py          # 顶部导航栏
+│   ├── navigation.py       # 移动端底部导航 / 桌面端侧边栏
 │   ├── score_hero.py       # 评分英雄区
 │   ├── additive_card.py    # 添加剂清单卡片
 │   ├── nutrition_bars.py   # 营养成分 NRV 可视化条
 │   ├── voice_panel.py      # 语音播报面板
-│   └── personal_warnings.py # 个性化健康档案警告
+│   ├── personal_warnings.py # 个性化健康档案警告
+│   └── state.py            # 统一空态 / 错误态 / 加载态
 ├── pages/                  # 页面渲染模块
 │   ├── __init__.py         # 统一暴露页面渲染函数
 │   ├── home.py             # 首页（移动端 / 桌面端）

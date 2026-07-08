@@ -125,13 +125,17 @@ def render_scan_page():
             st.info("📷 像这样正对配料表拍照，识别率更高")
 
         input_method_key = f"scan_input_method_desktop_{uploader_key}" if is_desktop else f"scan_input_method_{uploader_key}"
-        input_method = st.radio(
-            "输入方式",
-            ["拍照", "从相册选择"],
-            horizontal=True,
-            label_visibility="collapsed",
-            key=input_method_key,
-        )
+        # 评委快速模式下自动选择输入方式，减少一次无意义点击
+        if st.session_state.get("demo_mode"):
+            input_method = "从相册选择" if is_desktop else "拍照"
+        else:
+            input_method = st.radio(
+                "输入方式",
+                ["拍照", "从相册选择"],
+                horizontal=True,
+                label_visibility="collapsed",
+                key=input_method_key,
+            )
 
         with st.container():
             st.markdown(

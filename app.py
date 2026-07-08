@@ -1,6 +1,6 @@
-"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.6.4
+"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.6.6
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
-特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 三端适配
+特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 三端适配 + 评委快速模式
 运行环境：Python 3.10+
 依赖：pip install streamlit requests pillow
 运行命令：streamlit run app.py
@@ -99,6 +99,33 @@ def _dispatch_page(page: str):
         st.rerun()
 
 
+# ========== 评委快速模式 ==========
+
+def _apply_demo_mode():
+    """检测 URL 参数 ?demo=1，为评委自动完成法律同意、引导并预填健康档案.
+
+    普通用户访问仍走完整流程；评委模式仅通过 session_state 跳过，不删除任何页面。
+    """
+    if st.session_state.get("demo_mode"):
+        return
+    if st.query_params.get("demo") != "1":
+        return
+    st.session_state["demo_mode"] = True
+    st.session_state["legal_agreed"] = True
+    st.session_state["onboarded"] = True
+    st.session_state["page"] = "home"
+    if "health_profile" not in st.session_state:
+        st.session_state["health_profile"] = {}
+    profile = st.session_state["health_profile"]
+    profile.setdefault("name", "")
+    profile.setdefault("age", 60)
+    profile.setdefault("diseases", ["脑梗/心血管", "高血压"])
+    profile.setdefault("allergens", [])
+    profile.setdefault("drugs", [])
+    # 保持与引导页一致的默认模型
+    st.session_state["selected_model"] = "mimo"
+
+
 # ========== 主程序 ==========
 
 def main():
@@ -154,6 +181,9 @@ def main():
     # 默认模型选择
     if "selected_model" not in st.session_state:
         st.session_state["selected_model"] = "mimo"
+
+    # 评委快速模式：URL ?demo=1 自动完成法律同意与引导
+    _apply_demo_mode()
 
     # 首次访问：先法律同意，再触发 4 步引导
     if "legal_agreed" not in st.session_state:

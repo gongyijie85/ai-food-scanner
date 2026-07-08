@@ -4,12 +4,6 @@ import os
 
 import streamlit as st
 
-from components.icons import (
-    _ICON_CAMERA,
-    _ICON_HISTORY,
-    _ICON_HOME,
-    _ICON_PROFILE,
-)
 from utils.helpers import detect_device_type
 
 
@@ -21,10 +15,10 @@ def render_mobile_bottom_nav(switch_page_func):
     current_page = st.session_state.get("page", "home")
 
     tabs = [
-        ("home", _ICON_HOME, "首页"),
-        ("scan", _ICON_CAMERA, "扫描"),
-        ("history", _ICON_HISTORY, "历史"),
-        ("profile", _ICON_PROFILE, "我的"),
+        ("home", "首页"),
+        ("scan", "扫描"),
+        ("history", "历史"),
+        ("profile", "我的"),
     ]
 
     with st.container():
@@ -45,7 +39,7 @@ def render_mobile_bottom_nav(switch_page_func):
                         unsafe_allow_html=True,
                     )
                     if st.button(
-                        f"{icon}\n{label}",
+                        label,
                         width="stretch",
                         key=f"mobile_nav_{page}",
                     ):
@@ -88,25 +82,27 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
 
         st.divider()
 
-        with st.expander("高级设置"):
-            model_choice = st.radio(
-                "选择识别模型",
-                options=["mimo", "agnes"],
-                format_func=lambda x: {
-                    "mimo": "MiMo（推荐）：识别更准确",
-                    "agnes": "Agnes（更快）：速度优先",
-                }[x],
-                key="selected_model_radio",
-                index=0
-                if st.session_state.get("selected_model", "mimo") == "mimo"
-                else 1,
-            )
-            st.session_state["selected_model"] = model_choice
-            if os.getenv("DEBUG") == "1":
-                if st.button("重新查看引导", width="stretch", key="replay_ob"):
-                    st.session_state["onboarded"] = False
-                    st.session_state["onboarding_step"] = 1
-                    st.rerun()
+        # 评委快速模式下隐藏模型切换，仅保留 MiMo 主模型与失败降级
+        if not st.session_state.get("demo_mode"):
+            with st.expander("高级设置"):
+                model_choice = st.radio(
+                    "选择识别模型",
+                    options=["mimo", "agnes"],
+                    format_func=lambda x: {
+                        "mimo": "MiMo（推荐）：识别更准确",
+                        "agnes": "Agnes（更快）：速度优先",
+                    }[x],
+                    key="selected_model_radio",
+                    index=0
+                    if st.session_state.get("selected_model", "mimo") == "mimo"
+                    else 1,
+                )
+                st.session_state["selected_model"] = model_choice
+                if os.getenv("DEBUG") == "1":
+                    if st.button("重新查看引导", width="stretch", key="replay_ob"):
+                        st.session_state["onboarded"] = False
+                        st.session_state["onboarding_step"] = 1
+                        st.rerun()
 
         with st.expander("📄 法律声明"):
             st.caption("AI识别仅供参考，不构成医疗建议")

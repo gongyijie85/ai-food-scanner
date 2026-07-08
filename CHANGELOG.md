@@ -1,5 +1,25 @@
 # 变更日志
 
+## v0.6.6 - 2026-07-08
+
+### Bug 修复：移动端底部导航运行时错误
+
+- **修复 `components/navigation.py` 移动端底部导航崩溃**（`components/navigation.py`）：v0.6.3 清理 SVG 图标后，`render_mobile_bottom_nav()` 中的 `tabs` 列表仍保留 3 元组 `(page, icon, label)` 结构，但循环解包和按钮 label 未同步更新，导致手机端访问时抛出 `ValueError` / `NameError`。已将 tabs 改为 2 元组、按钮 label 改为纯文字、移除未使用的图标 import。
+- **版本号同步**：`app.py`、`.streamlit/style.css`、`README.md`、Demo 帖统一升级到 `v0.6.6`。
+- **验证**：`pytest tests/ -q` 51 项全量通过；`python -m compileall app.py pages components utils` 通过。
+
+## v0.6.5 - 2026-07-08
+
+### 参赛 Demo 体验优化（评委快速模式 + 资料同步）
+
+- **新增 `?demo=1` 评委快速模式**（`app.py`）：评委访问链接时自动完成法律同意、跳过 4 步引导页、预填默认健康档案（脑梗/心血管 + 高血压，年龄 60），直接进入首页。普通用户访问仍走完整流程。
+- **评委模式下隐藏模型切换**（`components/navigation.py`）：桌面端侧边栏“高级设置”在 `demo_mode` 下不展开，MiMo 仍为主模型，Agnes 保留失败降级逻辑。
+- **评委模式下自动选择扫描输入方式**（`pages/scan.py`）：手机端默认“拍照”、桌面端默认“从相册选择”，不再渲染“拍照 / 相册”单选组件，减少一次点击。
+- **README 资料补全**：顶部补充真实公开体验链接与评委快速体验链接（`?demo=1`）；将部署章节占位符替换为真实地址；项目结构补全 `components/navigation.py` 与 `components/state.py`。
+- **Demo 帖草稿同步**：版本号升级到 v0.6.5；父亲病史统一为“10 年以上脑梗”；使用步骤增加 `?demo=1` 评委入口；最新更新追加 v0.6.0 ~ v0.6.5 关键变更；Session ID 列表追加 7 月迭代记录。
+- **版本号同步**：`app.py`、`.streamlit/style.css`、`README.md` 统一升级到 v0.6.5。
+- **验证**：`pytest tests/ -q` 51 项全量通过；`python -m compileall app.py pages components utils` 通过。
+
 ## v0.6.4 - 2026-07-08
 
 ### 参赛前收口整理（文档一致性、安全清理、合规口径）
