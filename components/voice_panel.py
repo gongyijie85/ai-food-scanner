@@ -223,7 +223,6 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text
 
     rate = st.session_state["tts_rate"]
     safe = _safe(speak_content)
-    safe_button_text = _safe(button_text)
     btn_id = _next_tts_id(f"tts-btn-{key_prefix}")
     stop_btn_id = _next_tts_id(f"tts-stop-{key_prefix}")
     err_id = _next_tts_id(f"tts-err-{key_prefix}")
@@ -234,7 +233,7 @@ def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text
         f"<button id='{btn_id}' aria-label='语音播报识别结果' "
         f"class='food-scanner-tts-btn voice-float-btn' data-action='speak' "
         f"data-err-id='{err_id}' data-text='{safe}' data-rate='{rate}'>"
-        f"{safe_button_text}</button>"
+        f"{button_text}</button>"
         f"<button id='{stop_btn_id}' class='food-scanner-tts-stop-btn voice-stop-btn' "
         f"data-action='stop' aria-label='停止播报'>停止</button>"
         f"<span id='{err_id}' class='tts-err'></span>"

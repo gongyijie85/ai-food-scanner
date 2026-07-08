@@ -2,7 +2,6 @@
 
 import streamlit as st
 
-from components.icons import _ICON_BACK, _ICON_HEART
 from utils.helpers import switch_page
 from utils.security import _safe
 
@@ -19,7 +18,7 @@ def render_top_nav(title: str, show_back: bool = True, back_target: str = "home"
         cols = st.columns([1, 4, 1])
         with cols[0]:
             if show_back:
-                if st.button(f"{_ICON_BACK} 返回", key=f"tn_back_{title}", help="返回"):
+                if st.button("返回", key=f"tn_back_{title}", help="返回"):
                     target = st.session_state.get("prev_page", back_target)
                     switch_page(target)
         with cols[1]:
@@ -27,5 +26,5 @@ def render_top_nav(title: str, show_back: bool = True, back_target: str = "home"
             st.markdown(f"<div class='top-nav-title' style='{title_style}'>{_safe(title)}</div>", unsafe_allow_html=True)
         with cols[2]:
             if right_action == "profile":
-                if st.button(_ICON_HEART, key=f"tn_profile_{title}", help="健康档案"):
+                if st.button("健康档案", key=f"tn_profile_{title}", help="健康档案"):
                     switch_page("profile")

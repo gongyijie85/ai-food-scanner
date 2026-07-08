@@ -7,8 +7,6 @@ from PIL import Image
 
 from components import (
     _ICON_CAMERA,
-    _ICON_CHECK,
-    _ICON_REFRESH,
     render_empty_state,
     render_error,
     render_top_nav,
@@ -170,12 +168,12 @@ def render_scan_page():
             col1, col2 = st.columns(2)
             with col1:
                 retake_key = "scan_retake_desktop" if is_desktop else "scan_retake"
-                if st.button(f"{_ICON_REFRESH} 重新选择", width="stretch", key=retake_key):
+                if st.button("重新选择", width="stretch", key=retake_key):
                     st.session_state["scan_upload_key"] += 1
                     st.rerun()
             with col2:
                 confirm_key = "scan_confirm_desktop" if is_desktop else "scan_confirm"
-                if st.button(f"{_ICON_CHECK} 使用照片", type="primary", width="stretch", key=confirm_key):
+                if st.button("使用照片", type="primary", width="stretch", key=confirm_key):
                     _scan_validate_and_recognize(uploaded, api_key, groups)
         elif is_desktop:
             render_empty_state("在左侧上传配料表图片后，这里会显示预览")

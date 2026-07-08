@@ -2,11 +2,12 @@
 
 ## v0.6.3 - 2026-07-08
 
-### Bug 修复：扫描页崩溃 + 过期 API 全局替换
+### Bug 修复：扫描页崩溃 + 过期 API 全局替换 + 按钮 SVG 乱码
 
 - **修复扫描页因示例图缺失崩溃**（`pages/scan.py`）：`test_images/example_label.jpg` 文件不存在，`st.image` 直接抛 `FileNotFoundError` 导致整个扫描页无法打开。改为 `os.path.exists` 判断，文件存在才显示示例图，否则用 `st.info` 显示文字提示。
 - **全局替换 `use_container_width=True` → `width="stretch"`**（10 个文件，32 处）：`use_container_width` 参数已于 2025-12-31 过期移除。涉及 `pages/result.py`、`pages/scan.py`、`pages/home.py`、`pages/history.py`、`pages/profile.py`、`pages/legal.py`、`pages/onboarding.py`、`components/navigation.py`、`components/additive_card.py`、`utils/history.py`。
 - **`@st.cache_data` 加 `ttl=300`**（3 处）：`utils/history.py` 的 `load_history()` / `load_history_full()` 和 `utils/data.py` 的 `_load_markdown()`，符合项目缓存规范，避免历史记录展示旧数据。
+- **修复按钮 SVG 图标显示为源码乱码**（16 处 `st.button` + 1 处 HTML 按钮）：Streamlit 的 `st.button(label=...)` 不支持内联 HTML/SVG，直接把 SVG 字符串当作普通文本渲染，导致移动端底部导航等按钮出现 `<svg class='icon'...>` 源码。把所有 `st.button` label 中的 SVG 图标替换为纯文字（仅保留主页大按钮的 `📷` emoji），并清理了不再使用的 `components.icons` import。同时修复 `voice_control_panel` 中对按钮文本整体调用 `_safe()` 导致 HTML 按钮里的 SVG 被转义的问题。
 - **未处理**：`st.components.v1.html` 弃用警告（`app.py`、`components/voice_panel.py` 共 3 处），该 API 目前仍可用，迁移到 `st.html()` 会丢失 JS 执行能力，影响 TTS 语音播报与设备检测，暂缓处理。
 - **验证**：`py_compile` 全部通过；`pytest tests/` 51 项全量通过。
 

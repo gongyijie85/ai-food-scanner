@@ -33,7 +33,7 @@ def render_mobile_bottom_nav(switch_page_func):
             unsafe_allow_html=True,
         )
         cols = st.columns(4)
-        for col, (page, icon, label) in zip(cols, tabs):
+        for col, (page, label) in zip(cols, tabs):
             active = current_page == page
             item_class = "mobile-bottom-nav-item"
             if active:
@@ -61,12 +61,12 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
         c1, c2 = st.columns(2)
         with c1:
             if st.button(
-                f"{_ICON_HOME} 首页", width="stretch", key="sidebar_home"
+                "首页", width="stretch", key="sidebar_home"
             ):
                 switch_page_func("home")
         with c2:
             if st.button(
-                f"{_ICON_HISTORY} 历史",
+                "历史",
                 width="stretch",
                 key="sidebar_history",
             ):
@@ -75,12 +75,12 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
         if st.button(
-            f"{_ICON_CAMERA} 扫描", width="stretch", key="sidebar_scan"
+            "扫描", width="stretch", key="sidebar_scan"
         ):
             switch_page_func("scan")
 
         if st.button(
-            f"{_ICON_PROFILE} 健康档案",
+            "健康档案",
             width="stretch",
             key="sidebar_profile",
         ):

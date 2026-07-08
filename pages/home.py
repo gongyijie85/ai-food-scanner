@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from components import _ICON_CAMERA, render_empty_state, render_top_nav
+from components import render_empty_state, render_top_nav
 from utils.helpers import detect_device_type, switch_page
 from utils.history import load_history
 from utils.security import _safe
@@ -49,7 +49,7 @@ def render_home_page():
                 unsafe_allow_html=True,
             )
             scan_key = "home_goto_scan" if detect_device_type() == "mobile" else "home_goto_scan_desktop"
-            if st.button(f"{_ICON_CAMERA}\n扫描配料表", type="primary", key=scan_key):
+            if st.button("📷\n扫描配料表", type="primary", key=scan_key):
                 switch_page("scan")
 
     with right:

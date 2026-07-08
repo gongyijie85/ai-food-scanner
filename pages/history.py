@@ -3,9 +3,6 @@
 import streamlit as st
 
 from components import (
-    _ICON_CAMERA,
-    _ICON_REFRESH,
-    _ICON_SHARE,
     _render_additive_card,
     _render_score_hero,
     render_empty_state,
@@ -77,7 +74,7 @@ def render_history_page():
     if not filtered:
         if not history:
             render_empty_state("还没有扫描记录", "去首页拍第一张配料表吧")
-            if st.button(f"{_ICON_CAMERA} 开始扫描", type="primary", width="stretch", key="hist_empty_scan"):
+            if st.button("开始扫描", type="primary", width="stretch", key="hist_empty_scan"):
                 switch_page("scan")
         else:
             st.info("没有匹配的记录")
@@ -178,8 +175,8 @@ def render_detail_page():
     with st.container():
         col1, col2 = st.columns(2)
         with col1:
-            if st.button(f"{_ICON_REFRESH} 重新评分", width="stretch", key="detail_rescore"):
+            if st.button("重新评分", width="stretch", key="detail_rescore"):
                 switch_page("scan")
         with col2:
-            if st.button(f"{_ICON_SHARE} 分享给家人", width="stretch", key="detail_share"):
+            if st.button("分享给家人", width="stretch", key="detail_share"):
                 st.toast("已复制结果摘要，可直接粘贴给家人")
