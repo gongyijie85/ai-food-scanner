@@ -11,7 +11,7 @@
 
 ## 最新更新
 
-- **v0.6.3（2026-07-08）**：修复扫描页示例图缺失导致的崩溃；全局替换已过期 `use_container_width=True` 为 `width="stretch"`（10 个文件 32 处）；为 `@st.cache_data` 添加 `ttl=300` 参数；修复 `st.button` label 中内联 SVG 被显示为源码乱码的问题（移动端底部导航、侧边栏、历史页、扫描页、结果页共 16 处），并修复语音播报面板 HTML 按钮中文本被 `_safe()` 误转义的问题；`py_compile` 与 `pytest` 51 项全量通过。
+- **v0.6.3（2026-07-08）**：修复扫描页示例图缺失导致的崩溃；全局替换已过期 `use_container_width=True` 为 `width="stretch"`（10 个文件 32 处）；为 `@st.cache_data` 添加 `ttl=300` 参数；修复 `st.button` label 中内联 SVG 被显示为源码乱码的问题（移动端底部导航、侧边栏、历史页、扫描页、结果页共 16 处），并修复语音播报面板 HTML 按钮中文本被 `_safe()` 误转义的问题；在 `.streamlit/config.toml` 中禁用原生多页面侧边栏导航，避免与自定义导航重复显示；`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.6.2（2026-07-08）**：真正修复 Streamlit Cloud `ModuleNotFoundError: No module named 'pages'` 部署错误。根因是 `.gitignore` 仍忽略 `pages/`，导致生产页面模块未进入 Git 仓库；已移除该忽略规则并将 `pages/` 全部文件加入跟踪。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.6.1（2026-07-08）**：尝试修复 Streamlit Cloud 部署后 `ModuleNotFoundError: No module named 'pages'` 错误。在 `app.py` 顶部动态将项目根目录加入 `sys.path`，确保 Cloud 运行 `app.py` 时能正确导入 `pages`、`components`、`utils` 等同级模块；版本号同步到 v0.6.1。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.6.0（2026-07-07）**：组件化 + 页面模块化架构重构。新增 `components/` 模块，将 `app.py` 中 7 个可复用 UI 组件与 14 个 SVG 图标常量抽离到独立文件；新增 `components/state.py` 统一空态/错误态/加载态组件，替换页面中重复的空状态 HTML 与 emoji；`components/additive_card.py` 实现添加剂清单折叠（默认前 5 项、高风险优先）。新增 `pages/` 模块，将 15 个页面渲染函数拆分为 7 个文件；新增 `utils/constants.py` 集中存放项目级常量；`app.py` 从约 1489 行精简至约 230 行。`py_compile` 与 `pytest` 51 项全量通过。

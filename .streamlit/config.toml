@@ -9,6 +9,10 @@ enableCORS = true
 # 适老化：禁止自动收集使用数据
 gatherUsageStats = false
 
+[client]
+# 禁用 Streamlit 原生多页面侧边栏导航，避免与自定义导航组件重复显示
+showSidebarNavigation = false
+
 [theme]
 primaryColor = "#2E7D32"
 backgroundColor = "#FFFFFF"
