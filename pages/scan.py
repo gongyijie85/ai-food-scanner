@@ -115,11 +115,16 @@ def render_scan_page():
     uploaded = None
 
     with left:
-        st.image(
-            os.path.join(_BASE_DIR, "test_images", "example_label.jpg"),
-            caption="像这样正对配料表拍照，识别率更高",
-            use_container_width=True,
-        )
+        # 示例图可能缺失，文件存在才显示，避免页面崩溃
+        example_path = os.path.join(_BASE_DIR, "test_images", "example_label.jpg")
+        if os.path.exists(example_path):
+            st.image(
+                example_path,
+                caption="像这样正对配料表拍照，识别率更高",
+                width="stretch",
+            )
+        else:
+            st.info("📷 像这样正对配料表拍照，识别率更高")
 
         input_method_key = f"scan_input_method_desktop_{uploader_key}" if is_desktop else f"scan_input_method_{uploader_key}"
         input_method = st.radio(
@@ -161,16 +166,16 @@ def render_scan_page():
         if uploaded is not None:
             st.markdown("<div class='preview-card-marker'></div>", unsafe_allow_html=True)
             st.markdown("<div class='preview-card-title'>已选择图片</div>", unsafe_allow_html=True)
-            st.image(uploaded, use_container_width=True)
+            st.image(uploaded, width="stretch")
             col1, col2 = st.columns(2)
             with col1:
                 retake_key = "scan_retake_desktop" if is_desktop else "scan_retake"
-                if st.button(f"{_ICON_REFRESH} 重新选择", use_container_width=True, key=retake_key):
+                if st.button(f"{_ICON_REFRESH} 重新选择", width="stretch", key=retake_key):
                     st.session_state["scan_upload_key"] += 1
                     st.rerun()
             with col2:
                 confirm_key = "scan_confirm_desktop" if is_desktop else "scan_confirm"
-                if st.button(f"{_ICON_CHECK} 使用照片", type="primary", use_container_width=True, key=confirm_key):
+                if st.button(f"{_ICON_CHECK} 使用照片", type="primary", width="stretch", key=confirm_key):
                     _scan_validate_and_recognize(uploaded, api_key, groups)
         elif is_desktop:
             render_empty_state("在左侧上传配料表图片后，这里会显示预览")

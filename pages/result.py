@@ -68,10 +68,10 @@ def render_food_page(result):
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button(f"{_ICON_CAMERA} 再扫一个", use_container_width=True, key="food_btn_scan_desktop"):
+            if st.button(f"{_ICON_CAMERA} 再扫一个", width="stretch", key="food_btn_scan_desktop"):
                 switch_page("scan")
         with col2:
-            if st.button(f"{_ICON_HOME} 返回首页", use_container_width=True, key="food_btn_home_desktop"):
+            if st.button(f"{_ICON_HOME} 返回首页", width="stretch", key="food_btn_home_desktop"):
                 switch_page("home")
     else:
         _render_score_hero(score, product_name)
@@ -113,10 +113,10 @@ def render_food_page(result):
             st.markdown("<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True)
             col1, col2 = st.columns(2)
             with col1:
-                if st.button(f"{_ICON_CAMERA} 再扫一个", use_container_width=True, key="food_btn_scan"):
+                if st.button(f"{_ICON_CAMERA} 再扫一个", width="stretch", key="food_btn_scan"):
                     switch_page("scan")
             with col2:
-                if st.button(f"{_ICON_HOME} 返回首页", use_container_width=True, key="food_btn_home"):
+                if st.button(f"{_ICON_HOME} 返回首页", width="stretch", key="food_btn_home"):
                     switch_page("home")
 
 
@@ -212,10 +212,10 @@ def render_supplement_page(result):
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button(f"{_ICON_CAMERA} 再扫一个", use_container_width=True, key="supp_btn_scan_desktop"):
+            if st.button(f"{_ICON_CAMERA} 再扫一个", width="stretch", key="supp_btn_scan_desktop"):
                 switch_page("scan")
         with col2:
-            if st.button(f"{_ICON_HOME} 返回首页", use_container_width=True, key="supp_btn_home_desktop"):
+            if st.button(f"{_ICON_HOME} 返回首页", width="stretch", key="supp_btn_home_desktop"):
                 switch_page("home")
     else:
         if summary:
@@ -280,10 +280,10 @@ def render_supplement_page(result):
             st.markdown("<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True)
             col1, col2 = st.columns(2)
             with col1:
-                if st.button(f"{_ICON_CAMERA} 再扫一个", use_container_width=True, key="supp_btn_scan"):
+                if st.button(f"{_ICON_CAMERA} 再扫一个", width="stretch", key="supp_btn_scan"):
                     switch_page("scan")
             with col2:
-                if st.button(f"{_ICON_HOME} 返回首页", use_container_width=True, key="supp_btn_home"):
+                if st.button(f"{_ICON_HOME} 返回首页", width="stretch", key="supp_btn_home"):
                     switch_page("home")
 
 
@@ -292,7 +292,7 @@ def render_result_page():
     result = st.session_state.get("last_result")
     if not result:
         render_empty_state("暂无识别结果", "请返回首页扫描")
-        if st.button(f"{_ICON_HOME} 返回首页", use_container_width=True, key="result_empty_home"):
+        if st.button(f"{_ICON_HOME} 返回首页", width="stretch", key="result_empty_home"):
             switch_page("home")
         return
     if result.get("type") == "supplement":

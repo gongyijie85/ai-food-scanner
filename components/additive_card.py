@@ -78,7 +78,7 @@ def _render_additive_card(additives, key="additive_card"):
 
     if total > 5:
         btn_label = "收起" if expanded else f"展开全部（共 {total} 项）"
-        if st.button(btn_label, use_container_width=True, key=f"{key}_toggle"):
+        if st.button(btn_label, width="stretch", key=f"{key}_toggle"):
             st.session_state[expand_key] = not expanded
             st.rerun()
 

@@ -46,7 +46,7 @@ def render_mobile_bottom_nav(switch_page_func):
                     )
                     if st.button(
                         f"{icon}\n{label}",
-                        use_container_width=True,
+                        width="stretch",
                         key=f"mobile_nav_{page}",
                     ):
                         switch_page_func(page)
@@ -61,13 +61,13 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
         c1, c2 = st.columns(2)
         with c1:
             if st.button(
-                f"{_ICON_HOME} 首页", use_container_width=True, key="sidebar_home"
+                f"{_ICON_HOME} 首页", width="stretch", key="sidebar_home"
             ):
                 switch_page_func("home")
         with c2:
             if st.button(
                 f"{_ICON_HISTORY} 历史",
-                use_container_width=True,
+                width="stretch",
                 key="sidebar_history",
             ):
                 switch_page_func("history")
@@ -75,13 +75,13 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
         if st.button(
-            f"{_ICON_CAMERA} 扫描", use_container_width=True, key="sidebar_scan"
+            f"{_ICON_CAMERA} 扫描", width="stretch", key="sidebar_scan"
         ):
             switch_page_func("scan")
 
         if st.button(
             f"{_ICON_PROFILE} 健康档案",
-            use_container_width=True,
+            width="stretch",
             key="sidebar_profile",
         ):
             switch_page_func("profile")
@@ -103,16 +103,16 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
             )
             st.session_state["selected_model"] = model_choice
             if os.getenv("DEBUG") == "1":
-                if st.button("重新查看引导", use_container_width=True, key="replay_ob"):
+                if st.button("重新查看引导", width="stretch", key="replay_ob"):
                     st.session_state["onboarded"] = False
                     st.session_state["onboarding_step"] = 1
                     st.rerun()
 
         with st.expander("📄 法律声明"):
             st.caption("AI识别仅供参考，不构成医疗建议")
-            if st.button("查看用户协议", use_container_width=True, key="sidebar_ua"):
+            if st.button("查看用户协议", width="stretch", key="sidebar_ua"):
                 switch_page_func("legal_ua")
-            if st.button("查看隐私政策", use_container_width=True, key="sidebar_pp"):
+            if st.button("查看隐私政策", width="stretch", key="sidebar_pp"):
                 switch_page_func("legal_pp")
 
         st.divider()

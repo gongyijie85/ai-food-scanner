@@ -51,7 +51,7 @@ def render_onboarding():
         # 一键跳过：保留默认档案，直接进入下一步
         if st.button(
             "⏭️ 跳过，稍后设置",
-            use_container_width=True,
+            width="stretch",
             key="ob_skip_health",
             help="保留默认档案（脑梗/心血管 + 高血压），稍后可在健康档案页修改"
         ):
@@ -112,16 +112,16 @@ def render_onboarding():
     col_back, col_next = st.columns(2)
     with col_back:
         if step > 1:
-            if st.button("⬅️ 上一步", use_container_width=True, key=f"ob_back_{step}"):
+            if st.button("⬅️ 上一步", width="stretch", key=f"ob_back_{step}"):
                 st.session_state["onboarding_step"] = step - 1
                 st.rerun()
     with col_next:
         if step < 4:
-            if st.button("下一步 ➡️", type="primary", use_container_width=True, key=f"ob_next_{step}"):
+            if st.button("下一步 ➡️", type="primary", width="stretch", key=f"ob_next_{step}"):
                 st.session_state["onboarding_step"] = step + 1
                 st.rerun()
         else:
-            if st.button("🚀 开始使用", type="primary", use_container_width=True, key="ob_start"):
+            if st.button("🚀 开始使用", type="primary", width="stretch", key="ob_start"):
                 # 完成引导，把人群保存到 health_profile
                 if "health_profile" not in st.session_state:
                     st.session_state["health_profile"] = {}

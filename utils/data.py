@@ -25,7 +25,7 @@ def _load_json(path):
         return {}
 
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def _load_markdown(path):
     """读取 Markdown 文件，失败返回提示文本."""
     try:

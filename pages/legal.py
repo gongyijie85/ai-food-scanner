@@ -40,7 +40,7 @@ def render_legal_consent():
     if st.button(
         "开始使用",
         type="primary",
-        use_container_width=True,
+        width="stretch",
         disabled=start_disabled,
         key="legal_start_btn"
     ):

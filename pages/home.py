@@ -108,7 +108,7 @@ def render_home_page():
                     "</div></div>",
                     unsafe_allow_html=True,
                 )
-                if st.button("查看全部历史记录", use_container_width=True, key="home_goto_history"):
+                if st.button("查看全部历史记录", width="stretch", key="home_goto_history"):
                     switch_page("history")
         else:
             empty_text = (

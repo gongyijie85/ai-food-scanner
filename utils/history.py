@@ -17,7 +17,7 @@ _HISTORY_FULL_PATH = os.path.join(_DATA_DIR, "history_full.json")
 _HISTORY_FULL_MAX = 20
 
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_history():
     """读取本地历史记录 JSON，返回 list[dict].
 
@@ -54,7 +54,7 @@ def save_history(record):
         pass
 
 
-@st.cache_data
+@st.cache_data(ttl=300)
 def load_history_full():
     """读取完整历史快照."""
     try:
@@ -126,5 +126,5 @@ def show_history(switch_page_func, safe_func, max_items: int = 3):
             unsafe_allow_html=True
         )
     if len(history) > max_items:
-        if st.button("查看全部历史记录", use_container_width=True, key="sb_view_all_history"):
+        if st.button("查看全部历史记录", width="stretch", key="sb_view_all_history"):
             switch_page_func("history")

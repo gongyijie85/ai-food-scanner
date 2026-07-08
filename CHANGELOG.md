@@ -1,5 +1,15 @@
 # 变更日志
 
+## v0.6.3 - 2026-07-08
+
+### Bug 修复：扫描页崩溃 + 过期 API 全局替换
+
+- **修复扫描页因示例图缺失崩溃**（`pages/scan.py`）：`test_images/example_label.jpg` 文件不存在，`st.image` 直接抛 `FileNotFoundError` 导致整个扫描页无法打开。改为 `os.path.exists` 判断，文件存在才显示示例图，否则用 `st.info` 显示文字提示。
+- **全局替换 `use_container_width=True` → `width="stretch"`**（10 个文件，32 处）：`use_container_width` 参数已于 2025-12-31 过期移除。涉及 `pages/result.py`、`pages/scan.py`、`pages/home.py`、`pages/history.py`、`pages/profile.py`、`pages/legal.py`、`pages/onboarding.py`、`components/navigation.py`、`components/additive_card.py`、`utils/history.py`。
+- **`@st.cache_data` 加 `ttl=300`**（3 处）：`utils/history.py` 的 `load_history()` / `load_history_full()` 和 `utils/data.py` 的 `_load_markdown()`，符合项目缓存规范，避免历史记录展示旧数据。
+- **未处理**：`st.components.v1.html` 弃用警告（`app.py`、`components/voice_panel.py` 共 3 处），该 API 目前仍可用，迁移到 `st.html()` 会丢失 JS 执行能力，影响 TTS 语音播报与设备检测，暂缓处理。
+- **验证**：`py_compile` 全部通过；`pytest tests/` 51 项全量通过。
+
 ## v0.6.2 - 2026-07-08
 
 ### 修复 Streamlit Cloud `ModuleNotFoundError: No module named 'pages'` 部署错误

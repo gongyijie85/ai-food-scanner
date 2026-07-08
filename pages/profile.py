@@ -53,7 +53,7 @@ def render_health_profile():
             is_selected = CONDITION_NAME_MAP[key] in selected
             wrapper_cls = "condition-card-wrapper selected" if is_selected else "condition-card-wrapper"
             st.markdown(f"<div class='{wrapper_cls}'>", unsafe_allow_html=True)
-            if st.button(f"{icon}\n{name}", key=f"cond_{key}", use_container_width=True):
+            if st.button(f"{icon}\n{name}", key=f"cond_{key}", width="stretch"):
                 if is_selected:
                     selected.discard(CONDITION_NAME_MAP[key])
                 else:
@@ -134,7 +134,7 @@ def render_health_profile():
     if st.button(
         "💾 保存档案",
         type="primary",
-        use_container_width=True,
+        width="stretch",
         key="hp_save_btn"
     ):
         st.session_state["user_profile"] = {
