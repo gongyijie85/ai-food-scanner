@@ -42,12 +42,12 @@ def render_onboarding():
 
         selected = set(st.session_state.get("onboarding_groups", []))
         cols = st.columns(2)
-        for i, (key, name, _icon) in enumerate(CONDITION_ITEMS):
+        for i, (key, name, icon) in enumerate(CONDITION_ITEMS):
             with cols[i % 2]:
                 is_selected = name in selected
                 wrapper_cls = "condition-card-wrapper selected" if is_selected else "condition-card-wrapper"
                 st.markdown(f"<div class='{wrapper_cls}'>", unsafe_allow_html=True)
-                if st.button(name, key=f"ob_cond_{key}", width="stretch"):
+                if st.button(f"{icon} {name}", key=f"ob_cond_{key}", width="stretch"):
                     if is_selected:
                         selected.discard(name)
                     else:
@@ -79,8 +79,8 @@ def render_onboarding():
         col1, col2, col3 = st.columns(3)
         with col1:
             st.markdown(
-                "<div style='text-align:center;padding:20px;background:#E3F2FD;"
-                "border-radius:12px;height:200px;'>"
+                "<div style='text-align:center;padding:16px 12px;background:#E3F2FD;"
+                "border-radius:12px;min-height:140px;'>"
                 "<div style='font-size:64px;'>📷</div>"
                 "<h3>1. 拍照</h3>"
                 "<p style='font-size:18px;'>拍配料表</p>"
@@ -89,8 +89,8 @@ def render_onboarding():
             )
         with col2:
             st.markdown(
-                "<div style='text-align:center;padding:20px;background:#FFF3E0;"
-                "border-radius:12px;height:200px;'>"
+                "<div style='text-align:center;padding:16px 12px;background:#FFF3E0;"
+                "border-radius:12px;min-height:140px;'>"
                 "<div style='font-size:64px;'>🤖</div>"
                 "<h3>2. 识别</h3>"
                 "<p style='font-size:18px;'>AI 自动分析</p>"
@@ -99,8 +99,8 @@ def render_onboarding():
             )
         with col3:
             st.markdown(
-                "<div style='text-align:center;padding:20px;background:#E8F5E9;"
-                "border-radius:12px;height:200px;'>"
+                "<div style='text-align:center;padding:16px 12px;background:#E8F5E9;"
+                "border-radius:12px;min-height:140px;'>"
                 "<div style='font-size:64px;'>📊</div>"
                 "<h3>3. 看结果</h3>"
                 "<p style='font-size:18px;'>红黄绿三色评分</p>"

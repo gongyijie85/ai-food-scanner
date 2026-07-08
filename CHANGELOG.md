@@ -1,5 +1,17 @@
 # 变更日志
 
+## v0.6.9 - 2026-07-08
+
+### 测试反馈修复
+
+- **强化疾病卡片选中态并增加图标**（`pages/onboarding.py`、`pages/profile.py`、`.streamlit/style.css`）：将 `CONDITION_ITEMS` 中的单字图标显示在疾病卡片按钮上；选中态改为绿色背景 + 白色文字 + 右上角白色圆形 ✓ 对勾，解决“选中和没选中没区别”。手机端（< 768px）疾病卡片高度从 120px 降至 80px，更紧凑。
+- **修复引导页说明卡片文字溢出**（`pages/onboarding.py`）：第 3 步 3 个说明卡片从固定 `height: 200px` 改为 `min-height: 140px`，`padding` 从 20px 改为 16px 12px，允许内容自适应，避免文字溢出框外。
+- **统一健康档案过敏原控件为卡片风格**（`pages/profile.py`、`.streamlit/style.css`）：将过敏原选择从 `st.checkbox` 改为与疾病卡片一致的 `.condition-card-wrapper` 卡片按钮，解决“控件不协调”。过敏原卡片高度略低（80px，手机端 64px）。
+- **修复扫描页上传文件名溢出**（`pages/scan.py`、`.streamlit/style.css`）：在预览区图片上方单独渲染文件名与大小，使用 `.preview-file-meta` 样式并设置 `ellipsis` 截断，避免长文件名撑破容器。
+- **首页聚合卡片优化手机展示**（`pages/home.py`、`.streamlit/style.css`）：将健康标签行和扫描大按钮包裹进统一白底圆角卡片（`.home-scan-card`），减少手机上松散感。
+- **版本号同步**：`app.py`、`.streamlit/style.css`、`README.md`、`CHANGELOG.md` 统一升级到 `v0.6.9`。
+- **验证**：`pytest tests/ -q` 51 项通过；`python -m compileall -q .` 通过。
+
 ## v0.6.8 - 2026-07-08
 
 ### 测试反馈修复

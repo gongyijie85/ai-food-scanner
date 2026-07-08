@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.6.8 | 更新时间: 2026-07-08 */
+/* 版本: v0.6.9 | 更新时间: 2026-07-08 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -1455,6 +1455,16 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) {
   margin-bottom: var(--spacing-base);
 }
 
+.preview-file-meta {
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
 .preview-card img,
 div[data-testid="stVerticalBlock"]:has(.preview-card-marker) img {
   border-radius: var(--radius-md);
@@ -1920,6 +1930,19 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
 
 .home-top-bar-icon:hover {
   background: #C8E6C9;
+}
+
+/* 首页扫描入口聚合卡片 */
+.home-scan-card-marker {
+  display: none;
+}
+
+div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--spacing-xl) var(--spacing-base);
+  margin: var(--spacing-lg) 0;
 }
 
 .home-scan-area {
@@ -2439,13 +2462,50 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
   overflow-wrap: break-word !important;
   word-break: normal !important;
   transition: all var(--transition-normal) !important;
+  position: relative !important;
 }
 
 .condition-card-wrapper.selected .stButton > button {
-  background: var(--color-primary-light) !important;
+  background: var(--color-primary) !important;
   border-color: var(--color-primary) !important;
-  color: var(--color-primary) !important;
+  color: var(--color-text-inverse) !important;
   font-weight: var(--font-weight-bold) !important;
+}
+
+/* 选中态右上角对勾 */
+.condition-card-wrapper.selected .stButton > button::after {
+  content: "✓";
+  position: absolute;
+  top: 6px;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  background: var(--color-text-inverse);
+  color: var(--color-primary);
+  border-radius: 50%;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 过敏原卡片共用疾病卡片样式，高度略低 */
+.condition-card-wrapper.allergen-card .stButton > button {
+  min-height: 80px !important;
+}
+
+/* 手机端疾病/过敏原卡片缩小 */
+@media (max-width: 767px) {
+  .condition-card-wrapper .stButton > button {
+    min-height: 80px !important;
+    padding: 10px 12px !important;
+    font-size: var(--font-size-body) !important;
+    border-radius: var(--radius-lg) !important;
+  }
+
+  .condition-card-wrapper.allergen-card .stButton > button {
+    min-height: 64px !important;
+  }
 }
 
 /* 过敏原网格 */

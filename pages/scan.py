@@ -27,6 +27,7 @@ from utils.api import (
 from utils.constants import _BASE_DIR
 from utils.helpers import detect_device_type, switch_page
 from utils.history import add_history
+from utils.security import _safe
 
 
 def _scan_common_setup():
@@ -168,6 +169,10 @@ def render_scan_page():
         if uploaded is not None:
             st.markdown("<div class='preview-card-marker'></div>", unsafe_allow_html=True)
             st.markdown("<div class='preview-card-title'>已选择图片</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div class='preview-file-meta'>{_safe(uploaded.name)} · {uploaded.size / 1024:.0f}KB</div>",
+                unsafe_allow_html=True,
+            )
             st.image(uploaded, width="stretch")
             col1, col2 = st.columns(2)
             with col1:
