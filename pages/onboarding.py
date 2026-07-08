@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from utils.constants import HEALTH_GROUPS
+from utils.constants import CONDITION_ITEMS
 
 
 def render_onboarding():
@@ -39,18 +39,31 @@ def render_onboarding():
         # 第 2 步：选人群（默认已勾选「脑梗/心血管 + 高血压」，可跳过）
         st.markdown("## 👴 第 2 步：请选择您的健康状况")
         st.caption("我们会根据您的情况给个性化建议（可多选；已为您预选常见选项）")
-        selected = st.multiselect(
-            "您有以下情况吗？（可多选）",
-            HEALTH_GROUPS,
-            default=st.session_state.get("onboarding_groups", []),
-            key="onboarding_groups_widget",
-        )
-        st.session_state["onboarding_groups"] = selected
+
+        selected = set(st.session_state.get("onboarding_groups", []))
+        cols = st.columns(2)
+        for i, (key, name, _icon) in enumerate(CONDITION_ITEMS):
+            with cols[i % 2]:
+                is_selected = name in selected
+                wrapper_cls = "condition-card-wrapper selected" if is_selected else "condition-card-wrapper"
+                st.markdown(f"<div class='{wrapper_cls}'>", unsafe_allow_html=True)
+                if st.button(name, key=f"ob_cond_{key}", width="stretch"):
+                    if is_selected:
+                        selected.discard(name)
+                    else:
+                        selected.add(name)
+                    st.session_state["onboarding_groups"] = list(selected)
+                    st.rerun()
+                st.markdown("</div>", unsafe_allow_html=True)
+
         if selected:
-            st.info(f"已选：{'、'.join(selected)}")
+            st.info(f"已选：{'、'.join(sorted(selected))}")
+
+        st.caption("稍后可在“我的”页面补充过敏原、用药等详细信息")
+
         # 一键跳过：保留默认档案，直接进入下一步
         if st.button(
-            "⏭️ 跳过，稍后设置",
+            "跳过，稍后设置",
             width="stretch",
             key="ob_skip_health",
             help="保留默认档案（脑梗/心血管 + 高血压），稍后可在健康档案页修改"
@@ -125,7 +138,7 @@ def render_onboarding():
                 # 完成引导，把人群保存到 health_profile
                 if "health_profile" not in st.session_state:
                     st.session_state["health_profile"] = {}
-                # 引导时用的是 6 大类 HEALTH_GROUPS 简化选项，存到 diseases 列表
+                # 引导时用的是疾病卡片网格选择的选项，存到 diseases 列表
                 st.session_state["health_profile"]["diseases"] = st.session_state.get("onboarding_groups", [])
                 st.session_state["health_profile"].setdefault("name", "")
                 st.session_state["health_profile"].setdefault("age", 60)

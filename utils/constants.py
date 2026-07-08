@@ -10,8 +10,8 @@ import os
 # 项目根目录，避免多处重复计算
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 六大人群选项（引导页默认疾病选择）
-HEALTH_GROUPS = ["糖尿病", "高血压", "脑梗/心血管", "减脂", "过敏", "孕妇/儿童"]
+# 疾病/人群选项（引导页与健康档案共用）
+HEALTH_GROUPS = ["糖尿病", "高血压", "脑梗/心血管", "减脂", "过敏", "儿童", "孕妇"]
 
 # 健康档案疾病选项（模块级常量，避免每次渲染重复构造）
 CONDITION_ITEMS = [

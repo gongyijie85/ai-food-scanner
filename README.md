@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.6.7-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.6.8-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -15,6 +15,7 @@
 
 ## 最新更新
 
+- **v0.6.8（2026-07-08）**：测试反馈修复。引导页第 2 步初始健康档案从简单 `multiselect` 改为与详细档案页一致的卡片网格布局，解决“维护过于简单”；修复健康档案页疾病按钮“糖糖尿病”“压高血压”等双字重复；优化疾病卡片 `white-space` 与换行，修复字体框体布局；为文件上传器文件名/大小标签增加截断，防止上传图片标签溢出；统一结果页语音“停止”按钮与主播报按钮的高度、圆角和配色；历史页与侧边栏历史记录标签视觉层级优化。`py_compile`、`pytest` 51 项全量通过。
 - **v0.6.7（2026-07-08）**：优化首页与历史记录交互。移除首页右侧「最近扫描」重复区域，历史记录统一由侧边栏/历史页承载；历史页与侧边栏历史记录改为整行可点击，直接跳转产品详情，移除独立「查看」大按钮；CSS 选择器精确限定扫描大按钮样式，避免误伤其他按钮。新增 `smoke_test.py` 本地冒烟测试覆盖首页、历史页、详情页关键路径。`py_compile`、`pytest` 51 项、`smoke_test` 全量通过。
 - **v0.6.6（2026-07-08）**：修复 `components/navigation.py` 移动端底部导航循环解包错误（v0.6.3 SVG 清理后遗症），手机端访问不再崩溃；版本号同步到 v0.6.6。`py_compile` 与 `pytest` 51 项全量通过。
 - **v0.6.5（2026-07-08）**：参赛 Demo 体验优化。新增 `?demo=1` 评委快速模式：自动完成法律同意、跳过 4 步引导、预填默认健康档案；评委模式下隐藏侧边栏模型切换与扫描页“拍照/相册”单选，让评委 3 秒内进入核心功能。同步 README 真实公开链接与 Demo 帖资料。`py_compile` 与 `pytest` 51 项全量通过。

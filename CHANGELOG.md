@@ -1,5 +1,18 @@
 # 变更日志
 
+## v0.6.8 - 2026-07-08
+
+### 测试反馈修复
+
+- **优化引导页初始健康档案**（`pages/onboarding.py`、`utils/constants.py`）：将第 2 步的疾病选择从简单 `st.multiselect` 改为与详细健康档案页一致的卡片网格布局，解决“初始档案维护过于简单”的反馈。复用 `.condition-card-wrapper` 样式，默认仍选中“脑梗/心血管”“高血压”，并提示“稍后可在‘我的’页面补充过敏原、用药等详细信息”。同步统一 `HEALTH_GROUPS` 与 `CONDITION_ITEMS` 的疾病名称。
+- **修复健康状况双字重复**（`pages/profile.py`）：疾病选择按钮 label 从 `f"{icon}\n{name}"` 改为 `name`，消除“糖糖尿病”“压高血压”等重复显示。
+- **修复字体和框体布局**（`.streamlit/style.css`、`pages/profile.py`）：调整 `.condition-card-wrapper .stButton > button` 的 `white-space`、`overflow-wrap`、`word-break`，允许正常换行并避免长词溢出；引导页卡片网格自然沿用健康档案页卡片样式。
+- **修复上传图片标签溢出**（`.streamlit/style.css`）：为文件上传器内的文件名/大小标签（`[data-testid="stFileUploaderFileName"]`、`[data-testid="stFileUploaderFileSize"]`）增加 `overflow: hidden; text-overflow: ellipsis; white-space: nowrap;`，防止长文件名撑破容器。
+- **修复结果页停止按钮风格不匹配**（`.streamlit/style.css`）：补充 `.voice-stop-btn` 样式，与主播报按钮同高（56px）、同圆角（`--radius-full`），采用白底绿边的次要按钮风格，hover/active 状态统一。
+- **优化历史记录列表展示**（`pages/history.py`、`utils/history.py`）：历史页列表项 label 调整为“产品名\n评分 · 状态 · 添加剂数 · 日期”，侧边栏历史记录标签同步精简为“产品名 [类型]\n评分 · 种数 · 时间”，提升视觉层级。
+- **版本号同步**：`app.py`、`.streamlit/style.css`、`README.md`、`CHANGELOG.md` 统一升级到 `v0.6.8`。
+- **验证**：`pytest tests/ -q` 51 项通过；`python -m compileall -q .` 通过。
+
 ## v0.6.7 - 2026-07-08
 
 ### 优化首页与历史记录交互

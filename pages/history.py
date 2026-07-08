@@ -91,7 +91,7 @@ def render_history_page():
             status_class, status_text = "danger", "高风险"
         ts = item.get("timestamp", "")[:10]
         name = _safe(item.get("product_name", "未知"))
-        label = f"{name}\n{status_text} · {score}分 · {ts}"
+        label = f"{name}\n{score}分 · {status_text} · {item.get('additives_count', 0)}种添加剂 · {ts}"
         # marker 提供状态色，整行按钮点击查看详情
         st.markdown(
             f"<div class='history-row-btn-marker {status_class}'></div>",

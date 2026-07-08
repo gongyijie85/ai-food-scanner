@@ -116,7 +116,7 @@ def show_history(switch_page_func, safe_func, max_items: int = 3):
         # 类型标签：保健食品 / 食品
         type_tag = "保健食品" if item.get("type") == "supplement" else "食品"
         name = safe_func(item.get("product_name", "未知"))
-        label = f"{name} [{type_tag}]\n{score}分 · {item.get('additives_count', 0)}种添加剂 · {time_str}"
+        label = f"{name} [{type_tag}]\n{score}分 · {item.get('additives_count', 0)}种 · {time_str}"
         # 用 marker 给样式提供状态色，整行按钮点击查看详情
         st.markdown(
             f"<div class='sidebar-history-row-marker {status}'></div>",
