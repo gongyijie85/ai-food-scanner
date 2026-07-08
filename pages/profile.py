@@ -52,15 +52,20 @@ def render_health_profile():
         with cols[i % 2]:
             is_selected = CONDITION_NAME_MAP[key] in selected
             wrapper_cls = "condition-card-wrapper selected" if is_selected else "condition-card-wrapper"
-            st.markdown(f"<div class='{wrapper_cls}'>", unsafe_allow_html=True)
-            if st.button(f"{icon} {name}", key=f"cond_{key}", width="stretch"):
+            st.markdown(f"<div class='{wrapper_cls}'></div>", unsafe_allow_html=True)
+            label = f"✓ {icon} {name}" if is_selected else f"{icon} {name}"
+            if st.button(
+                label,
+                key=f"cond_{key}",
+                width="stretch",
+                type="primary" if is_selected else "secondary",
+            ):
                 if is_selected:
                     selected.discard(CONDITION_NAME_MAP[key])
                 else:
                     selected.add(CONDITION_NAME_MAP[key])
                 profile["diseases"] = list(selected)
                 st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<div class='profile-section-title'>过敏原</div>", unsafe_allow_html=True)
     st.markdown("<div class='profile-section-desc'>如有过敏请点击选择</div>", unsafe_allow_html=True)
@@ -89,15 +94,20 @@ def render_health_profile():
         with cols[i % 2]:
             is_selected = name in selected_alg
             wrapper_cls = "condition-card-wrapper allergen-card selected" if is_selected else "condition-card-wrapper allergen-card"
-            st.markdown(f"<div class='{wrapper_cls}'>", unsafe_allow_html=True)
-            if st.button(name, key=f"alg_{name}", width="stretch"):
+            st.markdown(f"<div class='{wrapper_cls}'></div>", unsafe_allow_html=True)
+            label = f"✓ {name}" if is_selected else name
+            if st.button(
+                label,
+                key=f"alg_{name}",
+                width="stretch",
+                type="primary" if is_selected else "secondary",
+            ):
                 if is_selected:
                     selected_alg.discard(name)
                 else:
                     selected_alg.add(name)
                 profile["allergens"] = [allergen_structured_map[n] for n in selected_alg]
                 st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
     profile["allergens"] = [allergen_structured_map[name] for name in selected_alg]

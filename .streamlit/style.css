@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.7.0 | 更新时间: 2026-07-08 */
+/* 版本: v0.7.1 | 更新时间: 2026-07-08 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -109,6 +109,75 @@
   padding-bottom: calc(72px + var(--safe-area-bottom) + var(--spacing-base)) !important;
 }
 
+/* 修复 Streamlit centered layout 在移动端把短内容垂直居中，导致相机/按钮被推到首屏外 */
+/* 关键：强制主内容区顶部对齐、高度自适应，取消 emotion 内部 flex 居中 */
+/* 使用 [data-layout] 属性提高选择器权重，覆盖 Streamlit emotion 内联样式 */
+body.device-mobile .stAppViewContainer[data-layout="wide"],
+body.device-mobile .stAppViewContainer {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  align-content: flex-start !important;
+  justify-content: flex-start !important;
+  height: auto !important;
+  min-height: 100vh !important;
+  max-height: none !important;
+}
+
+body.device-mobile .stAppViewContainer > div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  align-content: flex-start !important;
+  justify-content: flex-start !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+body.device-mobile section[data-testid="stMain"],
+body.device-mobile .stMainBlockContainer {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+body.device-mobile section[data-testid="stMain"] {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  align-content: flex-start !important;
+  flex: 1 1 auto !important;
+}
+
+body.device-mobile .stMainBlockContainer {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  align-content: flex-start !important;
+  width: 100% !important;
+}
+
+body.device-mobile .stMainBlockContainer > div[data-testid="stVerticalBlock"]:not(:has(.mobile-bottom-nav-marker)) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  align-content: flex-start !important;
+  height: auto !important;
+  min-height: auto !important;
+  width: 100% !important;
+}
+
 /* 桌面端：最大宽度限制、双栏卡片 */
 .device-desktop .stMainBlockContainer {
   max-width: 900px !important;
@@ -128,37 +197,42 @@
 }
 
 /* ========== 移动端底部固定导航栏 ========== */
-/* 外层容器：固定在视口底部 */
-div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-marker) {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  min-height: 72px;
-  background: var(--color-bg-card);
-  border-top: 1px solid var(--color-border);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  z-index: 50;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+/* 导航包装层：固定在视口底部（Streamlit 1.59+ 把 marker 放在 stLayoutWrapper 内） */
+body.device-mobile div[data-testid="stLayoutWrapper"]:has(.mobile-bottom-nav-marker) {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 72px !important;
+  background: var(--color-bg-card) !important;
+  border-top: 1px solid var(--color-border) !important;
+  padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+  z-index: 50 !important;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05) !important;
 }
 
 /* 内部 4 列横向布局：均分并垂直居中 */
-div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-marker) > div[data-testid="stHorizontalBlock"] {
-  height: 100%;
-  min-height: 72px;
+body.device-mobile div[data-testid="stLayoutWrapper"]:has(.mobile-bottom-nav-marker) > div[data-testid="stVerticalBlock"] > div[data-testid="stLayoutWrapper"] > div[data-testid="stHorizontalBlock"],
+body.device-mobile div[data-testid="stLayoutWrapper"]:has(.mobile-bottom-nav-marker) > div[data-testid="stVerticalBlock"] > div[data-testid="stHorizontalBlock"] {
+  height: 56px;
+  min-height: 56px;
   align-items: stretch;
   margin: 0;
 }
 
-div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-marker) > div[data-testid="stHorizontalBlock"] > div {
-  flex: 1;
-  min-width: 0;
-  display: flex;
+body.device-mobile div[data-testid="stLayoutWrapper"]:has(.mobile-bottom-nav-marker) > div[data-testid="stVerticalBlock"] > div[data-testid="stLayoutWrapper"] > div[data-testid="stHorizontalBlock"] > div,
+body.device-mobile div[data-testid="stLayoutWrapper"]:has(.mobile-bottom-nav-marker) > div[data-testid="stVerticalBlock"] > div[data-testid="stHorizontalBlock"] > div {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  width: auto !important;
+  display: flex !important;
 }
 
 /* 单个 tab 项：图标 + 文字垂直居中 */
-div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item) {
+body.device-mobile div[data-testid="stLayoutWrapper"]:has(.mobile-bottom-nav-marker) div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item) {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -166,11 +240,11 @@ div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item) {
   width: 100%;
 }
 
-div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item) .stButton {
+body.device-mobile div[data-testid="stLayoutWrapper"]:has(.mobile-bottom-nav-marker) div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item) .stButton {
   width: 100%;
 }
 
-div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item) .stButton > button {
+body.device-mobile div[data-testid="stLayoutWrapper"]:has(.mobile-bottom-nav-marker) div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item) .stButton > button {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -190,7 +264,7 @@ div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item) .stButton > butt
 }
 
 /* 当前激活 tab：主色绿色 */
-div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item.active) .stButton > button {
+body.device-mobile div[data-testid="stLayoutWrapper"]:has(.mobile-bottom-nav-marker) div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-item.active) .stButton > button {
   color: var(--color-primary) !important;
   font-weight: var(--font-weight-bold) !important;
 }
@@ -1739,12 +1813,12 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
     flex: 0 0 auto !important;
   }
 
-  /* 手机端：所有 st.columns 在窄容器中堆叠 */
-  div[data-testid="stHorizontalBlock"] {
+  /* 手机端：所有 st.columns 在窄容器中堆叠（顶部/底部导航栏除外） */
+  div[data-testid="stHorizontalBlock"]:not(:has(.top-nav-title)):not(:has(.mobile-bottom-nav-item)) {
     flex-wrap: wrap !important;
   }
 
-  div[data-testid="stHorizontalBlock"] > div {
+  div[data-testid="stHorizontalBlock"]:not(:has(.top-nav-title)):not(:has(.mobile-bottom-nav-item)) > div {
     min-width: 100% !important;
   }
 
@@ -1990,6 +2064,34 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
   padding: var(--spacing-xl) var(--spacing-base) var(--spacing-lg);
   min-height: 240px;
   position: relative;
+}
+
+/* 手机端首页：压缩卡片与扫描区，确保大按钮一屏可见 */
+@media (max-width: 767px) {
+  div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
+    padding: var(--spacing-base);
+    margin: var(--spacing-sm) 0;
+  }
+
+  .home-scan-area {
+    min-height: auto;
+    padding: var(--spacing-sm) var(--spacing-base);
+  }
+
+  .health-tags-row {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .hint-bubble {
+    display: none;
+  }
+
+  .st-key-home_goto_scan .stButton > button,
+  .st-key-home_goto_scan_desktop .stButton > button {
+    width: 150px !important;
+    height: 150px !important;
+    font-size: 20px !important;
+  }
 }
 
 /* ========== 结果页浮动语音按钮 ========== */
@@ -2474,12 +2576,13 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
 }
 
 /* 健康档案状况卡片按钮桥接 */
-.condition-card-wrapper .stButton,
-.condition-card-wrapper .stButton > button {
+/* 疾病/过敏原卡片：用 :has 找到包含 marker 的 stElementContainer，再定位相邻的按钮容器 */
+div[data-testid="stElementContainer"]:has(.condition-card-wrapper) + div[data-testid="stElementContainer"] .stButton,
+div[data-testid="stElementContainer"]:has(.condition-card-wrapper) + div[data-testid="stElementContainer"] .stButton > button {
   width: 100% !important;
 }
 
-.condition-card-wrapper .stButton > button {
+div[data-testid="stElementContainer"]:has(.condition-card-wrapper) + div[data-testid="stElementContainer"] .stButton > button {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -2488,10 +2591,7 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
   min-height: 64px !important;
   padding: var(--spacing-sm) var(--spacing-base) !important;
   border-radius: var(--radius-md) !important;
-  background: var(--color-bg-card) !important;
-  border: 2px solid var(--color-border-light) !important;
   box-shadow: var(--shadow-card) !important;
-  color: var(--color-text-primary) !important;
   font-size: var(--font-size-body-lg) !important;
   font-weight: var(--font-weight-medium) !important;
   line-height: 1.3 !important;
@@ -2500,17 +2600,26 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
   word-break: normal !important;
   transition: all var(--transition-normal) !important;
   position: relative !important;
+  overflow: visible !important;
 }
 
-.condition-card-wrapper.selected .stButton > button {
+/* 未选中：白底浅色边框 */
+div[data-testid="stElementContainer"]:has(.condition-card-wrapper) + div[data-testid="stElementContainer"] .stButton > button {
+  background: var(--color-bg-card) !important;
+  border: 2px solid var(--color-border-light) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* 选中：主色背景 + 白字 */
+div[data-testid="stElementContainer"]:has(.condition-card-wrapper.selected) + div[data-testid="stElementContainer"] .stButton > button {
   background: var(--color-primary) !important;
-  border-color: var(--color-primary) !important;
+  border: 2px solid var(--color-primary) !important;
   color: var(--color-text-inverse) !important;
   font-weight: var(--font-weight-bold) !important;
 }
 
 /* 选中态右上角对勾 */
-.condition-card-wrapper.selected .stButton > button::after {
+div[data-testid="stElementContainer"]:has(.condition-card-wrapper.selected) + div[data-testid="stElementContainer"] .stButton > button::after {
   content: "✓";
   position: absolute;
   top: 6px;
@@ -2527,13 +2636,13 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
 }
 
 /* 过敏原卡片共用疾病卡片样式，高度略低 */
-.condition-card-wrapper.allergen-card .stButton > button {
+div[data-testid="stElementContainer"]:has(.condition-card-wrapper.allergen-card) + div[data-testid="stElementContainer"] .stButton > button {
   min-height: 56px !important;
 }
 
 /* 手机端疾病/过敏原卡片：图标+文字水平排列，保持足够点击区域 */
 @media (max-width: 767px) {
-  .condition-card-wrapper .stButton > button {
+  div[data-testid="stElementContainer"]:has(.condition-card-wrapper) + div[data-testid="stElementContainer"] .stButton > button {
     flex-direction: row !important;
     justify-content: flex-start !important;
     min-height: 56px !important;
@@ -2542,7 +2651,7 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
     border-radius: var(--radius-lg) !important;
   }
 
-  .condition-card-wrapper.allergen-card .stButton > button {
+  div[data-testid="stElementContainer"]:has(.condition-card-wrapper.allergen-card) + div[data-testid="stElementContainer"] .stButton > button {
     min-height: 48px !important;
   }
 }
@@ -2710,7 +2819,7 @@ div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker) .stButton > bu
 /* ========== 响应式适配增强 ========== */
 @media (max-width: 480px) {
   .home-scan-area {
-    min-height: 220px;
+    min-height: auto;
   }
 
   .capture-btn {

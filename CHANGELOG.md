@@ -1,5 +1,14 @@
 # 变更日志
 
+## v0.7.1 - 2026-07-08
+
+### 修复手机端页面比例/首屏内容下沉
+
+- **根因定位**（`.streamlit/style.css`）：移动端底部导航原 CSS 选择器 `div[data-testid="stVerticalBlock"]:has(.mobile-bottom-nav-marker)` 命中了包含整页内容的外层 `stVerticalBlock`，导致该容器被 `position: fixed; bottom: 0; max-height: 72px`，从而把标题、扫描按钮、相机区域全部推到首屏外，表现为“页面比例不对/内容下沉”。
+- **修复方案**：将导航固定目标改为 `body.device-mobile div[data-testid="stLayoutWrapper"]:has(.mobile-bottom-nav-marker)`，仅固定包裹底部导航 marker 与 4 个 tab 按钮的 `stLayoutWrapper`；同步将内部横向布局、tab 项、激活态等选择器都限定在该导航 wrapper 下，避免误伤页面主体内容。
+- **增强移动端顶部对齐**：为 `body.device-mobile .stAppViewContainer` 及其直接子元素、`section[data-testid="stMain"]`、`.stMainBlockContainer`、`.stMainBlockContainer > div[data-testid="stVerticalBlock"]` 强制 `display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start;`，确保内容从顶部开始排列、不再被垂直居中。
+- **验证**：本地 `python diag_mobile.py` Playwright 移动端截图验证，首页扫描按钮与扫描页相机区域均已进入首屏。`pytest tests/ -q` 51 项通过；`python -m compileall -q .` 通过。
+
 ## v0.7.0 - 2026-07-08
 
 ### 手机端 UI 修复：拍照页显示不全 + 疾病图标重复
