@@ -165,7 +165,10 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
                         "type": "image_url",
                         "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"},
                     },
-                    {"type": "text", "text": "请严格根据图片中配料表实际出现的文字回答，禁止猜测任何图片中没有显示的配料，按规则返回 JSON。"},
+                    {
+                        "type": "text",
+                        "text": "请严格根据图片中配料表实际出现的文字回答，禁止猜测任何图片中没有显示的配料，按规则返回 JSON。",
+                    },
                 ],
             },
         ],
