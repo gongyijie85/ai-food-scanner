@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.7.2 | 更新时间: 2026-07-09 */
+/* 版本: v0.7.3 | 更新时间: 2026-07-09 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -1411,8 +1411,23 @@ div[data-testid="stVerticalBlock"]:has(.scan-card-marker) .stFileUploader [data-
 }
 
 /* 文件上传器内文件名/大小标签截断，防止溢出 */
+.stFileUploader [data-testid="stFileUploaderFile"] {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.stFileUploader [data-testid="stFileUploaderFile"] > div,
+.stFileUploader [data-testid="stFileUploaderFile"] > div > div {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
 .stFileUploader [data-testid="stFileUploaderFileName"],
-.stFileUploader [data-testid="stFileUploaderFileSize"] {
+.stFileUploader [data-testid="stFileUploaderFileSize"],
+.stFileUploader [data-testid="stFileUploaderFile"] span,
+.stFileUploader [data-testid="stFileUploaderFile"] p {
   display: block !important;
   max-width: 100% !important;
   overflow: hidden !important;

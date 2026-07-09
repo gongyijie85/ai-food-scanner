@@ -107,7 +107,8 @@ def build_system_prompt(groups):
         "只输出一句，禁止医学疗效词。\n\n"
         "## 强制规则（两类产品都适用）\n"
         "- product_name **必须中文**，英文产品名翻译成中文或填'该产品'\n"
-        "- 所有引用包装的内容（health_claims/suitable_for/usage）**严格按包装原文**，不评价、不推荐、不补全\n"
+        "- **配料识别必须完全基于图片中实际出现的文字**，禁止根据产品类型、常识、宣传文案或营养成分表推测配料；禁止把'可能含有'、'常见配方'当作配料返回\n"
+        "- 所有引用包装的内容（health_claims/suitable_for/usage/ingredients）**严格按包装原文**，不评价、不推荐、不补全；看不清或缺失的字段宁可为空或'未显示'，也禁止编造\n"
         "- 禁止任何医学疗效措辞：'治疗/疗效/降三高/防癌/增强免疫力+治愈'等\n"
         "- 所有健康相关结论以'请咨询医生/药师/营养师'收尾\n"
         "- 返回必须是纯 JSON 对象，不要数组、不要 Markdown、不要注释\n\n"
@@ -164,7 +165,7 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
                         "type": "image_url",
                         "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"},
                     },
-                    {"type": "text", "text": "请分析这张配料表图片，按规则返回 JSON。"},
+                    {"type": "text", "text": "请严格根据图片中配料表实际出现的文字回答，禁止猜测任何图片中没有显示的配料，按规则返回 JSON。"},
                 ],
             },
         ],
