@@ -101,8 +101,17 @@ def render_scan_page():
     groups, api_key, uploader_key = _scan_common_setup()
 
     if not api_key and os.getenv("DEBUG") == "1":
-        st.warning("未检测到 MIMO_API_KEY，请在 .env 或 Secrets 中配置")
-        api_key = st.text_input("API 密钥", type="password")
+        # 仅本地开发允许手动输入密钥：通过 Host 头判断，避免 Streamlit Cloud 误配 DEBUG=1 后被任意访客滥用
+        try:
+            host = st.context.headers.get("Host", "") if hasattr(st, "context") else ""
+        except Exception:
+            host = ""
+        is_local = any(h in host for h in ("localhost", "127.0.0.1", "0.0.0.0"))
+        if is_local:
+            st.warning("未检测到 MIMO_API_KEY，请在 .env 或 Secrets 中配置")
+            api_key = st.text_input("API 密钥", type="password")
+        else:
+            st.error("API 密钥未配置，请联系管理员")
 
     is_desktop = detect_device_type() == "desktop"
 
@@ -198,8 +207,3 @@ def render_scan_page():
         "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",
         unsafe_allow_html=True,
     )
-
-
-# 兼容旧版调用入口
-render_scan_mobile = render_scan_page
-render_scan_desktop = render_scan_page

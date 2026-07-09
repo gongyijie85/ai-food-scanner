@@ -32,16 +32,15 @@ jobs:
           pip install flake8 black isort
 
       - name: 代码格式检查 (black)
-        run: black --check --diff app.py
-        continue-on-error: true
+        # 检查全仓库，排除缓存/虚拟环境目录
+        run: black --check --diff --extend-exclude "(__pycache__|\.venv|venv)" .
 
       - name: 导入排序检查 (isort)
-        run: isort --check-only --diff app.py
-        continue-on-error: true
+        run: isort --check-only --diff --skip-glob "**/__pycache__/**" --skip-glob "**/.venv/**" .
 
       - name: 代码风格检查 (flake8)
-        run: flake8 app.py --max-line-length=120 --ignore=E501,W503
-        continue-on-error: true
+        # 检查全仓库 Python 文件；忽略行宽/换行风格
+        run: flake8 . --max-line-length=120 --ignore=E501,W503 --exclude=__pycache__,.venv,venv
 
   # Job 2: 单元测试
   test:
@@ -72,7 +71,6 @@ jobs:
       - name: 生成测试报告
         if: always()
         run: pytest tests/ --junitxml=test-report.xml
-        continue-on-error: true
 
       - name: 上传测试报告
         if: always()
@@ -102,12 +100,13 @@ jobs:
           pip install bandit safety
 
       - name: 依赖漏洞扫描 (safety)
-        run: safety check -r requirements.txt
+        # safety 失败仅警告（外部 CVE 数据库可能误报），不阻断流水线
         continue-on-error: true
+        run: safety check -r requirements.txt
 
       - name: 代码安全扫描 (bandit)
-        run: bandit -r app.py -ll -ii
-        continue-on-error: true
+        # 扫描全仓库，阻断高风险发现
+        run: bandit -r . -ll -ii -x __pycache__,.venv,venv
 
   # Job 4: 构建验证
   build:
@@ -131,8 +130,8 @@ jobs:
 
       - name: 验证应用启动
         run: |
-          # 检查 app.py 语法
-          python -m py_compile app.py
+          # 检查全仓库语法
+          python -m compileall -q .
 
           # 检查关键数据文件存在
           test -f data/gb2760_risk.csv

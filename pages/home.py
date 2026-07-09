@@ -41,8 +41,3 @@ def render_home_page():
             )
             if st.button("📷\n扫描配料表", type="primary", key="home_goto_scan"):
                 switch_page("scan")
-
-
-# 兼容旧版调用入口
-render_home_mobile = render_home_page
-render_home_desktop = render_home_page

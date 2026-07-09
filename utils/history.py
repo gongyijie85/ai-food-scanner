@@ -13,8 +13,9 @@ _HISTORY_PATH = os.path.join(_DATA_DIR, "history.json")
 _HISTORY_MAX = 50
 
 # 完整历史快照路径与上限
+# 与 _HISTORY_MAX 对齐：避免详情页索引越界（详情页基于 50 条索引，快照只留 20 条会让 idx=21~49 的记录读不到完整数据）
 _HISTORY_FULL_PATH = os.path.join(_DATA_DIR, "history_full.json")
-_HISTORY_FULL_MAX = 20
+_HISTORY_FULL_MAX = 50
 
 
 @st.cache_data(ttl=300)

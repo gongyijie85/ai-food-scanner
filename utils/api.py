@@ -24,6 +24,7 @@ AGNES_API_URL = "https://api.agnes-ai.com/v1/chat/completions"
 AGNES_MODEL_NAME = "agnes-20-flash"
 
 # 建议文案模板（降低模型随机性，统一兜底）
+# 键必须与 CONDITION_ITEMS 中的疾病名一致；"孕妇/儿童" 永不匹配（HEALTH_GROUPS 无此组合），已移除
 ADVICE_TEMPLATES = {
     "default": "普通人群可适量食用，建议保持均衡饮食。",
     "糖尿病": "糖尿病患者请注意控制摄入量，具体请咨询医生或营养师。",
@@ -31,7 +32,6 @@ ADVICE_TEMPLATES = {
     "脑梗/心血管": "脑梗/心血管人群建议低脂低盐饮食，具体请咨询医生或营养师。",
     "减脂": "减脂人群建议关注糖分和脂肪含量，具体请咨询教练或营养师。",
     "过敏": "过敏体质请仔细核对配料，具体请咨询医生。",
-    "孕妇/儿童": "孕妇及儿童人群请谨慎选择，具体请咨询医生或营养师。",
     "儿童": "儿童请谨慎选择，具体请咨询医生或营养师。",
     "孕妇": "孕妇请谨慎选择，具体请咨询医生或营养师。",
 }
@@ -132,15 +132,19 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
     - 最多 2 次指数退避重试（第1次等2秒，第2次等4秒）
     - 仅网络错误或 5xx 状态码才重试，4xx 直接返回不重试
     - 错误提示使用用户友好文案，不直接展示 resp.text
-    - 原始错误信息仅在 DEBUG=1 时通过折叠区展示
+    - 原始错误信息仅写入日志（v0.7.2 起不再在 UI 折叠区展示，防泄露）
     """
 
     def _err(msg, detail=""):
-        """统一错误提示；DEBUG=1 时显示详情折叠区."""
+        """统一错误提示；detail 仅写入日志，不在 UI 展示（防泄露 resp.text）.
+
+        安全说明：
+        - resp.text 可能包含上游服务返回的请求 ID / 鉴权细节，不可信；
+        - 用户侧只看 msg（友好文案），detail 只进 logger，便于事后排查。
+        """
         st.error(msg)
-        if os.getenv("DEBUG") == "1" and detail:
-            with st.expander("调试：错误详情"):
-                st.code(detail)
+        if detail:
+            logger.error(f"API错误详情: {detail}")
 
     headers = {"api-key": api_key, "Content-Type": "application/json"}
     payload = {
@@ -211,11 +215,21 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
                 )
                 return None
 
-        # 4xx 客户端错误：不重试（API Key 无效、请求格式错误等）
+        # 4xx 客户端错误：不重试（密钥无效 / 限流 / 请求格式错误等）
         if 400 <= resp.status_code < 500:
             logger.error(f"API客户端错误: status={resp.status_code}, 耗时={elapsed:.2f}s")
+            # 按状态码细分用户提示，避免把限流误判为密钥问题
+            if resp.status_code in (401, 403):
+                user_msg = "API 密钥无效或无权限，请检查密钥后重试。"
+            elif resp.status_code == 429:
+                user_msg = "识别服务繁忙，请稍后再试。"
+            elif resp.status_code == 404:
+                user_msg = "识别服务地址错误，请联系管理员。"
+            else:
+                # 400 / 405 / 406 等：请求异常，不是密钥问题
+                user_msg = "请求异常，请稍后重试或更换图片。"
             _err(
-                "API 密钥无效或请求被拒绝，请检查密钥后重试。",
+                user_msg,
                 f"HTTP {resp.status_code}\n{resp.text[:1000]}"
             )
             return None

@@ -144,6 +144,9 @@ def render_onboarding():
                 st.session_state["health_profile"].setdefault("age", 60)
                 st.session_state["health_profile"].setdefault("allergens", [])
                 st.session_state["health_profile"].setdefault("drugs", [])
+                # 同步初始化 user_profile（render_personal_warnings 依赖此键判断是否展示药物/过敏警告）
+                # 未初始化时新用户首扫会因 user_profile={} 直接跳过个性化警告
+                st.session_state.setdefault("user_profile", {"drugs": [], "allergens": []})
                 st.session_state["onboarded"] = True
                 st.session_state["onboarding_step"] = 1
                 st.rerun()

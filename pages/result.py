@@ -5,8 +5,6 @@ import os
 import streamlit as st
 
 from components import (
-    _ICON_CAMERA,
-    _ICON_HOME,
     _ICON_SPEAKER,
     _render_additive_card,
     _render_score_hero,
@@ -299,10 +297,3 @@ def render_result_page():
         render_supplement_page(result)
     else:
         render_food_page(result)
-
-
-# 兼容旧版调用入口
-render_food_mobile = render_food_page
-render_food_desktop = render_food_page
-render_supplement_mobile = render_supplement_page
-render_supplement_desktop = render_supplement_page

@@ -176,37 +176,6 @@ def _render_tts_namespace():
     )
 
 
-def speak_text(text: str, rate: float = 1.0):
-    """用浏览器原生 SpeechSynthesis API 播报中文语音.
-
-    参数：
-        text: 要播报的文本
-        rate: 语速，0.7 慢速 / 1.0 正常 / 1.3 快速 / 0.75 慢速重播
-
-    注意：手机浏览器要求语音播报必须由用户手势同步触发。
-    此函数注入一个纯 HTML 按钮 + 全局 JS 函数调用，点击时直接在浏览器端
-    调用 speechSynthesis.speak()，不经过 Python rerun，确保
-    用户手势上下文不丢失。
-    """
-    rate = max(0.5, min(2.0, float(rate)))
-    safe = _safe(text)
-    btn_id = _next_tts_id("tts-simple-btn")
-    err_id = _next_tts_id("tts-simple-err")
-    _render_tts_namespace()
-    js = (
-        f"<div style='text-align:center;margin:12px 0;'>"
-        f"<button id='{btn_id}' aria-label='语音播报识别结果' "
-        f"class='food-scanner-tts-btn' data-err-id='{err_id}' data-text='{safe}' data-rate='{rate}' "
-        f"style='font-size:20px;height:56px;padding:0 28px;border-radius:12px;"
-        f"border:2px solid #2E7D32;background:#E8F5E9;color:#1B5E20;"
-        f"font-weight:bold;cursor:pointer;min-width:200px;'>"
-        f"{_ICON_SPEAKER} 点击播报</button>"
-        f"<span id='{err_id}' class='tts-err' style='color:#D32F2F;font-size:14px;margin-left:8px;'></span>"
-        f"</div>"
-    )
-    st.markdown(js, unsafe_allow_html=True)
-
-
 def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text: str = f"{_ICON_SPEAKER} 点击播报", wrapper_class: str = "voice-control-wrap"):
     """语音播报控制面板：简洁版，主按钮+折叠的语速控制.
 

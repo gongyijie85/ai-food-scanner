@@ -1,10 +1,8 @@
-"""通用状态组件：空态、错误态、加载态.
+"""通用状态组件：空态、错误态.
 
-将页面中分散的空状态/错误状态/加载状态统一为可复用组件，
+将页面中分散的空状态/错误状态统一为可复用组件，
 避免重复 HTML 拼接，保证视觉与交互一致。
 """
-
-from contextlib import contextmanager
 
 import streamlit as st
 
@@ -55,19 +53,3 @@ def render_error(title: str, description: str | None = None):
         f"</div>",
         unsafe_allow_html=True,
     )
-
-
-@contextmanager
-def render_loading(message: str = "加载中..."):
-    """统一加载态上下文管理器.
-
-    用法:
-        with render_loading("正在识别..."):
-            # 执行耗时操作
-            result = call_api(...)
-
-    参数:
-        message: 加载提示文字。
-    """
-    with st.spinner(_safe(message)):
-        yield

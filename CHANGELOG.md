@@ -1,5 +1,38 @@
 # 变更日志
 
+## v0.7.2 - 2026-07-09
+
+### 综合代码审计修复（CI/安全/正确性 + Ponytail 清理）
+
+基于 code-reviewer + security-auditor + ponytail-audit 三技能联合审计，修复 Critical 2 项、High 5 项，并清理约 80 行死代码。
+
+#### Critical（必须修）
+
+- **C1: CI 流水线名存实亡**（`.github/workflows/ci.yml`）：原配置中 lint / security / 测试报告等 6 个步骤全部 `continue-on-error: true`，即使检查失败也不阻断合并，CI 等于没做。改为仅 safety 保留 `continue-on-error`（外部 CVE 数据库可能误报），black/isort/flake8/pytest/bandit 全部正常阻断。
+- **C2: CI lint 只检查 app.py 遗漏 38 个文件**（`.github/workflows/ci.yml`）：`black --check app.py` / `flake8 app.py` 未覆盖 `pages/`、`components/`、`utils/`。改为 `black --check . --extend-exclude "(__pycache__|\.venv|venv)"`、`flake8 . --max-line-length=120 --ignore=E501,W503 --exclude=__pycache__,.venv,venv`，并新增 `isort --check-only`。
+
+#### High（应该修）
+
+- **H1: 4xx 错误提示误把 429/400/404 全归为"API 密钥无效"**（`utils/api.py`）：`call_api` 对所有 `4xx` 统一返回"API 密钥无效或请求被拒绝"，但 429（限流）、400（请求格式）、404（路径错误）都不是密钥问题。按状态码拆分：401/403→密钥无效、429→服务繁忙稍后重试、404→服务地址错误、其他 4xx→请求异常。
+- **H2: DEBUG=1 时泄露 `resp.text` 到前端**（`utils/api.py`）：`_err(msg, detail)` 把 `resp.text[:1000]` 放入折叠区，可能包含上游服务返回的请求 ID / 鉴权细节。`detail` 改为仅写入 `logger.error`，UI 不再展示。
+- **H3: DEBUG=1 暴露 API key 明文输入框**（`pages/scan.py`）：`if not api_key and os.getenv("DEBUG") == "1"` 无环境判断，Streamlit Cloud 误配 DEBUG=1 时任意访客可输入任意 key 调用付费 API。增加 `st.context.headers.get("Host")` 本地判断，仅 localhost/127.0.0.1/0.0.0.0 显示输入框。
+- **H4: 历史记录索引越界导致详情页静默降级**（`utils/history.py`）：`history.json` 保留 50 条，`history_full.json` 只保留 20 条，详情页基于 50 条索引，第 21~50 条点击只能读 fallback 的 4 个字段。`_HISTORY_FULL_MAX` 从 20 对齐到 50。
+- **H5: 引导完成后未初始化 `user_profile`**（`pages/onboarding.py`）：引导只写 `health_profile.diseases`，未写 `user_profile`（drugs/allergens）。新用户引导后直接扫描，`render_personal_warnings` 因 `user_profile={}` 直接 return。引导完成时 `st.session_state.setdefault("user_profile", {"drugs": [], "allergens": []})`。
+
+#### Ponytail 清理（约 -80 行死代码）
+
+- **删除 8 个 `render_*_mobile/desktop` 别名**（`pages/home.py`、`pages/scan.py`、`pages/result.py`、`pages/__init__.py`）：`render_home_mobile = render_home_page` 等别名仅作向后兼容保留，无任何调用方。
+- **删除 9 个未用 SVG 图标**（`components/icons.py`、`components/__init__.py`）：`_ICON_BACK`、`_ICON_HEART`、`_ICON_HOME`、`_ICON_HISTORY`、`_ICON_PROFILE`、`_ICON_CHECK`、`_ICON_REFRESH`、`_ICON_SHARE`、`_ICON_FOOD` 仅在 `__init__.py` 导出，无页面使用。同步清理 `pages/result.py` 中 `_ICON_CAMERA`、`_ICON_HOME` 的无用导入。
+- **删除 `speak_text()` 未用函数**（`components/voice_panel.py`、`components/__init__.py`）：仅被 `__init__` 导出，无调用方。
+- **删除 `render_loading()` 未用上下文管理器**（`components/state.py`、`components/__init__.py`）：仅被 `__init__` 导出，无调用方。同步移除 `from contextlib import contextmanager` 未用导入。
+- **删除 `HEALTH_GROUPS` 未用常量**（`utils/constants.py`）：与 `CONDITION_ITEMS` 重复定义疾病列表，但无任何代码引用 `HEALTH_GROUPS`。
+- **删除 `ADVICE_TEMPLATES["孕妇/儿童"]` 永不匹配键**（`utils/api.py`）：因 `HEALTH_GROUPS` 无此组合键，模型永远不会匹配到该模板，且与"孕妇"+"儿童"单独键重复。
+
+#### 验证
+
+- `python -m compileall -q .` 通过
+- `python -m pytest tests/ -q` 51 项全量通过
+
 ## v0.7.1 - 2026-07-08
 
 ### 修复手机端页面比例/首屏内容下沉

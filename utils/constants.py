@@ -10,9 +10,6 @@ import os
 # 项目根目录，避免多处重复计算
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# 疾病/人群选项（引导页与健康档案共用）
-HEALTH_GROUPS = ["糖尿病", "高血压", "脑梗/心血管", "减脂", "过敏", "儿童", "孕妇"]
-
 # 健康档案疾病选项（模块级常量，避免每次渲染重复构造）
 # 第三个字段使用语义化 emoji 小图标，避免与疾病名首字重复
 CONDITION_ITEMS = [
