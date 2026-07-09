@@ -43,7 +43,8 @@ def render_food_page(result):
             if ingredients:
                 st.markdown(
                     f"<div class='result-card'><div class='result-card-title'>全部配料</div>"
-                    f"<p class='detail-ingredients-text'>{_safe('、'.join(ingredients))}</p></div>",
+                    f"<p class='detail-ingredients-text'>{_safe('、'.join(ingredients))}</p>"
+                    f"<p class='ocr-text-note'>识别到的配料表原文：{_safe(result.get('ocr_text', ''))}</p></div>",
                     unsafe_allow_html=True,
                 )
 
@@ -95,6 +96,9 @@ def render_food_page(result):
         if ingredients:
             with st.expander("查看全部配料"):
                 st.write("、".join(ingredients))
+                ocr_text = result.get("ocr_text", "")
+                if ocr_text:
+                    st.caption(f"识别到的配料表原文：{_safe(ocr_text)}")
 
         if os.getenv("DEBUG") == "1":
             with st.expander("查看原始 JSON（调试用）"):

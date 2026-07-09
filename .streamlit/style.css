@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.7.3 | 更新时间: 2026-07-09 */
+/* 版本: v0.7.4 | 更新时间: 2026-07-09 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -2075,9 +2075,9 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: var(--spacing-xl) var(--spacing-base) var(--spacing-lg);
-  min-height: 240px;
+  justify-content: center;
+  padding: var(--spacing-base);
+  min-height: 180px;
   position: relative;
 }
 
@@ -2107,6 +2107,16 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
     height: 150px !important;
     font-size: 20px !important;
   }
+}
+
+/* 配料表 OCR 原文备注 */
+.ocr-text-note {
+  margin: var(--spacing-sm) 0 0 0;
+  padding-top: var(--spacing-sm);
+  border-top: 1px dashed var(--color-border);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
 }
 
 /* ========== 结果页浮动语音按钮 ========== */
@@ -2850,7 +2860,7 @@ div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker) .stButton > bu
 
 @media (min-width: 768px) {
   .home-scan-area {
-    min-height: 280px;
+    min-height: 220px;
   }
 
   .camera-page {
