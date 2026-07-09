@@ -60,10 +60,10 @@ def get_api_key():
         return ""
 
 
-def encode_image_to_base64(image_file, max_size=1200):
-    """压缩图片并转 base64：高清 1200px、quality 85，提升配料表小字识别率.
+def encode_image_to_base64(image_file, max_size=2000):
+    """压缩图片并转 base64：高清 2000px、quality 85，提升配料表小字识别率.
 
-    同时保留 106KB base64 上限保护：如果超过则自动降低 quality，
+    同时保留 2MB base64 上限保护：如果超过则自动降低 quality，
     仍超过再缩小尺寸，确保 API 能正常传输。
     """
     img = Image.open(image_file)
@@ -74,7 +74,7 @@ def encode_image_to_base64(image_file, max_size=1200):
         ratio = max_size / max(w, h)
         img = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
 
-    max_base64_bytes = 106 * 1024  # 106 KB 上限
+    max_base64_bytes = 2 * 1024 * 1024  # 2 MB 上限
     for quality in (85, 80, 75, 70):
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=quality, optimize=True)
@@ -82,8 +82,8 @@ def encode_image_to_base64(image_file, max_size=1200):
         if len(b64) <= max_base64_bytes:
             return b64
 
-    # 如果 quality 降到 70 还超，回退到 768px + quality 75
-    fallback_size = 768
+    # 如果 quality 降到 70 还超，回退到 1600px + quality 75
+    fallback_size = 1600
     ratio = fallback_size / max(w, h)
     img = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
     buf = io.BytesIO()

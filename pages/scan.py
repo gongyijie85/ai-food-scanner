@@ -76,24 +76,34 @@ def _scan_validate_and_recognize(uploaded, api_key, groups):
             raw = call_api_with_fallback(
                 api_key, img_b64, sys_prompt, agnes_key=agnes_key
             )
+        result = None
         if raw:
             status.update(label="③ 正在计算评分...", state="running")
             normalized = normalize_model_output(raw)
             result = parse_result(normalized, health_groups=groups)
-            if result:
-                status.update(label="识别完成", state="complete")
-                st.session_state["last_result"] = result
-                add_history(result, default_engine=MODEL_NAME)
-                switch_page("result")
-            else:
-                status.update(label="识别失败", state="error")
-                render_error("返回内容不是合法 JSON", "请重试或更换图片")
-                if os.getenv("DEBUG") == "1":
-                    with st.expander("查看原始返回（调试用）"):
-                        st.text(raw)
+
+        if result:
+            status.update(label="识别完成", state="complete")
+            st.session_state["last_result"] = result
+            add_history(result, default_engine=MODEL_NAME)
+            switch_page("result")
         else:
             status.update(label="识别失败", state="error")
-            render_error("识别服务暂时不可用", "请检查网络或 API 密钥后重试")
+            if raw:
+                render_error("返回内容不是合法 JSON", "请重试或更换图片")
+            else:
+                render_error("识别服务暂时不可用", "请检查网络或 API 密钥后重试")
+            if os.getenv("DEBUG") == "1" and raw:
+                with st.expander("查看原始返回（调试用）"):
+                    st.text(raw)
+            if st.button(
+                "重新拍摄/选择图片",
+                type="primary",
+                width="stretch",
+                key="scan_retake_on_error",
+            ):
+                st.session_state["scan_upload_key"] += 1
+                st.rerun()
 
 
 def render_scan_page():

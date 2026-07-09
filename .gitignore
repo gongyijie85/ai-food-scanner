@@ -69,7 +69,9 @@ push.ps1
 
 # 本地诊断截图与计划文档（仓库外协作/个人工作区）
 diag_shots/
-docs/
+docs/*
+!docs/agents/
+!docs/agents/**
 .streamlit/documents/
 
 # UI/UX 评审报告（静态 HTML，不进入最终提交）
