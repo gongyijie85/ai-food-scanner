@@ -102,8 +102,8 @@ jobs:
         run: safety check -r requirements.txt
 
       - name: 代码安全扫描 (bandit)
-        # 扫描全仓库，阻断高风险发现
-        run: bandit -r . -ll -ii -x __pycache__,.venv,venv
+        # 扫描全仓库（排除缓存/worktrees），阻断高风险发现
+        run: bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees
 
   # Job 4: 构建验证
   build:

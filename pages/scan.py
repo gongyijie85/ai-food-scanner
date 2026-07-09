@@ -108,7 +108,8 @@ def render_scan_page():
             host = st.context.headers.get("Host", "") if hasattr(st, "context") else ""
         except Exception:
             host = ""
-        is_local = any(h in host for h in ("localhost", "127.0.0.1", "0.0.0.0"))
+        local_hosts = ("localhost", "127.0.0.1", "0.0.0.0")  # nosec B104
+        is_local = any(h in host for h in local_hosts)
         if is_local:
             st.warning("未检测到 MIMO_API_KEY，请在 .env 或 Secrets 中配置")
             api_key = st.text_input("API 密钥", type="password")
