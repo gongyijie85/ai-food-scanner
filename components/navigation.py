@@ -54,9 +54,7 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
     with st.sidebar:
         c1, c2 = st.columns(2)
         with c1:
-            if st.button(
-                "首页", width="stretch", key="sidebar_home"
-            ):
+            if st.button("首页", width="stretch", key="sidebar_home"):
                 switch_page_func("home")
         with c2:
             if st.button(
@@ -68,9 +66,7 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
 
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
-        if st.button(
-            "扫描", width="stretch", key="sidebar_scan"
-        ):
+        if st.button("扫描", width="stretch", key="sidebar_scan"):
             switch_page_func("scan")
 
         if st.button(
@@ -93,9 +89,11 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
                         "agnes": "Agnes（更快）：速度优先",
                     }[x],
                     key="selected_model_radio",
-                    index=0
-                    if st.session_state.get("selected_model", "mimo") == "mimo"
-                    else 1,
+                    index=(
+                        0
+                        if st.session_state.get("selected_model", "mimo") == "mimo"
+                        else 1
+                    ),
                 )
                 st.session_state["selected_model"] = model_choice
                 if os.getenv("DEBUG") == "1":

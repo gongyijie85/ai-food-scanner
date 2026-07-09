@@ -18,9 +18,11 @@ def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = T
         meaning = "添加剂较多，请谨慎选择"
     shape = "●" if score >= 80 else ("▲" if score >= 60 else "■")
     clip = (
-        "polygon(50% 0%, 0% 100%, 100% 100%)" if shape == "▲"
-        else "polygon(0 0, 100% 0, 100% 100%, 0 100%)" if shape == "■"
-        else "circle(50%)"
+        "polygon(50% 0%, 0% 100%, 100% 100%)"
+        if shape == "▲"
+        else (
+            "polygon(0 0, 100% 0, 100% 100%, 0 100%)" if shape == "■" else "circle(50%)"
+        )
     )
     replay_btn = ""
     if show_slow_replay:
@@ -42,5 +44,5 @@ def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = T
         f"<div class='result-score-meaning'>{_safe(meaning)}</div>"
         f"{replay_btn}"
         f"</div>",
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )

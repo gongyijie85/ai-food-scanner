@@ -108,7 +108,9 @@ def render_food_page(result):
         )
 
         with st.container():
-            st.markdown("<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True
+            )
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("再扫一个", width="stretch", key="food_btn_scan"):
@@ -139,7 +141,7 @@ def render_supplement_page(result):
         "<div style='color:#C62828;font-weight:bold;font-size:18px;'>⚠️ 本产品为保健食品</div>"
         "<p style='color:#C62828;margin:8px 0 0 0;'>保健食品不是药物，不能代替药物治疗疾病</p>"
         "</div>",
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     _render_score_hero(score if score else 100, product_name)
@@ -158,13 +160,13 @@ def render_supplement_page(result):
             if summary:
                 st.markdown(
                     f"<div class='result-card'><div class='result-card-title'>📝 产品摘要</div><p>{_safe(summary)}</p></div>",
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
             if approval_no and approval_no != "未显示":
                 st.markdown(
                     f"<div class='result-card'><div class='result-card-title'>📋 批准文号</div>"
                     f"<p><code>{_safe(approval_no)}</code></p></div>",
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
             if functional:
                 html = "<div class='result-card'><div class='result-card-title'>✨ 标志性成分</div><ul style='margin:0;padding-left:20px;'>"
@@ -180,22 +182,22 @@ def render_supplement_page(result):
             if health_claims and health_claims != "未显示":
                 st.markdown(
                     f"<div class='result-card'><div class='result-card-title'>💪 保健功能（包装原文）</div><p>{_safe(health_claims)}</p></div>",
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
             if suitable and suitable != "未显示":
                 st.markdown(
                     f"<div class='result-card'><div class='result-card-title'>👥 适宜人群（包装原文）</div><p>{_safe(suitable)}</p></div>",
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
             if unsuitable and unsuitable != "未显示":
                 st.markdown(
                     f"<div class='result-card' style='border-left:4px solid #FF9800;'><div class='result-card-title'>⚠️ 不适宜人群（包装原文）</div><p style='color:#E65100;'>{_safe(unsuitable)}</p></div>",
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
             if usage and usage != "未显示":
                 st.markdown(
                     f"<div class='result-card'><div class='result-card-title'>💊 食用方法（包装原文）</div><p>{_safe(usage)}</p></div>",
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
             voice_control_panel(
                 speak_content,
@@ -219,14 +221,14 @@ def render_supplement_page(result):
         if summary:
             st.markdown(
                 f"<div class='result-card'><div class='result-card-title'>📝 产品摘要</div><p>{_safe(summary)}</p></div>",
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
 
         if approval_no and approval_no != "未显示":
             st.markdown(
                 f"<div class='result-card'><div class='result-card-title'>📋 批准文号</div>"
                 f"<p><code>{_safe(approval_no)}</code></p></div>",
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
 
         if functional:
@@ -239,24 +241,24 @@ def render_supplement_page(result):
         if health_claims and health_claims != "未显示":
             st.markdown(
                 f"<div class='result-card'><div class='result-card-title'>💪 保健功能（包装原文）</div><p>{_safe(health_claims)}</p></div>",
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
 
         if suitable and suitable != "未显示":
             st.markdown(
                 f"<div class='result-card'><div class='result-card-title'>👥 适宜人群（包装原文）</div><p>{_safe(suitable)}</p></div>",
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
         if unsuitable and unsuitable != "未显示":
             st.markdown(
                 f"<div class='result-card' style='border-left:4px solid #FF9800;'><div class='result-card-title'>⚠️ 不适宜人群（包装原文）</div><p style='color:#E65100;'>{_safe(unsuitable)}</p></div>",
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
 
         if usage and usage != "未显示":
             st.markdown(
                 f"<div class='result-card'><div class='result-card-title'>💊 食用方法（包装原文）</div><p>{_safe(usage)}</p></div>",
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
 
         if ingredients:
@@ -275,7 +277,9 @@ def render_supplement_page(result):
         )
 
         with st.container():
-            st.markdown("<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='bottom-action-bar-marker'></div>", unsafe_allow_html=True
+            )
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("再扫一个", width="stretch", key="supp_btn_scan"):

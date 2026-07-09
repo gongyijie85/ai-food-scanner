@@ -6,7 +6,13 @@ from utils.helpers import switch_page
 from utils.security import _safe
 
 
-def render_top_nav(title: str, show_back: bool = True, back_target: str = "home", right_action: str | None = None, align: str = "center"):
+def render_top_nav(
+    title: str,
+    show_back: bool = True,
+    back_target: str = "home",
+    right_action: str | None = None,
+    align: str = "center",
+):
     """渲染顶部导航栏（标题居中/居左 + 返回按钮 + 右侧可选入口）.
 
     right_action 可选值："profile"（心形入口）、None。
@@ -22,8 +28,13 @@ def render_top_nav(title: str, show_back: bool = True, back_target: str = "home"
                     target = st.session_state.get("prev_page", back_target)
                     switch_page(target)
         with cols[1]:
-            title_style = "text-align:left;" if align == "left" else "text-align:center;"
-            st.markdown(f"<div class='top-nav-title' style='{title_style}'>{_safe(title)}</div>", unsafe_allow_html=True)
+            title_style = (
+                "text-align:left;" if align == "left" else "text-align:center;"
+            )
+            st.markdown(
+                f"<div class='top-nav-title' style='{title_style}'>{_safe(title)}</div>",
+                unsafe_allow_html=True,
+            )
         with cols[2]:
             if right_action == "profile":
                 if st.button("健康档案", key=f"tn_profile_{title}", help="健康档案"):

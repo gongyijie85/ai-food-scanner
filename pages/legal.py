@@ -12,9 +12,7 @@ from utils.data import _load_markdown
 def render_legal_consent():
     """首次访问：阅读并同意用户协议及隐私政策."""
     st.markdown("## 用户协议及隐私政策")
-    st.markdown(
-        "使用本工具前请阅读并同意《用户协议及免责声明》和《隐私政策》。"
-    )
+    st.markdown("使用本工具前请阅读并同意《用户协议及免责声明》和《隐私政策》。")
 
     user_agreement = _load_markdown(os.path.join(_BASE_DIR, "USER_AGREEMENT.md"))
     privacy_policy = _load_markdown(os.path.join(_BASE_DIR, "PRIVACY_POLICY.md"))
@@ -25,12 +23,11 @@ def render_legal_consent():
         st.markdown(privacy_policy)
 
     agree_terms = st.checkbox(
-        "我已阅读并同意《用户协议及隐私政策》",
-        key="legal_agree_terms"
+        "我已阅读并同意《用户协议及隐私政策》", key="legal_agree_terms"
     )
     agree_sensitive = st.checkbox(
         "我同意收集我的敏感健康信息（疾病、过敏原、用药）用于个性化科普提示，并知悉数据可能传输至境外 AI 服务",
-        key="legal_agree_sensitive"
+        key="legal_agree_sensitive",
     )
 
     start_disabled = not (agree_terms and agree_sensitive)
@@ -42,7 +39,7 @@ def render_legal_consent():
         type="primary",
         width="stretch",
         disabled=start_disabled,
-        key="legal_start_btn"
+        key="legal_start_btn",
     ):
         if agree_terms and agree_sensitive:
             st.session_state["legal_agreed"] = True

@@ -3,21 +3,21 @@
 覆盖：normalize_additive, compute_score_from_additives, check_drug_food_conflicts, parse_result
 """
 
-import sys
-import os
 import json
+import os
+import sys
+
 import pytest
 import streamlit as st
 
 # 添加项目根目录到路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.api import _generate_advice, normalize_model_output, parse_result
 from utils.data import load_gb2760_risk
 from utils.helpers import detect_device_type
 from utils.score import (
     C_LEVEL_DENSITY_PENALTY,
-    C_LEVEL_DENSITY_THRESHOLD,
     _is_blocklisted,
     check_drug_food_conflicts,
     compute_score_from_additives,
@@ -212,12 +212,14 @@ class TestNormalizeModelOutput:
 
     def test_model_score_is_removed(self):
         """模型自带 score / level 应被删除"""
-        raw = json.dumps({
-            "type": "food",
-            "product_name": "测试",
-            "score": 95,
-            "additives": [{"name": "山梨酸钾", "level": "A", "score": 95}],
-        })
+        raw = json.dumps(
+            {
+                "type": "food",
+                "product_name": "测试",
+                "score": 95,
+                "additives": [{"name": "山梨酸钾", "level": "A", "score": 95}],
+            }
+        )
         out = normalize_model_output(raw)
         data = json.loads(out)
         assert "score" not in data
@@ -231,15 +233,17 @@ class TestNormalizeModelOutput:
 
     def test_blocklisted_additive_filtered(self):
         """黑名单基础配料应从 additives 中过滤"""
-        raw = json.dumps({
-            "type": "food",
-            "product_name": "测试",
-            "additives": [
-                {"name": "水"},
-                {"name": "白砂糖"},
-                {"name": "山梨酸钾"},
-            ],
-        })
+        raw = json.dumps(
+            {
+                "type": "food",
+                "product_name": "测试",
+                "additives": [
+                    {"name": "水"},
+                    {"name": "白砂糖"},
+                    {"name": "山梨酸钾"},
+                ],
+            }
+        )
         out = normalize_model_output(raw)
         data = json.loads(out)
         assert len(data["additives"]) == 1
@@ -247,16 +251,18 @@ class TestNormalizeModelOutput:
 
     def test_empty_and_abnormal_additive_filtered(self):
         """空名称、过短、过长条目应被过滤"""
-        raw = json.dumps({
-            "type": "food",
-            "product_name": "测试",
-            "additives": [
-                {"name": ""},
-                {"name": "a"},
-                {"name": "x" * 35},
-                {"name": "山梨酸钾"},
-            ],
-        })
+        raw = json.dumps(
+            {
+                "type": "food",
+                "product_name": "测试",
+                "additives": [
+                    {"name": ""},
+                    {"name": "a"},
+                    {"name": "x" * 35},
+                    {"name": "山梨酸钾"},
+                ],
+            }
+        )
         out = normalize_model_output(raw)
         data = json.loads(out)
         assert len(data["additives"]) == 1
@@ -319,8 +325,17 @@ class TestDetectDeviceType:
         monkeypatch.setattr(st, "query_params", {})
         monkeypatch.setattr(st, "session_state", {})
         monkeypatch.setattr(
-            st, "context",
-            type("Ctx", (), {"headers": {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"}})()
+            st,
+            "context",
+            type(
+                "Ctx",
+                (),
+                {
+                    "headers": {
+                        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"
+                    }
+                },
+            )(),
         )
         assert detect_device_type() == "mobile"
 
@@ -329,8 +344,17 @@ class TestDetectDeviceType:
         monkeypatch.setattr(st, "query_params", {})
         monkeypatch.setattr(st, "session_state", {})
         monkeypatch.setattr(
-            st, "context",
-            type("Ctx", (), {"headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}})()
+            st,
+            "context",
+            type(
+                "Ctx",
+                (),
+                {
+                    "headers": {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                    }
+                },
+            )(),
         )
         assert detect_device_type() == "desktop"
 
@@ -345,8 +369,17 @@ class TestDetectDeviceType:
         monkeypatch.setattr(st, "query_params", {"device": "tablet"})
         monkeypatch.setattr(st, "session_state", {})
         monkeypatch.setattr(
-            st, "context",
-            type("Ctx", (), {"headers": {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}})()
+            st,
+            "context",
+            type(
+                "Ctx",
+                (),
+                {
+                    "headers": {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                    }
+                },
+            )(),
         )
         assert detect_device_type() == "desktop"
 
@@ -375,12 +408,14 @@ class TestBuildSystemPrompt:
     def test_prompt_requires_json_only(self):
         """提示詞應要求純 JSON 輸出"""
         from utils.api import build_system_prompt
+
         prompt = build_system_prompt([])
         assert "純 JSON" in prompt or "不要 Markdown" in prompt
 
     def test_prompt_forbids_basic_ingredients_in_additives(self):
         """提示詞應禁止把基礎配料列入 additives"""
         from utils.api import build_system_prompt
+
         prompt = build_system_prompt([])
         assert "白砂糖" in prompt
         assert "食用盐" in prompt
@@ -388,6 +423,7 @@ class TestBuildSystemPrompt:
     def test_prompt_has_output_examples(self):
         """提示詞應包含輸出示例"""
         from utils.api import build_system_prompt
+
         prompt = build_system_prompt([])
         assert '"type":"food"' in prompt
         assert '"type":"supplement"' in prompt
@@ -395,6 +431,7 @@ class TestBuildSystemPrompt:
     def test_prompt_requires_no_model_level_or_score(self):
         """提示詞應要求模型不要輸出 level/score"""
         from utils.api import build_system_prompt
+
         prompt = build_system_prompt([])
         assert "不要输出 level" in prompt
         assert "不要给 score" in prompt
@@ -406,6 +443,7 @@ class TestCallApiWithFallback:
     def test_mimo_success_no_fallback(self, monkeypatch):
         """MiMo 成功時不應調用 Agnes"""
         from utils.api import call_api_with_fallback
+
         call_count = {"mimo": 0, "agnes": 0}
 
         def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
@@ -416,7 +454,9 @@ class TestCallApiWithFallback:
             return "mimo_result"
 
         monkeypatch.setattr("utils.api.call_api", mock_call_api)
-        result = call_api_with_fallback("mimo_key", "img", "prompt", agnes_key="agnes_key")
+        result = call_api_with_fallback(
+            "mimo_key", "img", "prompt", agnes_key="agnes_key"
+        )
         assert result == "mimo_result"
         assert call_count["mimo"] == 1
         assert call_count["agnes"] == 0
@@ -424,6 +464,7 @@ class TestCallApiWithFallback:
     def test_mimo_fail_fallback_to_agnes(self, monkeypatch):
         """MiMo 失敗時應降級到 Agnes"""
         from utils.api import call_api_with_fallback
+
         call_count = {"mimo": 0, "agnes": 0}
 
         def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
@@ -435,7 +476,9 @@ class TestCallApiWithFallback:
 
         monkeypatch.setattr("utils.api.call_api", mock_call_api)
         monkeypatch.setattr("streamlit.toast", lambda *a, **kw: None)
-        result = call_api_with_fallback("mimo_key", "img", "prompt", agnes_key="agnes_key")
+        result = call_api_with_fallback(
+            "mimo_key", "img", "prompt", agnes_key="agnes_key"
+        )
         assert result == "agnes_result"
         assert call_count["mimo"] == 1
         assert call_count["agnes"] == 1
@@ -460,7 +503,9 @@ class TestCallApiWithFallback:
 
         monkeypatch.setattr("utils.api.call_api", mock_call_api)
         monkeypatch.setattr("streamlit.toast", lambda *a, **kw: None)
-        result = call_api_with_fallback("mimo_key", "img", "prompt", agnes_key="agnes_key")
+        result = call_api_with_fallback(
+            "mimo_key", "img", "prompt", agnes_key="agnes_key"
+        )
         assert result is None
 
 

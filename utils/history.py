@@ -1,4 +1,5 @@
 """历史记录本地 JSON 持久化工具。"""
+
 import json
 import os
 from datetime import datetime

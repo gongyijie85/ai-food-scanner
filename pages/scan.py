@@ -5,16 +5,10 @@ import os
 import streamlit as st
 from PIL import Image
 
-from components import (
-    _ICON_CAMERA,
-    render_empty_state,
-    render_error,
-    render_top_nav,
-)
+from components import _ICON_CAMERA, render_empty_state, render_error, render_top_nav
 from utils.api import (
     AGNES_API_URL,
     AGNES_MODEL_NAME,
-    API_URL,
     MODEL_NAME,
     build_system_prompt,
     call_api,
@@ -71,9 +65,17 @@ def _scan_validate_and_recognize(uploaded, api_key, groups):
         agnes_key = os.getenv("AGNES_API_KEY", "")
         selected_model = st.session_state.get("selected_model", "mimo")
         if selected_model == "agnes" and agnes_key:
-            raw = call_api(agnes_key, img_b64, sys_prompt, url=AGNES_API_URL, model=AGNES_MODEL_NAME)
+            raw = call_api(
+                agnes_key,
+                img_b64,
+                sys_prompt,
+                url=AGNES_API_URL,
+                model=AGNES_MODEL_NAME,
+            )
         else:
-            raw = call_api_with_fallback(api_key, img_b64, sys_prompt, agnes_key=agnes_key)
+            raw = call_api_with_fallback(
+                api_key, img_b64, sys_prompt, agnes_key=agnes_key
+            )
         if raw:
             status.update(label="③ 正在计算评分...", state="running")
             normalized = normalize_model_output(raw)
@@ -135,7 +137,11 @@ def render_scan_page():
             else:
                 st.info("📷 像这样正对配料表拍照，识别率更高")
 
-        input_method_key = f"scan_input_method_desktop_{uploader_key}" if is_desktop else f"scan_input_method_{uploader_key}"
+        input_method_key = (
+            f"scan_input_method_desktop_{uploader_key}"
+            if is_desktop
+            else f"scan_input_method_{uploader_key}"
+        )
         # 评委快速模式下自动选择输入方式，减少一次无意义点击
         if st.session_state.get("demo_mode"):
             input_method = "从相册选择" if is_desktop else "拍照"
@@ -151,10 +157,14 @@ def render_scan_page():
         with st.container():
             if is_desktop:
                 scan_card_desc = "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
-                scan_card_hint = "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>"
+                scan_card_hint = (
+                    "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>"
+                )
             else:
                 scan_card_desc = ""
-                scan_card_hint = "<div class='scan-card-hint'>对准配料表，光线充足更清晰</div>"
+                scan_card_hint = (
+                    "<div class='scan-card-hint'>对准配料表，光线充足更清晰</div>"
+                )
             st.markdown(
                 "<div class='scan-card-marker'></div>"
                 "<div class='scan-card-header'>"
@@ -165,7 +175,11 @@ def render_scan_page():
                 unsafe_allow_html=True,
             )
             if input_method == "拍照":
-                camera_key = f"camera_desktop_{uploader_key}" if is_desktop else f"camera_{uploader_key}"
+                camera_key = (
+                    f"camera_desktop_{uploader_key}"
+                    if is_desktop
+                    else f"camera_{uploader_key}"
+                )
                 uploaded = st.camera_input(
                     "对准配料表拍照",
                     key=camera_key,
@@ -183,8 +197,13 @@ def render_scan_page():
 
     with right:
         if uploaded is not None:
-            st.markdown("<div class='preview-card-marker'></div>", unsafe_allow_html=True)
-            st.markdown("<div class='preview-card-title'>已选择图片</div>", unsafe_allow_html=True)
+            st.markdown(
+                "<div class='preview-card-marker'></div>", unsafe_allow_html=True
+            )
+            st.markdown(
+                "<div class='preview-card-title'>已选择图片</div>",
+                unsafe_allow_html=True,
+            )
             st.markdown(
                 f"<div class='preview-file-meta'>{_safe(uploaded.name)} · {uploaded.size / 1024:.0f}KB</div>",
                 unsafe_allow_html=True,
@@ -198,7 +217,9 @@ def render_scan_page():
                     st.rerun()
             with col2:
                 confirm_key = "scan_confirm_desktop" if is_desktop else "scan_confirm"
-                if st.button("使用照片", type="primary", width="stretch", key=confirm_key):
+                if st.button(
+                    "使用照片", type="primary", width="stretch", key=confirm_key
+                ):
                     _scan_validate_and_recognize(uploaded, api_key, groups)
         elif is_desktop:
             render_empty_state("在左侧上传配料表图片后，这里会显示预览")

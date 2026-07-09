@@ -23,8 +23,7 @@ def render_nutrition_bars(result):
     if not items:
         return
     st.markdown(
-        "<div class='result-card'>"
-        "<div class='result-card-title'>📊 营养成分</div>",
+        "<div class='result-card'>" "<div class='result-card-title'>📊 营养成分</div>",
         unsafe_allow_html=True,
     )
     for name, pct in items:

@@ -1,4 +1,5 @@
 """评分与添加剂判定工具（客户端权威判定层）。"""
+
 import re
 
 from utils.data import load_gb2760_risk, load_health_data
@@ -12,18 +13,63 @@ C_LEVEL_DENSITY_THRESHOLD = 3
 
 # 不应被识别为食品添加剂的基础配料黑名单（避免 AI 误判导致分数虚低）
 ADDITIVE_BLOCKLIST = {
-    "水", "饮用水", "纯净水", "蒸馏水", "矿泉水",
-    "白砂糖", "白糖", "冰糖", "红糖", "绵白糖", "蔗糖",
-    "食用盐", "食盐", "精盐", "海盐", "岩盐",
-    "食用油", "植物油", "菜籽油", "花生油", "大豆油", "玉米油", "葵花籽油", "橄榄油", "棕榈油", "调和油",
-    "面粉", "小麦粉", "大米", "糯米粉", "淀粉", "小麦淀粉", "玉米淀粉", "马铃薯淀粉",
-    "食品用香精", "食用香精", "香精",
-    "酵母", "酵母抽提物",
-    "蜂蜜", "麦芽糖浆", "果葡糖浆", "葡萄糖浆", "乳糖",
+    "水",
+    "饮用水",
+    "纯净水",
+    "蒸馏水",
+    "矿泉水",
+    "白砂糖",
+    "白糖",
+    "冰糖",
+    "红糖",
+    "绵白糖",
+    "蔗糖",
+    "食用盐",
+    "食盐",
+    "精盐",
+    "海盐",
+    "岩盐",
+    "食用油",
+    "植物油",
+    "菜籽油",
+    "花生油",
+    "大豆油",
+    "玉米油",
+    "葵花籽油",
+    "橄榄油",
+    "棕榈油",
+    "调和油",
+    "面粉",
+    "小麦粉",
+    "大米",
+    "糯米粉",
+    "淀粉",
+    "小麦淀粉",
+    "玉米淀粉",
+    "马铃薯淀粉",
+    "食品用香精",
+    "食用香精",
+    "香精",
+    "酵母",
+    "酵母抽提物",
+    "蜂蜜",
+    "麦芽糖浆",
+    "果葡糖浆",
+    "葡萄糖浆",
+    "乳糖",
 }
 
 # 保健品辅料白名单（不参与扣分）
-SUPPLEMENT_EXCIPIENTS = {"鱼油", "明胶", "甘油", "蜂蜡", "卵磷脂", "淀粉", "麦芽糊精", "羧甲基纤维素钠"}
+SUPPLEMENT_EXCIPIENTS = {
+    "鱼油",
+    "明胶",
+    "甘油",
+    "蜂蜡",
+    "卵磷脂",
+    "淀粉",
+    "麦芽糊精",
+    "羧甲基纤维素钠",
+}
 
 
 def _clean_name(name) -> str:
@@ -127,15 +173,17 @@ def check_drug_food_conflicts(ingredients_list, user_drugs):
             ing_str = str(ing)
             for fk in c.get("food_keywords", []):
                 if fk in ing_str:
-                    conflicts.append({
-                        "drug": c.get("drug_name", ""),
-                        "food": ing_str,
-                        "matched_keyword": fk,
-                        "severity": c.get("severity", "medium"),
-                        "description": c.get("description", ""),
-                        "recommendation": c.get("recommendation", ""),
-                        "mechanism": c.get("mechanism", ""),
-                        "source": c.get("source", ""),
-                    })
+                    conflicts.append(
+                        {
+                            "drug": c.get("drug_name", ""),
+                            "food": ing_str,
+                            "matched_keyword": fk,
+                            "severity": c.get("severity", "medium"),
+                            "description": c.get("description", ""),
+                            "recommendation": c.get("recommendation", ""),
+                            "mechanism": c.get("mechanism", ""),
+                            "source": c.get("source", ""),
+                        }
+                    )
                     break  # 每个冲突只算一次
     return conflicts

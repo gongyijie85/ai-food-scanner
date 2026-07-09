@@ -1,5 +1,4 @@
 import json
-import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -12,11 +11,13 @@ DATA_DIR.mkdir(exist_ok=True)
 now = datetime.now()
 history = []
 full = []
-for i, (name, score, type_) in enumerate([
-    ("测试牛奶", 85, "food"),
-    ("测试鱼油胶囊", 72, "supplement"),
-    ("测试辣条", 45, "food"),
-]):
+for i, (name, score, type_) in enumerate(
+    [
+        ("测试牛奶", 85, "food"),
+        ("测试鱼油胶囊", 72, "supplement"),
+        ("测试辣条", 45, "food"),
+    ]
+):
     ts = (now - timedelta(hours=i)).isoformat(timespec="seconds")
     record = {
         "timestamp": ts,
@@ -26,12 +27,15 @@ for i, (name, score, type_) in enumerate([
         "additives_count": i + 1,
     }
     history.append(record)
-    full.append({
-        **record,
-        "additives": [{"name": f"添加剂{i}", "risk": "low"}],
-        "ingredients": ["水", "糖"],
-        "advice": "适量食用",
-    })
+    full.append(
+        {
+            **record,
+            "additives": [{"name": f"添加剂{i}", "risk": "low"}],
+            "ingredients": ["水", "糖"],
+            "advice": "适量食用",
+        }
+    )
+
 
 def _write_test_data():
     with open(DATA_DIR / "history.json", "w", encoding="utf-8") as f:
@@ -62,7 +66,11 @@ def main():
         # 检查首页没有其他大按钮（比如查看按钮），跳过扫描按钮本身
         for b in page.locator("button").all():
             txt = b.inner_text().replace("\n", " ")
-            if txt and "扫描配料表" not in txt and txt not in ("首页", "历史", "扫描", "健康档案"):
+            if (
+                txt
+                and "扫描配料表" not in txt
+                and txt not in ("首页", "历史", "扫描", "健康档案")
+            ):
                 bbox = b.bounding_box()
                 if bbox and bbox["width"] > 100 and bbox["height"] > 100:
                     raise AssertionError(f"发现异常大按钮: {txt} {bbox}")
@@ -79,7 +87,7 @@ def main():
         print("history buttons:", labels[:20])
         assert "查看" not in labels, "应移除单独的查看按钮"
         # 至少能看到测试牛奶按钮
-        assert any("测试牛奶" in l for l in labels), "应显示测试历史记录"
+        assert any("测试牛奶" in label for label in labels), "应显示测试历史记录"
 
         # 点击第一条历史记录，进入详情
         page.get_by_role("button", name="测试牛奶").first.click()

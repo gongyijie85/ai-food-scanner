@@ -9,7 +9,9 @@ from utils.security import _safe
 
 def render_home_page():
     """首页：扫描入口 + 健康标签，历史记录统一放到侧边栏/历史页."""
-    render_top_nav("食品配料表识别", show_back=False, right_action="profile", align="left")
+    render_top_nav(
+        "食品配料表识别", show_back=False, right_action="profile", align="left"
+    )
 
     profile = st.session_state.get("health_profile", {})
     diseases = profile.get("diseases", [])

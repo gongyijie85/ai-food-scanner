@@ -58,9 +58,13 @@ def _render_additive_card(additives, key="additive_card"):
         label, color, shape = _get_level_info(level)
         label = _safe(label)
         clip = (
-            "polygon(50% 0%, 0% 100%, 100% 100%)" if shape == "▲"
-            else "polygon(0 0, 100% 0, 100% 100%, 0 100%)" if shape == "■"
-            else "circle(50%)"
+            "polygon(50% 0%, 0% 100%, 100% 100%)"
+            if shape == "▲"
+            else (
+                "polygon(0 0, 100% 0, 100% 100%, 0 100%)"
+                if shape == "■"
+                else "circle(50%)"
+            )
         )
         note_html = f"<div class='result-additive-note'>{note}</div>" if note else ""
         html += (

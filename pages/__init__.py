@@ -5,18 +5,10 @@
 
 from pages.history import render_detail_page, render_history_page
 from pages.home import render_home_page
-from pages.legal import (
-    render_legal_consent,
-    render_legal_pp,
-    render_legal_ua,
-)
+from pages.legal import render_legal_consent, render_legal_pp, render_legal_ua
 from pages.onboarding import render_onboarding
 from pages.profile import render_health_profile, render_health_profile_page
-from pages.result import (
-    render_food_page,
-    render_result_page,
-    render_supplement_page,
-)
+from pages.result import render_food_page, render_result_page, render_supplement_page
 from pages.scan import render_scan_page
 
 __all__ = [

@@ -16,23 +16,12 @@ _PROJECT_ROOT = Path(__file__).resolve().parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from dotenv import load_dotenv
-
 import streamlit as st
 import streamlit.components.v1 as components
+from dotenv import load_dotenv
 
-from utils.api import API_URL, MODEL_NAME, get_api_key
-from utils.helpers import detect_device_type, switch_page
-from utils.history import show_history
-from utils.security import _safe
-from utils.constants import _BASE_DIR
-
-from components import (
-    _preload_tts_voices,
-    _render_tts_namespace,
-)
+from components import _preload_tts_voices, _render_tts_namespace
 from components.navigation import render_navigation
-
 from pages import (
     render_detail_page,
     render_health_profile_page,
@@ -45,6 +34,11 @@ from pages import (
     render_result_page,
     render_scan_page,
 )
+from utils.api import API_URL, MODEL_NAME, get_api_key
+from utils.constants import _BASE_DIR
+from utils.helpers import detect_device_type, switch_page
+from utils.history import show_history
+from utils.security import _safe
 
 # ========== 日志配置 ==========
 # 生产环境 INFO，本地 DEBUG=1 时 DEBUG
@@ -62,6 +56,7 @@ load_dotenv()
 
 # ========== 适老化样式 ==========
 
+
 def inject_css():
     """注入 .streamlit/style.css 到页面."""
     css_path = os.path.join(_BASE_DIR, ".streamlit", "style.css")
@@ -75,6 +70,7 @@ def inject_css():
 
 
 # ========== 页面分发 ==========
+
 
 def _dispatch_page(page: str):
     """根据当前页面名称分发到对应渲染函数."""
@@ -100,6 +96,7 @@ def _dispatch_page(page: str):
 
 
 # ========== 评委快速模式 ==========
+
 
 def _apply_demo_mode():
     """检测 URL 参数 ?demo=1，为评委自动完成法律同意、引导并预填健康档案.
@@ -127,6 +124,7 @@ def _apply_demo_mode():
 
 
 # ========== 主程序 ==========
+
 
 def main():
     """主程序入口：页面配置、CSS、法律同意、引导、页面分发."""
@@ -210,7 +208,7 @@ def main():
 
     st.markdown(
         "<div class='disclaimer-text' style='text-align:center;margin-top:24px;'>AI识别仅供参考，请以包装原文为准</div>",
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
 

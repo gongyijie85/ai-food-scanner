@@ -10,7 +10,9 @@ from components.icons import _ICON_ALERT, _ICON_EMPTY
 from utils.security import _safe
 
 
-def render_empty_state(title: str, description: str | None = None, icon: str = _ICON_EMPTY):
+def render_empty_state(
+    title: str, description: str | None = None, icon: str = _ICON_EMPTY
+):
     """渲染统一空状态.
 
     参数:
@@ -19,9 +21,7 @@ def render_empty_state(title: str, description: str | None = None, icon: str = _
         icon: 图标 HTML，默认使用空盒子 SVG。
     """
     desc_html = (
-        f"<p class='empty-state-desc'>{_safe(description)}</p>"
-        if description
-        else ""
+        f"<p class='empty-state-desc'>{_safe(description)}</p>" if description else ""
     )
     st.markdown(
         f"<div class='empty-state'>"
@@ -41,9 +41,7 @@ def render_error(title: str, description: str | None = None):
         description: 错误说明或修复建议，可选。
     """
     desc_html = (
-        f"<p class='empty-state-desc'>{_safe(description)}</p>"
-        if description
-        else ""
+        f"<p class='empty-state-desc'>{_safe(description)}</p>" if description else ""
     )
     st.markdown(
         f"<div class='empty-state empty-state-error'>"

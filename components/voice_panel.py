@@ -171,12 +171,19 @@ def _render_tts_namespace():
             }
         })();
         </script>
-        """.replace("ICON_MUTE", _ICON_MUTE_JS).replace("ICON_SPEAKER", _ICON_SPEAKER_JS),
+        """.replace("ICON_MUTE", _ICON_MUTE_JS).replace(
+            "ICON_SPEAKER", _ICON_SPEAKER_JS
+        ),
         height=0,
     )
 
 
-def voice_control_panel(speak_content: str, key_prefix: str = "tts", button_text: str = f"{_ICON_SPEAKER} 点击播报", wrapper_class: str = "voice-control-wrap"):
+def voice_control_panel(
+    speak_content: str,
+    key_prefix: str = "tts",
+    button_text: str = f"{_ICON_SPEAKER} 点击播报",
+    wrapper_class: str = "voice-control-wrap",
+):
     """语音播报控制面板：简洁版，主按钮+折叠的语速控制.
 
     使用浏览器原生 Web Speech API，针对 iOS Safari / 微信内置浏览器等

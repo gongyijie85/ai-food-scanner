@@ -74,7 +74,9 @@ def render_history_page():
     if not filtered:
         if not history:
             render_empty_state("还没有扫描记录", "去首页拍第一张配料表吧")
-            if st.button("开始扫描", type="primary", width="stretch", key="hist_empty_scan"):
+            if st.button(
+                "开始扫描", type="primary", width="stretch", key="hist_empty_scan"
+            ):
                 switch_page("scan")
         else:
             st.info("没有匹配的记录")
@@ -124,7 +126,9 @@ def render_detail_page():
     _render_score_hero(score, product_name, show_slow_replay=False)
 
     # 扫描信息卡片
-    ts = fallback.get("timestamp", "") or (record.get("timestamp", "") if record else "")
+    ts = fallback.get("timestamp", "") or (
+        record.get("timestamp", "") if record else ""
+    )
     type_label = "保健食品" if fallback.get("type") == "supplement" else "食品"
     st.markdown(
         "<div class='result-card detail-scan-card'>"

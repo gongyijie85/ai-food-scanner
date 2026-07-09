@@ -1,4 +1,5 @@
 """API 调用、提示词构建与模型输出归一化工具。"""
+
 import base64
 import io
 import json
@@ -11,7 +12,12 @@ import requests
 import streamlit as st
 from PIL import Image
 
-from utils.score import ADDITIVE_BLOCKLIST, _clean_name, _is_blocklisted, compute_score_from_additives, normalize_additive
+from utils.score import (
+    _clean_name,
+    _is_blocklisted,
+    compute_score_from_additives,
+    normalize_additive,
+)
 
 logger = logging.getLogger("ai-food-scanner")
 
@@ -79,28 +85,28 @@ def build_system_prompt(groups):
         "**第二步按类型返回 JSON**。必须返回合法 JSON，不要 Markdown 代码块，不要任何解释。\n\n"
         "## type=supplement（保健食品）必填字段\n"
         '- type: "supplement"\n'
-        '- product_name: 产品名称（**必须中文**），英文产品名翻译成中文或填\'该产品\'\n'
-        '- approval_no: 批准文号/备案号（如\'国食健注 G20170479\'、\'食健备 G202537000369\'），**未显示则填\'未显示\'**\n'
-        '- ingredients: 全部原料/配料成分（按包装原文顺序）\n'
-        '- functional_ingredients: 标志性成分/功效成分及含量（如\'每100g含辅酶Q10 24g\'、\'每片含钙 150mg\'）\n'
-        '- health_claims: 包装上写的保健功能（**严格按包装原文引用，不评价**），如\'补充多种维生素和矿物质\'、\'有助于增强免疫力和抗氧化\'\n'
-        '- suitable_for: 包装上的适宜人群（**严格按包装原文引用**），如\'需要补充多种维生素和矿物质的成人\'、\'成人\'\n'
-        '- unsuitable_for: 包装上的不适宜人群（**严格按包装原文引用**），如\'17岁以下人群、孕妇、乳母\'\n'
-        '- usage: 食用方法及食用量（**严格按包装原文引用**），如\'每日1次，每次2片，口服\'、\'每日1次，每次1粒，口服\'\n'
-        '- storage: 贮藏方法（按包装原文）\n'
-        '- shelf_life: 保质期\n'
-        '- summary: **30字以内**的事实摘要（如\'成人多种维生素补充剂，每日2片\'），**禁止评价、禁止推荐**\n\n'
+        "- product_name: 产品名称（**必须中文**），英文产品名翻译成中文或填'该产品'\n"
+        "- approval_no: 批准文号/备案号（如'国食健注 G20170479'、'食健备 G202537000369'），**未显示则填'未显示'**\n"
+        "- ingredients: 全部原料/配料成分（按包装原文顺序）\n"
+        "- functional_ingredients: 标志性成分/功效成分及含量（如'每100g含辅酶Q10 24g'、'每片含钙 150mg'）\n"
+        "- health_claims: 包装上写的保健功能（**严格按包装原文引用，不评价**），如'补充多种维生素和矿物质'、'有助于增强免疫力和抗氧化'\n"
+        "- suitable_for: 包装上的适宜人群（**严格按包装原文引用**），如'需要补充多种维生素和矿物质的成人'、'成人'\n"
+        "- unsuitable_for: 包装上的不适宜人群（**严格按包装原文引用**），如'17岁以下人群、孕妇、乳母'\n"
+        "- usage: 食用方法及食用量（**严格按包装原文引用**），如'每日1次，每次2片，口服'、'每日1次，每次1粒，口服'\n"
+        "- storage: 贮藏方法（按包装原文）\n"
+        "- shelf_life: 保质期\n"
+        "- summary: **30字以内**的事实摘要（如'成人多种维生素补充剂，每日2片'），**禁止评价、禁止推荐**\n\n"
         "## type=food（普通预包装食品）必填字段\n"
         '- type: "food"\n'
-        '- product_name: 产品名称（**必须中文**），英文产品名翻译成中文或填\'该产品\'，图片未显示则填\'未知\'\n'
-        '- ingredients: 所有配料成分列表，按原文顺序\n'
-        '- additives: 只含 GB 2760 具体食品添加剂。**绝对不要**把以下基础配料列入：水、饮用水、白砂糖、白糖、冰糖、红糖、食用盐、食盐、食用油、植物油、菜籽油、花生油、面粉、小麦粉、大米、淀粉、食品用香精、食用香精、香精、酵母、蜂蜜、麦芽糖浆、果葡糖浆、葡萄糖浆。'
+        "- product_name: 产品名称（**必须中文**），英文产品名翻译成中文或填'该产品'，图片未显示则填'未知'\n"
+        "- ingredients: 所有配料成分列表，按原文顺序\n"
+        "- additives: 只含 GB 2760 具体食品添加剂。**绝对不要**把以下基础配料列入：水、饮用水、白砂糖、白糖、冰糖、红糖、食用盐、食盐、食用油、植物油、菜籽油、花生油、面粉、小麦粉、大米、淀粉、食品用香精、食用香精、香精、酵母、蜂蜜、麦芽糖浆、果葡糖浆、葡萄糖浆。"
         "每个添加剂必须含 name（字符串），可选 code（INS/E号，没有留空）。additives 必须是数组，无添加剂时传 []。**不要输出 level 字段，不要给 score 评分，风险等级由系统判定。**\n"
         "- advice: 针对以下人群的一句话建议，使用固定句式：" + group_str + "。"
         "例如：普通人群可适量食用，建议保持均衡饮食；糖尿病患者请注意控制摄入量，具体请咨询医生或营养师。"
         "只输出一句，禁止医学疗效词。\n\n"
         "## 强制规则（两类产品都适用）\n"
-        '- product_name **必须中文**，英文产品名翻译成中文或填\'该产品\'\n'
+        "- product_name **必须中文**，英文产品名翻译成中文或填'该产品'\n"
         "- 所有引用包装的内容（health_claims/suitable_for/usage）**严格按包装原文**，不评价、不推荐、不补全\n"
         "- 禁止任何医学疗效措辞：'治疗/疗效/降三高/防癌/增强免疫力+治愈'等\n"
         "- 所有健康相关结论以'请咨询医生/药师/营养师'收尾\n"
@@ -151,10 +157,16 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
         "model": model,
         "messages": [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": [
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}},
-                {"type": "text", "text": "请分析这张配料表图片，按规则返回 JSON。"}
-            ]}
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"},
+                    },
+                    {"type": "text", "text": "请分析这张配料表图片，按规则返回 JSON。"},
+                ],
+            },
         ],
         "temperature": 0,
         "max_tokens": 2048,
@@ -176,27 +188,24 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
             # 超时属于网络错误，可重试
             logger.warning(f"API请求超时: attempt={attempt}, timeout=30s")
             if attempt < max_attempts:
-                time.sleep(2 ** attempt)  # attempt=1→2秒，attempt=2→4秒
+                time.sleep(2**attempt)  # attempt=1→2秒，attempt=2→4秒
                 continue
             elapsed = time.time() - start_time
             logger.error(f"API调用失败: 超时, 总耗时={elapsed:.2f}s")
             _err(
                 "识别服务暂时不可用，请稍后重试。",
-                f"Timeout after 30s, attempts={attempt}"
+                f"Timeout after 30s, attempts={attempt}",
             )
             return None
         except requests.exceptions.RequestException as e:
             # 连接错误/网络异常，可重试
             logger.warning(f"API网络错误: attempt={attempt}, error={str(e)[:200]}")
             if attempt < max_attempts:
-                time.sleep(2 ** attempt)
+                time.sleep(2**attempt)
                 continue
             elapsed = time.time() - start_time
             logger.error(f"API调用失败: 网络错误, 总耗时={elapsed:.2f}s")
-            _err(
-                "网络连接失败，请检查网络后重试。",
-                str(e)[:1000]
-            )
+            _err("网络连接失败，请检查网络后重试。", str(e)[:1000])
             return None
 
         # 收到 HTTP 响应
@@ -204,20 +213,24 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
         if resp.status_code == 200:
             try:
                 content = resp.json()["choices"][0]["message"]["content"]
-                logger.info(f"API调用成功: status=200, 耗时={elapsed:.2f}s, 响应长度={len(content)}")
+                logger.info(
+                    f"API调用成功: status=200, 耗时={elapsed:.2f}s, 响应长度={len(content)}"
+                )
                 return content
             except (KeyError, IndexError, json.JSONDecodeError) as e:
                 # 响应内容解析失败：不重试（重试也不会变好）
                 logger.error(f"API响应解析失败: error={str(e)[:200]}")
                 _err(
                     "识别结果解析失败，请重试。",
-                    f"Parse error: {e}\n{resp.text[:1000]}"
+                    f"Parse error: {e}\n{resp.text[:1000]}",
                 )
                 return None
 
         # 4xx 客户端错误：不重试（密钥无效 / 限流 / 请求格式错误等）
         if 400 <= resp.status_code < 500:
-            logger.error(f"API客户端错误: status={resp.status_code}, 耗时={elapsed:.2f}s")
+            logger.error(
+                f"API客户端错误: status={resp.status_code}, 耗时={elapsed:.2f}s"
+            )
             # 按状态码细分用户提示，避免把限流误判为密钥问题
             if resp.status_code in (401, 403):
                 user_msg = "API 密钥无效或无权限，请检查密钥后重试。"
@@ -228,22 +241,21 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
             else:
                 # 400 / 405 / 406 等：请求异常，不是密钥问题
                 user_msg = "请求异常，请稍后重试或更换图片。"
-            _err(
-                user_msg,
-                f"HTTP {resp.status_code}\n{resp.text[:1000]}"
-            )
+            _err(user_msg, f"HTTP {resp.status_code}\n{resp.text[:1000]}")
             return None
 
         # 5xx 服务端错误：可重试
-        logger.warning(f"API服务端错误: status={resp.status_code}, attempt={attempt}, 耗时={elapsed:.2f}s")
+        logger.warning(
+            f"API服务端错误: status={resp.status_code}, attempt={attempt}, 耗时={elapsed:.2f}s"
+        )
         if attempt < max_attempts:
-            time.sleep(2 ** attempt)
+            time.sleep(2**attempt)
             continue
         # 最后一次仍失败
         logger.error(f"API调用失败: 服务端错误, 总耗时={elapsed:.2f}s")
         _err(
             "识别服务暂时不可用，请稍后重试。",
-            f"HTTP {resp.status_code}\n{resp.text[:1000]}"
+            f"HTTP {resp.status_code}\n{resp.text[:1000]}",
         )
         return None
 
@@ -264,8 +276,11 @@ def call_api_with_fallback(mimo_key, image_b64, system_prompt, agnes_key=None):
         logger.warning("MiMo 调用失败，降级到 Agnes 备用模型")
         st.toast("主识别服务繁忙，已自动切换备用服务", icon="🔄")
         return call_api(
-            agnes_key, image_b64, system_prompt,
-            url=AGNES_API_URL, model=AGNES_MODEL_NAME,
+            agnes_key,
+            image_b64,
+            system_prompt,
+            url=AGNES_API_URL,
+            model=AGNES_MODEL_NAME,
         )
     return None
 
@@ -334,7 +349,9 @@ def normalize_model_output(raw: str) -> str:
             ]
         elif not isinstance(data["ingredients"], list):
             data["ingredients"] = []
-    if "functional_ingredients" in data and isinstance(data["functional_ingredients"], str):
+    if "functional_ingredients" in data and isinstance(
+        data["functional_ingredients"], str
+    ):
         data["functional_ingredients"] = [data["functional_ingredients"].strip()]
 
     # 4) product_name 强制中文，英文替换为「该产品」
@@ -418,7 +435,9 @@ def parse_result(raw, health_groups=None):
             )
         # advice 兜底：若为空或包含禁用词，用本地模板替换
         advice = str(result.get("advice", "")).strip()
-        if not advice or any(w in advice for w in ["治疗", "疗效", "降三高", "防癌", "治愈"]):
+        if not advice or any(
+            w in advice for w in ["治疗", "疗效", "降三高", "防癌", "治愈"]
+        ):
             advice = _generate_advice(health_groups)
         result["advice"] = advice
     return result

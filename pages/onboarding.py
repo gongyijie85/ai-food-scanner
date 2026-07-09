@@ -33,7 +33,9 @@ def render_onboarding():
             unsafe_allow_html=True,
         )
         st.markdown("### 🎯 这个工具能做什么？")
-        st.markdown("✅ **拍照**食品包装，自动识别**配料表**\n\n✅ 用**红黄绿三色**告诉您添加剂风险\n\n✅ **大字体**、**语音播报**，老人也能轻松用")
+        st.markdown(
+            "✅ **拍照**食品包装，自动识别**配料表**\n\n✅ 用**红黄绿三色**告诉您添加剂风险\n\n✅ **大字体**、**语音播报**，老人也能轻松用"
+        )
 
     elif step == 2:
         # 第 2 步：选人群（默认已勾选「脑梗/心血管 + 高血压」，可跳过）
@@ -45,7 +47,11 @@ def render_onboarding():
         for i, (key, name, icon) in enumerate(CONDITION_ITEMS):
             with cols[i % 2]:
                 is_selected = name in selected
-                wrapper_cls = "condition-card-wrapper selected" if is_selected else "condition-card-wrapper"
+                wrapper_cls = (
+                    "condition-card-wrapper selected"
+                    if is_selected
+                    else "condition-card-wrapper"
+                )
                 st.markdown(f"<div class='{wrapper_cls}'>", unsafe_allow_html=True)
                 if st.button(f"{icon} {name}", key=f"ob_cond_{key}", width="stretch"):
                     if is_selected:
@@ -66,7 +72,7 @@ def render_onboarding():
             "跳过，稍后设置",
             width="stretch",
             key="ob_skip_health",
-            help="保留默认档案（脑梗/心血管 + 高血压），稍后可在健康档案页修改"
+            help="保留默认档案（脑梗/心血管 + 高血压），稍后可在健康档案页修改",
         ):
             if not st.session_state.get("onboarding_groups"):
                 st.session_state["onboarding_groups"] = ["脑梗/心血管", "高血压"]
@@ -130,23 +136,31 @@ def render_onboarding():
                 st.rerun()
     with col_next:
         if step < 4:
-            if st.button("下一步 ➡️", type="primary", width="stretch", key=f"ob_next_{step}"):
+            if st.button(
+                "下一步 ➡️", type="primary", width="stretch", key=f"ob_next_{step}"
+            ):
                 st.session_state["onboarding_step"] = step + 1
                 st.rerun()
         else:
-            if st.button("🚀 开始使用", type="primary", width="stretch", key="ob_start"):
+            if st.button(
+                "🚀 开始使用", type="primary", width="stretch", key="ob_start"
+            ):
                 # 完成引导，把人群保存到 health_profile
                 if "health_profile" not in st.session_state:
                     st.session_state["health_profile"] = {}
                 # 引导时用的是疾病卡片网格选择的选项，存到 diseases 列表
-                st.session_state["health_profile"]["diseases"] = st.session_state.get("onboarding_groups", [])
+                st.session_state["health_profile"]["diseases"] = st.session_state.get(
+                    "onboarding_groups", []
+                )
                 st.session_state["health_profile"].setdefault("name", "")
                 st.session_state["health_profile"].setdefault("age", 60)
                 st.session_state["health_profile"].setdefault("allergens", [])
                 st.session_state["health_profile"].setdefault("drugs", [])
                 # 同步初始化 user_profile（render_personal_warnings 依赖此键判断是否展示药物/过敏警告）
                 # 未初始化时新用户首扫会因 user_profile={} 直接跳过个性化警告
-                st.session_state.setdefault("user_profile", {"drugs": [], "allergens": []})
+                st.session_state.setdefault(
+                    "user_profile", {"drugs": [], "allergens": []}
+                )
                 st.session_state["onboarded"] = True
                 st.session_state["onboarding_step"] = 1
                 st.rerun()

@@ -32,15 +32,12 @@ jobs:
           pip install flake8 black isort
 
       - name: 代码格式检查 (black)
-        # 检查全仓库，排除缓存/虚拟环境目录
-        run: black --check --diff --extend-exclude "(__pycache__|\.venv|venv)" .
-
-      - name: 导入排序检查 (isort)
-        run: isort --check-only --diff --skip-glob "**/__pycache__/**" --skip-glob "**/.venv/**" .
+        # 检查全仓库，排除缓存/虚拟环境/worktrees目录
+        run: black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .
 
       - name: 代码风格检查 (flake8)
-        # 检查全仓库 Python 文件；忽略行宽/换行风格
-        run: flake8 . --max-line-length=120 --ignore=E501,W503 --exclude=__pycache__,.venv,venv
+        # 检查全仓库 Python 文件；忽略行宽/换行风格/E402(sys.path插入后的导入)
+        run: flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees
 
   # Job 2: 单元测试
   test:

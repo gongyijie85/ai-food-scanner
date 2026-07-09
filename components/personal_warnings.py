@@ -25,12 +25,16 @@ def render_personal_warnings(result, ingredients):
                 grouped.setdefault(c["drug"], []).append(c)
             for drug, items in grouped.items():
                 food_names = "、".join(sorted({c["matched_keyword"] for c in items}))
-                warnings.append(f"⚠️ {drug} 与 {food_names} 可能存在相互作用，建议咨询医生或药师")
+                warnings.append(
+                    f"⚠️ {drug} 与 {food_names} 可能存在相互作用，建议咨询医生或药师"
+                )
 
     if user_allergens:
         allergen_warnings = []
-        all_ingredient_text = " ".join(ingredients) + " " + " ".join(
-            a.get("name", "") for a in result.get("additives", [])
+        all_ingredient_text = (
+            " ".join(ingredients)
+            + " "
+            + " ".join(a.get("name", "") for a in result.get("additives", []))
         )
         for allergen in user_allergens:
             if allergen.get("name") in all_ingredient_text:
@@ -41,7 +45,9 @@ def render_personal_warnings(result, ingredients):
                     allergen_warnings.append(allergen.get("name"))
                     break
         if allergen_warnings:
-            warnings.append(f"⚠️ 检测到可能的过敏原：{'、'.join(allergen_warnings)}，请谨慎食用")
+            warnings.append(
+                f"⚠️ 检测到可能的过敏原：{'、'.join(allergen_warnings)}，请谨慎食用"
+            )
 
     if warnings:
         warning_items = "".join(
