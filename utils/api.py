@@ -60,15 +60,32 @@ def get_api_key():
         return ""
 
 
-def encode_image_to_base64(image_file, max_size=768):
-    """压缩图片并转 base64：默认 768px、quality 75，兼顾速度与识别率."""
+def encode_image_to_base64(image_file, max_size=1200):
+    """压缩图片并转 base64：高清 1200px、quality 85，提升配料表小字识别率.
+
+    同时保留 106KB base64 上限保护：如果超过则自动降低 quality，
+    仍超过再缩小尺寸，确保 API 能正常传输。
+    """
     img = Image.open(image_file)
     if img.mode in ("RGBA", "P"):
         img = img.convert("RGB")
     w, h = img.size
     if max(w, h) > max_size:
         ratio = max_size / max(w, h)
-        img = img.resize((int(w * ratio), int(h * ratio)), Image.BILINEAR)
+        img = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
+
+    max_base64_bytes = 106 * 1024  # 106 KB 上限
+    for quality in (85, 80, 75, 70):
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG", quality=quality, optimize=True)
+        b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+        if len(b64) <= max_base64_bytes:
+            return b64
+
+    # 如果 quality 降到 70 还超，回退到 768px + quality 75
+    fallback_size = 768
+    ratio = fallback_size / max(w, h)
+    img = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
     buf = io.BytesIO()
     img.save(buf, format="JPEG", quality=75, optimize=True)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
