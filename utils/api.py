@@ -273,12 +273,31 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
 
 
 def call_api_with_fallback(mimo_key, image_b64, system_prompt, agnes_key=None):
-    """先调用 MiMo，失败时降级到 Agnes.
+    """先调用主模型，失败时降级到备用模型.
 
-    正常流程只调用 MiMo（3 秒），不增加延迟。
-    仅当 MiMo 返回 None（超时/网络错误/5xx/4xx）且配置了 agnes_key 时，
-    自动调用 Agnes 兜底，确保老人用户在 MiMo 故障时仍能得到结果。
+    默认主模型是 MiMo，备用是 Agnes。
+    可通过环境变量 PRIMARY_PROVIDER=agnes 切换主模型为 Agnes，
+    方便对比不同模型对同一配料表的识别效果。
     """
+    use_agnes_primary = os.getenv("PRIMARY_PROVIDER", "").lower() == "agnes"
+
+    if use_agnes_primary and agnes_key:
+        logger.info("使用 Agnes 作为主识别模型")
+        raw = call_api(
+            agnes_key,
+            image_b64,
+            system_prompt,
+            url=AGNES_API_URL,
+            model=AGNES_MODEL_NAME,
+        )
+        if raw:
+            return raw
+        if mimo_key:
+            logger.warning("Agnes 调用失败，降级到 MiMo")
+            st.toast("备用识别服务未返回结果，已切换主服务", icon="🔄")
+            return call_api(mimo_key, image_b64, system_prompt)
+        return None
+
     raw = call_api(mimo_key, image_b64, system_prompt)
     if raw:
         return raw
