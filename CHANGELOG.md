@@ -1,5 +1,16 @@
 # 变更日志
 
+## v0.8.2 - 2026-07-10
+
+### AI 食品配料表识别工具 v0.8.2（ponytail-audit 极限优化）
+
+- **文件**：`d:\GBT\ai-food-scanner\repositories\additive_risk.py`、`d:\GBT\ai-food-scanner\repositories\__init__.py`、`d:\GBT\ai-food-scanner\services\additive_matcher.py`、`d:\GBT\ai-food-scanner\utils\score.py`、`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\README.md`、`d:\GBT\ai-food-scanner\CHANGELOG.md`
+- **清理**：删除本地临时诊断脚本 `diag_tts_real_browser.py`、`diag_tts_debug.py`、`diag_tts_click_debug.py`、`inspect_btn.py`；删除 `.worktrees/feature/v0.5.5-v0.5.6-model-device/` 目录。
+- **移除过度抽象**：`repositories/additive_risk.py` 删除仅有单一 CSV 实现的 `AdditiveRiskRepository` ABC 抽象层，`CsvAdditiveRiskRepository` 直接使用；同步更新 `repositories/__init__.py` 导出列表和 `services/additive_matcher.py` 的类型提示。
+- **减少重复加载**：`utils/score.py` 将 `normalize_additive()` 与 `compute_score_from_additives()` 各自重复创建的 `AdditiveMatcher` 合并为模块级单一实例 `_MATCHER`，避免每次评分都重新加载 GB 2760 CSV；删除未再使用的 `_get_matcher()` 辅助函数和 `load_gb2760_risk()` 导入。
+- **版本同步**：`app.py`、`.streamlit/style.css` 版本号更新为 `v0.8.2`；`README.md` 版本徽章与最新更新区新增 v0.8.2 条目。
+- **验证**：`python -m compileall -q -x '(\.venv|venv|\.worktrees|__pycache__)' .` 全量通过；`python -m black --check --diff .` 无差异；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m pytest tests/ -v` 66 项全量通过。
+
 ## v0.8.1 - 2026-07-10
 
 ### AI 食品配料表识别工具 v0.8.1（减少配料识别幻觉与漏字）

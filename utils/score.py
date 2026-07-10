@@ -2,10 +2,10 @@
 
 from services.additive_matcher import (
     _is_blocklisted,
+    AdditiveMatcher,
     is_supplement_excipient,
 )
-from services.additive_matcher import AdditiveMatcher
-from utils.data import get_additive_risk_repository, load_gb2760_risk, load_health_data
+from utils.data import get_additive_risk_repository, load_health_data
 
 # 评分公式常量（A=绿/B=黄/C=红）
 SCORE_PENALTY = {"A": 0, "B": 8, "C": 25}
@@ -14,18 +14,13 @@ SCORE_PENALTY = {"A": 0, "B": 8, "C": 25}
 C_LEVEL_DENSITY_PENALTY = 5
 C_LEVEL_DENSITY_THRESHOLD = 3
 
-
-def _get_matcher() -> AdditiveMatcher:
-    """获取默认的添加剂分类器（基于本地 GB 2760 CSV 仓库）."""
-    return AdditiveMatcher(get_additive_risk_repository())
+# 模块级单一实例，避免每次评分都重复加载 GB 2760 CSV
+_MATCHER = AdditiveMatcher(get_additive_risk_repository())
 
 
 def normalize_additive(name):
-    """查 GB 2760 风险库返回 (level, ins_no, note)，未匹配默认 B 兜底.
-
-    此函数保留为兼容接口，实际逻辑委托给 AdditiveMatcher。
-    """
-    return _get_matcher().classify(name)
+    """查 GB 2760 风险库返回 (level, ins_no, note)，未匹配默认 B 兜底."""
+    return _MATCHER.classify(name)
 
 
 def compute_score_from_additives(additives, health_groups=None):
@@ -36,21 +31,19 @@ def compute_score_from_additives(additives, health_groups=None):
         return 100
     score = 100
     health_set = set(health_groups or [])
-    matcher = _get_matcher()
-    risk = load_gb2760_risk()
     c_level_count = 0
     for a in additives:
         if not isinstance(a, dict):
             continue
         name = a.get("name", "")
-        level, _, _ = matcher.classify(name)
+        level, _, _ = _MATCHER.classify(name)
         score -= SCORE_PENALTY.get(level, 0)
         if level == "C":
             c_level_count += 1
         # 特殊人群敏感性（如糖尿病/高血压 + 命中 warnings）
-        if name in risk:
-            warnings = risk[name].get("warnings", "")
-            if warnings and any(w in health_set for w in warnings.split("/")):
+        risk = _MATCHER.repository.find(name)
+        if risk and risk.warnings:
+            if any(w in health_set for w in risk.warnings.split("/")):
                 score -= 4
     # C 级密度惩罚：高风险添加剂过多时额外扣分
     if c_level_count >= C_LEVEL_DENSITY_THRESHOLD:

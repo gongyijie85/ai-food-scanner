@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.8.1-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.8.2-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -15,6 +15,7 @@
 
 ## 最新更新
 
+- **v0.8.2（2026-07-10）**：执行 ponytail-audit 极限优化。删除本地临时诊断脚本 `diag_tts_*.py`、`inspect_btn.py` 和 `.worktrees/` 目录；移除 `repositories/additive_risk.py` 中仅有单一实现的 `AdditiveRiskRepository` ABC 抽象层，`CsvAdditiveRiskRepository` 直接使用；`utils/score.py` 将 `normalize_additive()` 与 `compute_score_from_additives()` 各自重复创建的 `AdditiveMatcher` 合并为模块级单一实例，避免每次评分重复加载 GB 2760 CSV；同步更新 `repositories/__init__.py`、`services/additive_matcher.py` 的导入与类型提示。`py_compile`、`pytest` 66 项、`black --check`、`flake8` 全量通过。
 - **v0.8.1（2026-07-10）**：优化配料识别准确性，减少 AI 幻觉与漏字。提高图片压缩默认参数至 `max_size=4000/quality=90`，优先保留清晰度以减少小字漏识；收紧 `utils/api.py` system prompt，强制模型忽略风景/营销文案并只读取配料表区域；新增 `ocr_text` 一致性校验，为未在配料表原文中找到的 `additives` 标记 `ai_inferred`；结果页添加剂卡片展示"AI 推断，请以包装原文为准"提示；扩展单元测试覆盖压缩策略与 ai_inferred 标记；修复 v0.8.0 遗留的 flake8 警告。`py_compile`、`pytest` 66 项、`black --check`、`flake8` 全量通过。
 - **v0.8.0（2026-07-10）**：完成架构深化与健康风险提示引擎落地。拆分 GB 2760 风险数据仓库（`repositories/additive_risk.py`）与添加剂分类器（`services/additive_matcher.py`），新增 `HealthWarningEngine` 统一生成药物冲突、过敏原、疾病敏感、原料风险四类警告；结果页（普通食品/保健食品）统一调用引擎并渲染个性化警告；扩展单元测试覆盖 repository/service 模块。`py_compile`、`pytest` 63 项、`black --check` 全量通过。
 - **v0.7.7（2026-07-10）**：继续优化配料表小字识别与异常交互。根据 MiMo 图片理解文档，Base64 编码图片上限为 50MB，因此进一步提高 `utils/api.py` 中 `encode_image_to_base64` 默认 `max_size` 从 1200 到 2000，base64 上限从 106KB 放宽到 2MB（仍保留自适应 quality 降级与 1600px 回退保护），让配料表小字获得更多像素；扫描页识别失败时（API 异常或 JSON 解析失败）新增大号「重新拍摄/选择图片」按钮，引导老人直接重拍而不用手动返回上一步；结果页原有免责声明保留不变。`py_compile`、`pytest` 51 项、`black --check` 全量通过。

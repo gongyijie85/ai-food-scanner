@@ -2,7 +2,6 @@
 
 import csv
 import re
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Dict, Optional
 
@@ -24,24 +23,7 @@ class AdditiveRisk:
     note: str
 
 
-class AdditiveRiskRepository(ABC):
-    """添加剂风险数据仓库接口.
-
-    实现可以是 CSV 本地文件、数据库、远程 API 等。
-    调用方只依赖此接口，不依赖具体数据源。
-    """
-
-    @abstractmethod
-    def find(self, name: str) -> Optional[AdditiveRisk]:
-        """根据添加剂名称查找风险信息.
-
-        实现应处理精确匹配、清洗后匹配和必要的模糊匹配。
-        返回 None 表示库中无此添加剂。
-        """
-        ...
-
-
-class CsvAdditiveRiskRepository(AdditiveRiskRepository):
+class CsvAdditiveRiskRepository:
     """基于 CSV 文件的 GB 2760 风险库实现."""
 
     def __init__(self, csv_path: str):

@@ -2,7 +2,7 @@
 
 from typing import Tuple
 
-from repositories.additive_risk import AdditiveRiskRepository
+from repositories.additive_risk import CsvAdditiveRiskRepository
 
 # 不应被识别为食品添加剂的基础配料黑名单（避免 AI 误判导致分数虚低）
 ADDITIVE_BLOCKLIST = {
@@ -89,7 +89,7 @@ def is_supplement_excipient(name: str) -> bool:
 class AdditiveMatcher:
     """添加剂分类器：结合业务规则和风险库判定单一添加剂等级."""
 
-    def __init__(self, repository: AdditiveRiskRepository):
+    def __init__(self, repository: CsvAdditiveRiskRepository):
         self.repository = repository
 
     def classify(self, name) -> Tuple[str, str, str]:
