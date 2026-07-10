@@ -2,6 +2,15 @@
 
 ## v0.9.0 - 2026-07-10
 
+### AI 食品配料表识别工具 v0.9.0（首页/引导页/扫描页重设计）
+
+- **引导页标签统一**：将 `utils/constants.py` 中的 `CONDITION_ITEMS` 与 health_profile 疾病列表对齐，保留脑梗/心血管、糖尿病、高血压、痛风、乳糖不耐、肾病 6 项，删除减脂/过敏/儿童/孕妇等标签不匹配项；`pages/onboarding.py` 和 `pages/profile.py` 统一使用 `CONDITION_ITEMS` 中的 emoji 图标，避免重复映射。
+- **首页重设计**：`pages/home.py` 从单一大扫描按钮改为"最近识别记录 + 底部并排双按钮"布局；顶部保留标题副标题；中间调用 `utils.history.load_history()` 展示最近 3 条历史记录卡片（评分徽章、产品名、添加剂数、日期），支持点击查看详情；底部固定"📷 拍照识别"和"❤️ 健康档案"两个大按钮左右并排；移除健康标签和提示气泡。
+- **扫描页重构**：`pages/scan.py` 改为相机优先模式；顶部提示"对准商品自动识别"；中间黑色取景框区域包含四角绿标、扫描线动画和相机输入组件；用户点击快门拍照后自动进入识别流程并跳转结果页；下方提供相册上传入口；底部新增"最近拍过的商品"横向列表，点击可查看详情；删除原来冗余的"拍照"和"从相册选择"按钮。
+- **样式更新**：`.streamlit/style.css` 新增首页历史卡片、底部双按钮、扫描页取景框覆盖层、最近拍过商品横向排列等样式；强制移动端 `.scan-recent-list` 内的列保持横向不换行。
+- **预览稿**：新增 `design/home_v2_preview.html` 和 `design/scan_v2_preview.html` 供设计确认。
+- **验证**：`black`、`flake8`、`python -m py_compile` 全部通过；本地 Streamlit 启动验证首页和扫描页布局正常。
+
 ### AI 食品配料表识别工具 v0.9.0（全站 UI 视觉升级）
 
 - **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\components\top_nav.py`、`d:\GBT\ai-food-scanner\pages\home.py`、`d:\GBT\ai-food-scanner\pages\scan.py`、`d:\GBT\ai-food-scanner\pages\result.py`、`d:\GBT\ai-food-scanner\pages\profile.py`、`d:\GBT\ai-food-scanner\pages\history.py`、`d:\GBT\ai-food-scanner\pages\onboarding.py`、`d:\GBT\ai-food-scanner\components\score_hero.py`
