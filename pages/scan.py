@@ -23,7 +23,6 @@ from utils.helpers import switch_page
 from utils.history import add_history
 from utils.security import _safe
 
-
 # 取景框 SVG
 _CAMERA_FRAME_SVG = """
 <div class='scan-frame'>
@@ -188,9 +187,7 @@ def render_scan_page():
     )
 
     if uploaded is not None:
-        st.markdown(
-            "<div class='preview-card-marker'></div>", unsafe_allow_html=True
-        )
+        st.markdown("<div class='preview-card-marker'></div>", unsafe_allow_html=True)
         st.markdown(
             "<div class='preview-card-title'>已选择图片</div>",
             unsafe_allow_html=True,

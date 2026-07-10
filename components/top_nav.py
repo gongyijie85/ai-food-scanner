@@ -36,7 +36,9 @@ def render_top_nav(
             title_style = (
                 "text-align:left;" if align == "left" else "text-align:center;"
             )
-            title_html = f"<div class='top-nav-title' style='{title_style}'>{_safe(title)}</div>"
+            title_html = (
+                f"<div class='top-nav-title' style='{title_style}'>{_safe(title)}</div>"
+            )
             if subtitle:
                 title_html += f"<div class='top-nav-subtitle' style='{title_style}'>{_safe(subtitle)}</div>"
             st.markdown(title_html, unsafe_allow_html=True)

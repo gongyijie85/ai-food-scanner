@@ -5,7 +5,6 @@ import streamlit as st
 from utils.constants import CONDITION_ITEMS, CONDITION_NAME_MAP
 from utils.security import _safe
 
-
 # 疾病到图标的映射
 DISEASE_ICONS = {
     "脑梗/心血管": "❤️",
@@ -107,7 +106,9 @@ def render_onboarding():
                     if is_selected
                     else "condition-card-wrapper"
                 )
-                st.markdown(f"<div class='{wrapper_cls}'></div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div class='{wrapper_cls}'></div>", unsafe_allow_html=True
+                )
                 label = f"{icon}\n{name}"
                 if st.button(
                     label,
@@ -175,7 +176,10 @@ def render_onboarding():
     with col_next:
         if step < 4:
             if st.button(
-                "下一步 ➡️", type="primary", use_container_width=True, key=f"ob_next_{step}"
+                "下一步 ➡️",
+                type="primary",
+                use_container_width=True,
+                key=f"ob_next_{step}",
             ):
                 st.session_state["onboarding_step"] = step + 1
                 st.rerun()
@@ -199,9 +203,7 @@ def _finish_onboarding():
     st.session_state["health_profile"].setdefault("allergens", [])
     st.session_state["health_profile"].setdefault("drugs", [])
     # 同步初始化 user_profile
-    st.session_state.setdefault(
-        "user_profile", {"drugs": [], "allergens": []}
-    )
+    st.session_state.setdefault("user_profile", {"drugs": [], "allergens": []})
     st.session_state["onboarded"] = True
     st.session_state["onboarding_step"] = 1
     st.switch_page("pages/home.py")

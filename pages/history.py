@@ -74,7 +74,10 @@ def render_history_page():
         if not history:
             render_empty_state("还没有扫描记录", "去首页拍第一张配料表吧")
             if st.button(
-                "开始扫描", type="primary", use_container_width=True, key="hist_empty_scan"
+                "开始扫描",
+                type="primary",
+                use_container_width=True,
+                key="hist_empty_scan",
             ):
                 switch_page("scan")
         else:

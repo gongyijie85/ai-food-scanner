@@ -6,7 +6,6 @@ from components import render_top_nav
 from utils.helpers import switch_page
 from utils.security import _safe
 
-
 # 疾病到图标的映射
 DISEASE_ICONS = {
     "脑梗/心血管": "❤️",

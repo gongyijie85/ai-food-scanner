@@ -7,7 +7,6 @@ from utils.constants import CONDITION_ITEMS, CONDITION_NAME_MAP
 from utils.data import load_health_data
 from utils.security import _safe
 
-
 # 疾病到图标的映射
 DISEASE_ICONS = {
     "脑梗/心血管": "❤️",
@@ -122,7 +121,16 @@ def render_health_profile():
         "<p style='color:#616161;font-size:13px;margin-bottom:14px;'>如有过敏请点击选择</p>",
         unsafe_allow_html=True,
     )
-    allergen_options = ["花生", "牛奶", "鸡蛋", "鱼类", "甲壳类", "坚果", "小麦", "大豆"]
+    allergen_options = [
+        "花生",
+        "牛奶",
+        "鸡蛋",
+        "鱼类",
+        "甲壳类",
+        "坚果",
+        "小麦",
+        "大豆",
+    ]
     allergen_structured_map = {}
     for a in allergens:
         name = a.get("name", "")
@@ -236,7 +244,9 @@ def render_health_profile():
 
     # 保存按钮吸底
     st.markdown("<div class='voice-float-bar'>", unsafe_allow_html=True)
-    if st.button("💾 保存档案", type="primary", key="hp_save_btn", use_container_width=True):
+    if st.button(
+        "💾 保存档案", type="primary", key="hp_save_btn", use_container_width=True
+    ):
         st.session_state["user_profile"] = {
             "drugs": profile.get("drugs", []),
             "allergens": profile.get("allergens", []),
