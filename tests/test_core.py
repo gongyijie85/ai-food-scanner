@@ -16,7 +16,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from repositories.additive_risk import CsvAdditiveRiskRepository
 from services.additive_matcher import AdditiveMatcher
 from services.health_warning_engine import HealthWarningEngine
-from utils.api import _generate_advice, normalize_model_output, parse_result
+from utils.api import (
+    _generate_advice,
+    encode_image_to_base64,
+    normalize_model_output,
+    parse_result,
+)
 from utils.data import load_gb2760_risk
 from utils.helpers import detect_device_type
 from utils.score import (
@@ -271,6 +276,38 @@ class TestNormalizeModelOutput:
         assert len(data["additives"]) == 1
         assert data["additives"][0]["name"] == "山梨酸钾"
 
+    def test_ai_inferred_additive_not_in_ocr(self):
+        """additives 中未在 ocr_text 出现的项应被标记 ai_inferred=True"""
+        raw = json.dumps(
+            {
+                "type": "food",
+                "product_name": "测试",
+                "ocr_text": "配料：山楂、低聚果糖、浓缩苹果汁。",
+                "additives": [
+                    {"name": "山梨糖醇"},
+                    {"name": "低聚果糖"},
+                ],
+            }
+        )
+        out = normalize_model_output(raw)
+        data = json.loads(out)
+        assert data["additives"][0].get("ai_inferred") is True
+        assert data["additives"][1].get("ai_inferred") is False
+
+    def test_ai_inferred_ignores_parentheses(self):
+        """ocr_text 校验时应忽略添加剂名称中的括号补充说明"""
+        raw = json.dumps(
+            {
+                "type": "food",
+                "product_name": "测试",
+                "ocr_text": "配料：山梨酸钾、柠檬酸。",
+                "additives": [{"name": "山梨酸钾（E202）"}],
+            }
+        )
+        out = normalize_model_output(raw)
+        data = json.loads(out)
+        assert data["additives"][0].get("ai_inferred") is False
+
 
 class TestIsBlocklisted:
     """测试 _is_blocklisted 辅助函数"""
@@ -300,6 +337,20 @@ class TestGenerateAdvice:
         advice = _generate_advice(["糖尿病", "高血压"])
         assert "糖尿病" in advice
         assert "高血压" in advice
+
+
+class TestImageEncoding:
+    """测试图片压缩与 base64 编码"""
+
+    def test_encode_image_keeps_under_2mb(self):
+        """压缩后 base64 应不超过 2MB"""
+        test_path = os.path.join(os.path.dirname(__file__), "..", "test_label.jpg")
+        if not os.path.exists(test_path):
+            pytest.skip("test_label.jpg 不存在，跳过图片压缩测试")
+        with open(test_path, "rb") as f:
+            b64 = encode_image_to_base64(f)
+        assert b64
+        assert len(b64) <= 2 * 1024 * 1024
 
 
 class TestDetectDeviceType:

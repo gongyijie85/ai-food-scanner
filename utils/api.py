@@ -60,11 +60,16 @@ def get_api_key():
         return ""
 
 
-def encode_image_to_base64(image_file, max_size=2000):
-    """压缩图片并转 base64：高清 2000px、quality 85，提升配料表小字识别率.
+def encode_image_to_base64(image_file, max_size=4000):
+    """压缩图片并转 base64：优先保留清晰度，再控制 base64 ≤2MB.
 
-    同时保留 2MB base64 上限保护：如果超过则自动降低 quality，
-    仍超过再缩小尺寸，确保 API 能正常传输。
+    策略：
+    - 默认 max_size=4000, quality=90
+    - 若超过 2MB，先降 quality (90→85→80→75)
+    - 仍超过则回退到 max_size=3000 + quality=80
+
+    棕色包装上的小字（如"浓缩苹果汁"）对清晰度敏感，优先保尺寸/质量
+    而不是先压到 2MB，以减少漏字。
     """
     img = Image.open(image_file)
     if img.mode in ("RGBA", "P"):
@@ -75,19 +80,19 @@ def encode_image_to_base64(image_file, max_size=2000):
         img = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
 
     max_base64_bytes = 2 * 1024 * 1024  # 2 MB 上限
-    for quality in (85, 80, 75, 70):
+    for quality in (90, 85, 80, 75):
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=quality, optimize=True)
         b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         if len(b64) <= max_base64_bytes:
             return b64
 
-    # 如果 quality 降到 70 还超，回退到 1600px + quality 75
-    fallback_size = 1600
+    # 回退：降低尺寸到 3000px + quality 80
+    fallback_size = 3000
     ratio = fallback_size / max(w, h)
     img = img.resize((int(w * ratio), int(h * ratio)), Image.LANCZOS)
     buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=75, optimize=True)
+    img.save(buf, format="JPEG", quality=80, optimize=True)
     return base64.b64encode(buf.getvalue()).decode("utf-8")
 
 
@@ -129,6 +134,9 @@ def build_system_prompt(groups):
         "- 所有引用包装的内容（health_claims/suitable_for/usage/ingredients/ocr_text）**严格按包装原文**，不评价、不推荐、不补全；看不清或缺失的字段宁可为空或'未显示'，也禁止编造\n"
         "- 禁止任何医学疗效措辞：'治疗/疗效/降三高/防癌/增强免疫力+治愈'等\n"
         "- 所有健康相关结论以'请咨询医生/药师/营养师'收尾\n"
+        "- **只识别配料表区域的文字**：忽略图片中的风景、山水、人物、营销口号、产地故事、营养成分表、生产商信息等非配料表内容\n"
+        "- **必须定位'配料表'**：先找到包装上'配料表'三个字，只读取其后面连续的文字作为 ocr_text；不要把包装正面/背面的产品宣传语、广告语混入 ingredients\n"
+        "- **ocr_text 必须严格对应图片文字**：ingredients 和 additives 中的每一项都必须能在 ocr_text 中找到对应文字，找不到的必须丢弃，禁止用常见配方补全\n"
         "- 返回必须是纯 JSON 对象，不要数组、不要 Markdown、不要注释\n\n"
         "## 输出示例（仅供格式参考，不要返回多余说明）\n"
         "### 普通食品示例\n"
@@ -145,7 +153,8 @@ def build_system_prompt(groups):
         '"usage":"每日2次，每次1粒，口服","storage":"置阴凉干燥处","shelf_life":"24个月",'
         '"summary":"鱼油软胶囊，每日2次每次1粒"}\n\n'
         "## 反例：以下输出是严重错误，绝对禁止\n"
-        "错误示例：包装只写了'山楂、低聚果糖、浓缩苹果汁'，模型却返回'水、白砂糖、食用盐、柠檬酸'等包装中没有的成分。这种'补全'或'常见配方推断'必须杜绝。\n\n"
+        "错误示例：包装只写了'山楂、低聚果糖、浓缩苹果汁'，模型却返回'水、白砂糖、食用盐、柠檬酸'等包装中没有的成分。这种'补全'或'常见配方推断'必须杜绝。\n"
+        "错误示例：配料表只写了'山楂、低聚果糖、浓缩苹果汁'，模型却返回'白砂糖、饮用水、山梨糖醇、食用葡萄糖'等山楂制品常见配方。山楂制品常见配方不能作为推断依据，这种补全必须杜绝。\n\n"
         "## 格式强制规则\n"
         "- 必须返回纯 JSON 对象，不要 Markdown 代码块，不要任何解释。\n"
         "- food 类型必须包含 ocr_text 字段。\n"
@@ -331,6 +340,33 @@ def call_api_with_fallback(mimo_key, image_b64, system_prompt, agnes_key=None):
     return None
 
 
+def _item_in_ocr_text(item: str, ocr_text: str) -> bool:
+    """判断单个配料/添加剂名称是否能在 ocr_text 中找到。"""
+    if not item or not ocr_text:
+        return False
+    # 清洗括号补充说明、常见量词后再匹配
+    cleaned = re.sub(r"[(（][^）)]*[）)]", "", item).strip()
+    return cleaned in ocr_text
+
+
+def _tag_inferred_ingredients(data: dict) -> dict:
+    """把 additives 中未在 ocr_text 出现的项标记为 ai_inferred。"""
+    ocr_text = str(data.get("ocr_text", ""))
+    if not ocr_text:
+        return data
+
+    additives = data.get("additives")
+    if not isinstance(additives, list):
+        return data
+
+    for item in additives:
+        if not isinstance(item, dict):
+            continue
+        name = item.get("name", "")
+        item["ai_inferred"] = not _item_in_ocr_text(name, ocr_text)
+    return data
+
+
 def normalize_model_output(raw: str) -> str:
     """把 MiMo 的原始返回统一成标准 JSON 字符串.
 
@@ -428,6 +464,9 @@ def normalize_model_output(raw: str) -> str:
 
     # 6) 删除模型自带评分
     data.pop("score", None)
+
+    # 7) 校验 additives 是否能在 ocr_text 中找到，标记 AI 推断项
+    data = _tag_inferred_ingredients(data)
 
     return json.dumps(data, ensure_ascii=False)
 

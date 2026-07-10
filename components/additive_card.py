@@ -55,6 +55,7 @@ def _render_additive_card(additives, key="additive_card"):
         name = _safe(item.get("name", "未知"))
         level = item.get("level", "B")
         note = _safe(item.get("note", ""))
+        ai_inferred = item.get("ai_inferred", False)
         label, color, shape = _get_level_info(level)
         label = _safe(label)
         clip = (
@@ -67,6 +68,8 @@ def _render_additive_card(additives, key="additive_card"):
             )
         )
         note_html = f"<div class='result-additive-note'>{note}</div>" if note else ""
+        if ai_inferred:
+            note_html += "<div class='ai-inferred-tag'>AI 推断，请以包装原文为准</div>"
         html += (
             f"<div class='result-additive-item' style='border-left-color:{color};'>"
             f"<span class='result-additive-shape' style='background:{color};clip-path:{clip};'></span>"

@@ -1,5 +1,31 @@
 # 变更日志
 
+## v0.8.1 - 2026-07-10
+
+### AI 食品配料表识别工具 v0.8.1（减少配料识别幻觉与漏字）
+
+- **文件**：`d:\GBT\ai-food-scanner\utils\api.py`、`d:\GBT\ai-food-scanner\components\additive_card.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\tests\test_core.py`、`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\README.md`、`d:\GBT\ai-food-scanner\CHANGELOG.md`、`d:\GBT\ai-food-scanner\CONTEXT.md`
+- **图片压缩优化**：
+  - `utils/api.py` 中 `encode_image_to_base64()` 默认 `max_size` 从 2000 提高到 4000，默认 `quality` 从 85 提高到 90。
+  - 回退策略改为先降 quality（90→85→80→75），仍超 2MB 再缩尺寸到 3000px + quality 80，优先保留清晰度以减少小字漏识（如"浓缩苹果汁"）。
+- **提示词收紧**：
+  - `build_system_prompt()` 强制规则区新增三条约束：忽略风景/营销文案/营养成分表；必须定位"配料表"三个字并只读取其后内容；`ingredients`/`additives` 每一项必须在 `ocr_text` 中能找到对应文字。
+  - 反例区新增山楂制品专属反例，禁止用"常见配方"补全白砂糖、山梨糖醇、食用葡萄糖等未显示配料。
+- **ocr_text 一致性校验**：
+  - 新增 `_item_in_ocr_text()` 与 `_tag_inferred_ingredients()` 辅助函数。
+  - `normalize_model_output()` 在返回前对 `additives` 逐项回查 `ocr_text`，找不到的项标记 `ai_inferred=True`。
+- **UI 展示**：
+  - `components/additive_card.py` 对 `ai_inferred=True` 的添加剂追加"AI 推断，请以包装原文为准"提示。
+  - `.streamlit/style.css` 新增 `.ai-inferred-tag` 样式。
+- **测试扩展**：
+  - `tests/test_core.py` 新增 `TestImageEncoding` 类，验证压缩后 base64 不超过 2MB。
+  - `TestNormalizeModelOutput` 新增 `test_ai_inferred_additive_not_in_ocr` 与 `test_ai_inferred_ignores_parentheses` 两项测试。
+- **文档同步**：
+  - `CONTEXT.md` 新增"配料表区域""AI 推断"术语。
+  - `app.py`、`.streamlit/style.css` 版本号同步为 `v0.8.1`。
+  - `README.md` 版本徽章与最新更新区新增 v0.8.1 条目。
+- **验证**：`python -m py_compile` 全量通过；`python -m black --check --diff` 无差异；`python -m pytest tests/ -v` 66 项全量通过。
+
 ## v0.7.7 - 2026-07-10
 
 ### 继续优化小字识别：放宽图片压缩上限 + 识别失败引导重拍

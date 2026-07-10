@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.8.0 | 更新时间: 2026-07-10 */
+/* 版本: v0.8.1 | 更新时间: 2026-07-10 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -881,6 +881,17 @@ div[data-testid="stHorizontalBlock"]:has(.top-nav-title) {
 .additive-card.level-a { border-left-color: var(--state-success); }
 .additive-card.level-b { border-left-color: var(--state-warning); }
 .additive-card.level-c { border-left-color: var(--state-error); }
+
+/* AI 推断提示：用于标记模型补全但未在包装原文中出现的添加剂 */
+.ai-inferred-tag {
+    display: inline-block;
+    font-size: var(--font-size-caption);
+    color: var(--color-text-tertiary);
+    background: var(--color-bg);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    margin-top: 4px;
+}
 
 /* 图例 */
 .legend {
