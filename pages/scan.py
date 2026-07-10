@@ -5,7 +5,7 @@ import os
 import streamlit as st
 from PIL import Image
 
-from components import _ICON_CAMERA, render_empty_state, render_error, render_top_nav
+from components import render_empty_state, render_error, render_top_nav
 from utils.api import (
     AGNES_API_URL,
     AGNES_MODEL_NAME,
@@ -19,9 +19,21 @@ from utils.api import (
     parse_result,
 )
 from utils.constants import _BASE_DIR
-from utils.helpers import detect_device_type, switch_page
+from utils.helpers import switch_page
 from utils.history import add_history
 from utils.security import _safe
+
+
+# 取景框 SVG
+_CAMERA_FRAME_SVG = """
+<div class='scan-frame'>
+    <div class='corner corner-tl'></div>
+    <div class='corner corner-tr'></div>
+    <div class='corner corner-bl'></div>
+    <div class='corner corner-br'></div>
+    <div class='scan-line'></div>
+</div>
+"""
 
 
 def _scan_common_setup():
@@ -109,114 +121,95 @@ def render_scan_page():
 
     groups, api_key, uploader_key = _scan_common_setup()
 
-    is_desktop = detect_device_type() == "desktop"
-
-    if is_desktop:
-        left, right = st.columns([1, 1])
-    else:
-        left = right = st.container()
+    st.markdown(
+        "<p class='scan-tip' style='text-align:center;color:#616161;font-size:14px;"
+        "margin:0 0 16px 0;'>对准包装上的配料表<br>保证光线充足、文字清晰</p>",
+        unsafe_allow_html=True,
+    )
 
     uploaded = None
+    input_method = "拍照"
 
-    with left:
-        # 桌面端显示示例图；移动端首屏空间有限，改用一行提示，避免挤占拍照区域
-        if is_desktop:
-            example_path = os.path.join(_BASE_DIR, "test_images", "example_label.jpg")
-            if os.path.exists(example_path):
-                st.image(
-                    example_path,
-                    caption="像这样正对配料表拍照，识别率更高",
-                    width="stretch",
-                )
-            else:
-                st.info("📷 像这样正对配料表拍照，识别率更高")
+    # 取景框展示区
+    st.markdown(
+        "<div style='background:#1a1a1a;border-radius:16px;min-height:320px;"
+        "display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;'>"
+        f"{_CAMERA_FRAME_SVG}"
+        "<p style='position:absolute;bottom:24px;left:0;right:0;text-align:center;"
+        "color:rgba(255,255,255,0.85);font-size:14px;margin:0;'>将配料表放入框内</p>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 
-        input_method_key = (
-            f"scan_input_method_desktop_{uploader_key}"
-            if is_desktop
-            else f"scan_input_method_{uploader_key}"
+    # 隐藏的文件上传器，供底部按钮触发
+    uploaded = st.file_uploader(
+        "选择配料表图片",
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=False,
+        label_visibility="collapsed",
+        help="支持 jpg/png，大图会自动压缩",
+        key=uploader_key,
+    )
+
+    camera_key = f"camera_{uploader_key}"
+    # 隐藏的相机输入，供底部按钮触发
+    st.camera_input(
+        "拍照",
+        key=camera_key,
+        label_visibility="collapsed",
+        help="点击快门拍摄配料表",
+    )
+
+    # 底部操作按钮
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button(
+            "📷 拍照",
+            type="primary",
+            key="scan_take_photo",
+            use_container_width=True,
+        ):
+            # 触发相机输入：Streamlit 无法编程点击，引导用户使用相机组件
+            input_method = "拍照"
+            st.toast("请点击上方的相机组件进行拍照", icon="📷")
+    with col2:
+        if st.button(
+            "🖼️ 从相册选择",
+            key="scan_pick_album",
+            use_container_width=True,
+        ):
+            input_method = "从相册选择"
+            st.toast("请点击上方的文件上传区选择图片", icon="🖼️")
+
+    st.markdown(
+        "<p class='scan-card-hint' style='text-align:center;color:#9E9E9E;"
+        "font-size:13px;margin-top:8px;'>支持 jpg / png，最大 5MB</p>",
+        unsafe_allow_html=True,
+    )
+
+    if uploaded is not None:
+        st.markdown(
+            "<div class='preview-card-marker'></div>", unsafe_allow_html=True
         )
-        # 评委快速模式下自动选择输入方式，减少一次无意义点击
-        if st.session_state.get("demo_mode"):
-            input_method = "从相册选择" if is_desktop else "拍照"
-        else:
-            input_method = st.radio(
-                "输入方式",
-                ["拍照", "从相册选择"],
-                horizontal=True,
-                label_visibility="collapsed",
-                key=input_method_key,
-            )
-
-        with st.container():
-            if is_desktop:
-                scan_card_desc = "<div class='scan-card-desc'>对准包装上的配料表，保证光线充足、文字清晰</div>"
-                scan_card_hint = (
-                    "<div class='scan-card-hint'>支持 jpg / png，最大 5MB</div>"
-                )
-            else:
-                scan_card_desc = ""
-                scan_card_hint = (
-                    "<div class='scan-card-hint'>对准配料表，光线充足更清晰</div>"
-                )
-            st.markdown(
-                "<div class='scan-card-marker'></div>"
-                "<div class='scan-card-header'>"
-                f"<div class='scan-card-title'>{_ICON_CAMERA} 拍照识别</div>"
-                f"{scan_card_desc}"
-                "</div>"
-                f"{scan_card_hint}",
-                unsafe_allow_html=True,
-            )
-            if input_method == "拍照":
-                camera_key = (
-                    f"camera_desktop_{uploader_key}"
-                    if is_desktop
-                    else f"camera_{uploader_key}"
-                )
-                uploaded = st.camera_input(
-                    "对准配料表拍照",
-                    key=camera_key,
-                    help="点击快门拍摄配料表",
-                )
-            else:
-                uploaded = st.file_uploader(
-                    "点击选择或拍照上传配料表图片",
-                    type=["jpg", "jpeg", "png"],
-                    accept_multiple_files=False,
-                    label_visibility="collapsed",
-                    help="支持 jpg/png，大图会自动压缩",
-                    key=uploader_key,
-                )
-
-    with right:
-        if uploaded is not None:
-            st.markdown(
-                "<div class='preview-card-marker'></div>", unsafe_allow_html=True
-            )
-            st.markdown(
-                "<div class='preview-card-title'>已选择图片</div>",
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                f"<div class='preview-file-meta'>{_safe(uploaded.name)} · {uploaded.size / 1024:.0f}KB</div>",
-                unsafe_allow_html=True,
-            )
-            st.image(uploaded, width="stretch")
-            col1, col2 = st.columns(2)
-            with col1:
-                retake_key = "scan_retake_desktop" if is_desktop else "scan_retake"
-                if st.button("重新选择", width="stretch", key=retake_key):
-                    st.session_state["scan_upload_key"] += 1
-                    st.rerun()
-            with col2:
-                confirm_key = "scan_confirm_desktop" if is_desktop else "scan_confirm"
-                if st.button(
-                    "使用照片", type="primary", width="stretch", key=confirm_key
-                ):
-                    _scan_validate_and_recognize(uploaded, api_key, groups)
-        elif is_desktop:
-            render_empty_state("在左侧上传配料表图片后，这里会显示预览")
+        st.markdown(
+            "<div class='preview-card-title'>已选择图片</div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<div class='preview-file-meta'>{_safe(uploaded.name)} · {uploaded.size / 1024:.0f}KB</div>",
+            unsafe_allow_html=True,
+        )
+        st.image(uploaded, width="stretch")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("重新选择", key="scan_retake", use_container_width=True):
+                st.session_state["scan_upload_key"] += 1
+                st.rerun()
+        with col2:
+            if st.button(
+                "使用照片", type="primary", key="scan_confirm", use_container_width=True
+            ):
+                _scan_validate_and_recognize(uploaded, api_key, groups)
 
     st.markdown(
         "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",

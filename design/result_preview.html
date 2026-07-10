@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>识别结果 - 页面优化预览</title>
+    <style>
+        :root {
+            --color-primary: #2E7D32;
+            --color-primary-light: #E8F5E9;
+            --color-primary-dark: #1B5E20;
+            --color-secondary: #FF9800;
+            --color-secondary-light: #FFF3E0;
+            --color-secondary-dark: #E65100;
+            --state-success: #43A047;
+            --state-warning: #F57F17;
+            --state-error: #E53935;
+            --color-bg: #FAFAF5;
+            --color-bg-card: #FFFFFF;
+            --color-text-primary: #212121;
+            --color-text-secondary: #616161;
+            --color-text-tertiary: #9E9E9E;
+            --color-text-inverse: #FFFFFF;
+            --color-border: #E0E0E0;
+            --color-divider: #EEEEEE;
+            --font-family-cn: "PingFang SC", "Source Han Sans CN", "Noto Sans SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-family-num: "Roboto", "DIN Alternate", "Helvetica Neue", "Arial", sans-serif;
+            --radius-full: 9999px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family-cn);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .phone-shell {
+            width: 100%;
+            max-width: 414px;
+            min-height: 100vh;
+            background: var(--color-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 100px;
+        }
+
+        /* 顶部导航 */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--color-bg-card);
+            box-shadow: var(--shadow-card);
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+
+        .top-nav-back {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .top-nav-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .top-nav-spacer { width: 40px; }
+
+        /* 主内容 */
+        .main-content {
+            flex: 1;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 评分英雄区 */
+        .score-hero {
+            background: var(--state-success);
+            border-radius: var(--radius-lg);
+            padding: 28px 20px;
+            text-align: center;
+            color: var(--color-text-inverse);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+        }
+
+        .score-hero.warning { background: var(--state-warning); }
+        .score-hero.danger { background: var(--state-error); }
+
+        .score-hero-deco {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+        }
+
+        .score-hero-deco-tl { width: 120px; height: 120px; top: -40px; right: -30px; }
+        .score-hero-deco-br { width: 80px; height: 80px; bottom: -30px; left: -20px; }
+
+        .score-product {
+            font-size: 15px;
+            opacity: 0.9;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .score-ring {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 12px;
+        }
+
+        .score-ring svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .score-ring-bg { fill: none; stroke: rgba(255,255,255,0.25); stroke-width: 8; }
+        .score-ring-fill { fill: none; stroke: #FFFFFF; stroke-width: 8; stroke-linecap: round; }
+
+        .score-number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-family-num);
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .score-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0,0,0,0.15);
+            padding: 6px 16px;
+            border-radius: var(--radius-full);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .score-meaning {
+            font-size: 14px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 个人风险提示 banner */
+        .warning-banner {
+            background: #FFEBEE;
+            border: 1px solid #FFCDD2;
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .warning-banner-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--state-error);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .warning-banner-body { flex: 1; }
+
+        .warning-banner-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #C62828;
+            margin-bottom: 4px;
+        }
+
+        .warning-banner-text {
+            font-size: 14px;
+            color: #C62828;
+            line-height: 1.5;
+        }
+
+        /* 通用卡片 */
+        .card {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 添加剂列表 */
+        .additive-list { display: flex; flex-direction: column; gap: 10px; }
+
+        .additive-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--color-bg);
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--color-border);
+        }
+
+        .additive-item.safe { border-left-color: var(--state-success); background: #F1F8E9; }
+        .additive-item.caution { border-left-color: var(--state-warning); background: #FFF8E1; }
+        .additive-item.danger { border-left-color: var(--state-error); background: #FFEBEE; }
+
+        .additive-level {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .additive-item.safe .additive-level { background: var(--state-success); color: white; }
+        .additive-item.caution .additive-level { background: var(--state-warning); color: white; }
+        .additive-item.danger .additive-level { background: var(--state-error); color: white; }
+
+        .additive-body { flex: 1; min-width: 0; }
+
+        .additive-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .additive-note {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        /* 营养成分条 */
+        .nrv-list { display: flex; flex-direction: column; gap: 14px; }
+
+        .nrv-item {}
+
+        .nrv-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 6px;
+        }
+
+        .nrv-name { font-size: 15px; font-weight: 500; }
+        .nrv-value { font-size: 15px; font-weight: 700; }
+
+        .nrv-track {
+            width: 100%;
+            height: 10px;
+            background: var(--color-border);
+            border-radius: var(--radius-full);
+            overflow: hidden;
+        }
+
+        .nrv-fill {
+            height: 100%;
+            border-radius: var(--radius-full);
+            background: var(--color-primary);
+        }
+
+        .nrv-fill.warning { background: var(--state-warning); }
+        .nrv-fill.danger { background: var(--state-error); }
+
+        .nrv-caption {
+            text-align: right;
+            font-size: 12px;
+            color: var(--color-text-tertiary);
+            margin-top: 4px;
+        }
+
+        /* 健康建议 */
+        .advice-block {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px;
+            border-radius: var(--radius-md);
+            background: #FFF8E1;
+            border: 1px solid #FFE082;
+        }
+
+        .advice-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--state-warning);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .advice-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--state-warning);
+            margin-bottom: 4px;
+        }
+
+        .advice-text {
+            font-size: 15px;
+            color: var(--color-text-primary);
+            line-height: 1.6;
+        }
+
+        /* 底部语音播报吸底 */
+        .voice-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 414px;
+            background: rgba(250, 250, 245, 0.98);
+            border-top: 1px solid var(--color-border);
+            padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+            z-index: 40;
+        }
+
+        .voice-btn {
+            width: 100%;
+            height: 52px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: linear-gradient(135deg, #43A047 0%, #2E7D32 100%);
+            color: white;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+        }
+
+        /* 免责声明 */
+        .disclaimer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--color-text-tertiary);
+            padding: 8px 16px 0;
+            line-height: 1.5;
+        }
+
+        /* 桌面端 */
+        @media (min-width: 768px) {
+            body { background: #E8E8E0; padding: 40px 20px; }
+            .phone-shell {
+                min-height: 800px;
+                border-radius: 24px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+                overflow: hidden;
+            }
+            .score-number { font-size: 64px; }
+            .score-ring { width: 160px; height: 160px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-shell">
+        <!-- 顶部导航 -->
+        <header class="top-nav">
+            <button class="top-nav-back">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <span class="top-nav-title">识别结果</span>
+            <div class="top-nav-spacer"></div>
+        </header>
+
+        <main class="main-content">
+            <!-- 评分英雄区 -->
+            <section class="score-hero warning">
+                <div class="score-hero-deco score-hero-deco-tl"></div>
+                <div class="score-hero-deco score-hero-deco-br"></div>
+                <div class="score-product">某品牌无糖苏打饼干</div>
+                <div class="score-ring">
+                    <svg viewBox="0 0 120 120">
+                        <circle class="score-ring-bg" cx="60" cy="60" r="52"></circle>
+                        <circle class="score-ring-fill" cx="60" cy="60" r="52" stroke-dasharray="327" stroke-dashoffset="98"></circle>
+                    </svg>
+                    <div class="score-number">70</div>
+                </div>
+                <div class="score-label">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 22h20L12 2zm0 4l6 12H6l6-12z"/></svg>
+                    特定人群注意
+                </div>
+                <div class="score-meaning">含少量需注意的成分</div>
+            </section>
+
+            <!-- 个人风险提示 -->
+            <div class="warning-banner">
+                <div class="warning-banner-icon">⚠️</div>
+                <div class="warning-banner-body">
+                    <div class="warning-banner-title">糖尿病人群需注意</div>
+                    <div class="warning-banner-text">含麦芽糖醇、山梨糖醇等代糖，过量可能引起肠胃不适，建议控制摄入量。</div>
+                </div>
+            </div>
+
+            <!-- 添加剂列表 -->
+            <section class="card">
+                <div class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    检测到 3 种添加剂
+                </div>
+                <div class="additive-list">
+                    <div class="additive-item safe">
+                        <div class="additive-level">A</div>
+                        <div class="additive-body">
+                            <div class="additive-name">碳酸氢钠</div>
+                            <div class="additive-note">膨松剂，按标准使用安全</div>
+                        </div>
+                    </div>
+                    <div class="additive-item caution">
+                        <div class="additive-level">B</div>
+                        <div class="additive-body">
+                            <div class="additive-name">麦芽糖醇</div>
+                            <div class="additive-note">代糖，糖尿病患者适量食用</div>
+                        </div>
+                    </div>
+                    <div class="additive-item caution">
+                        <div class="additive-level">B</div>
+                        <div class="additive-body">
+                            <div class="additive-name">山梨糖醇</div>
+                            <div class="additive-note">代糖，大量摄入可能腹泻</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 营养成分 -->
+            <section class="card">
+                <div class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    营养成分参考
+                </div>
+                <div class="nrv-list">
+                    <div class="nrv-item">
+                        <div class="nrv-label">
+                            <span class="nrv-name">脂肪</span>
+                            <span class="nrv-value">12.5g / 21%</span>
+                        </div>
+                        <div class="nrv-track">
+                            <div class="nrv-fill warning" style="width: 21%"></div>
+                        </div>
+                        <div class="nrv-caption">占每日推荐摄入量 21%</div>
+                    </div>
+                    <div class="nrv-item">
+                        <div class="nrv-label">
+                            <span class="nrv-name">钠</span>
+                            <span class="nrv-value">580mg / 29%</span>
+                        </div>
+                        <div class="nrv-track">
+                            <div class="nrv-fill danger" style="width: 29%"></div>
+                        </div>
+                        <div class="nrv-caption">占每日推荐摄入量 29%</div>
+                    </div>
+                    <div class="nrv-item">
+                        <div class="nrv-label">
+                            <span class="nrv-name">碳水化合物</span>
+                            <span class="nrv-value">45g / 15%</span>
+                        </div>
+                        <div class="nrv-track">
+                            <div class="nrv-fill" style="width: 15%"></div>
+                        </div>
+                        <div class="nrv-caption">占每日推荐摄入量 15%</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 健康建议 -->
+            <section class="card">
+                <div class="card-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                    健康建议
+                </div>
+                <div class="advice-block">
+                    <div class="advice-icon">ℹ️</div>
+                    <div>
+                        <div class="advice-title">普通人群</div>
+                        <div class="advice-text">本品含代糖及较高钠，建议作为偶尔零食，不要一次吃太多。高血压和肾病患者尤其要注意钠摄入。</div>
+                    </div>
+                </div>
+            </section>
+
+            <p class="disclaimer">评分仅供参考，AI识别可能存在误差，请以包装原文为准。本工具不构成医疗建议。</p>
+        </main>
+
+        <!-- 底部语音播报 -->
+        <div class="voice-bar">
+            <button class="voice-btn" onclick="alert('播放语音播报')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/></svg>
+                一键播报全部结果
+            </button>
+        </div>
+    </div>
+</body>
+</html>

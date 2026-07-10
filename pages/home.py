@@ -7,10 +7,25 @@ from utils.helpers import switch_page
 from utils.security import _safe
 
 
+# 疾病到图标的映射
+DISEASE_ICONS = {
+    "脑梗/心血管": "❤️",
+    "糖尿病": "🩸",
+    "高血压": "🫀",
+    "痛风": "🦴",
+    "乳糖不耐": "🍼",
+    "肾病": "🌾",
+}
+
+
 def render_home_page():
     """首页：扫描入口 + 健康标签，历史记录统一放到侧边栏/历史页."""
     render_top_nav(
-        "食品配料表识别", show_back=False, right_action="profile", align="left"
+        "食品配料表识别",
+        subtitle="拍照即懂，吃得更安心",
+        show_back=False,
+        right_action="profile",
+        align="left",
     )
 
     profile = st.session_state.get("health_profile", {})
@@ -22,13 +37,14 @@ def render_home_page():
         if diseases:
             tags_html = "<div class='health-tags-row'>"
             for d in diseases[:4]:
-                tags_html += f"<span class='health-tag'>{_safe(d)}</span>"
+                icon = DISEASE_ICONS.get(d, "🏷️")
+                tags_html += f"<span class='health-tag'>{icon} {_safe(d)}</span>"
             tags_html += "</div>"
             st.markdown(tags_html, unsafe_allow_html=True)
         else:
             st.markdown(
                 "<div class='health-tags-row'>"
-                "<span class='health-tag'>+ 添加健康状况</span></div>",
+                "<span class='health-tag'>🏷️ 添加健康状况</span></div>",
                 unsafe_allow_html=True,
             )
 
@@ -36,10 +52,20 @@ def render_home_page():
         with st.container():
             st.markdown(
                 "<div class='home-scan-area'>"
-                "<div class='home-scan-area-marker'></div>"
                 "<div class='hint-bubble'>点击大按钮开始</div>"
                 "</div>",
                 unsafe_allow_html=True,
             )
             if st.button("📷\n扫描配料表", type="primary", key="home_goto_scan"):
                 switch_page("scan")
+
+        st.markdown(
+            "<p class='scan-button-hint' style='text-align:center;color:#616161;font-size:14px;"
+            "margin-top:8px;'>对准包装上的配料表拍照<br>光线充足识别更准确</p>",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown(
+        "<p class='disclaimer-text'>AI识别仅供参考，请以包装原文为准</p>",
+        unsafe_allow_html=True,
+    )

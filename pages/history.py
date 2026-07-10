@@ -16,7 +16,7 @@ from utils.security import _safe
 
 
 def render_history_page():
-    """历史记录页：搜索栏 + 筛选标签 + 竖向列表（对齐设计稿）."""
+    """历史记录页：搜索栏 + 筛选标签 + 竖向卡片列表."""
     render_top_nav("历史记录", back_target="home")
 
     # 搜索栏
@@ -36,7 +36,7 @@ def render_history_page():
 
     # 筛选标签
     filter_options = [
-        ("全部", "all", "active"),
+        ("全部", "all", "all"),
         ("安全", "safe", "safe"),
         ("注意", "caution", "caution"),
         ("高风险", "danger", "danger"),
@@ -44,7 +44,6 @@ def render_history_page():
     current_filter = st.session_state.get("history_filter", "全部")
 
     st.markdown("<div class='history-filter-row'>", unsafe_allow_html=True)
-    filter_col = current_filter
     for label, value, css in filter_options:
         wrapper_cls = f"history-filter-chip-wrapper {css}"
         if current_filter == label:
@@ -63,11 +62,11 @@ def render_history_page():
         score = item.get("score", 0)
         if search and search.lower() not in name.lower():
             continue
-        if filter_col == "安全" and score < 80:
+        if current_filter == "安全" and score < 80:
             continue
-        if filter_col == "注意" and not (60 <= score < 80):
+        if current_filter == "注意" and not (60 <= score < 80):
             continue
-        if filter_col == "高风险" and score >= 60:
+        if current_filter == "高风险" and score >= 60:
             continue
         filtered.append((idx, item))
 
@@ -75,31 +74,55 @@ def render_history_page():
         if not history:
             render_empty_state("还没有扫描记录", "去首页拍第一张配料表吧")
             if st.button(
-                "开始扫描", type="primary", width="stretch", key="hist_empty_scan"
+                "开始扫描", type="primary", use_container_width=True, key="hist_empty_scan"
             ):
                 switch_page("scan")
         else:
             st.info("没有匹配的记录")
         return
 
+    # 历史列表卡片
     st.markdown("<div class='history-list-wrap'>", unsafe_allow_html=True)
     for idx, item in filtered:
         score = item.get("score", 0)
         if score >= 80:
-            status_class, status_text = "safe", "安全"
+            status_class, status_text, bar_color = "safe", "安全", "#43A047"
         elif score >= 60:
-            status_class, status_text = "caution", "需要注意"
+            status_class, status_text, bar_color = "caution", "注意", "#F57F17"
         else:
-            status_class, status_text = "danger", "高风险"
+            status_class, status_text, bar_color = "danger", "高风险", "#C62828"
         ts = item.get("timestamp", "")[:10]
         name = _safe(item.get("product_name", "未知"))
-        label = f"{name}\n{score}分 · {status_text} · {item.get('additives_count', 0)}种添加剂 · {ts}"
-        # marker 提供状态色，整行按钮点击查看详情
-        st.markdown(
-            f"<div class='history-row-btn-marker {status_class}'></div>",
-            unsafe_allow_html=True,
+        additives_count = item.get("additives_count", 0)
+
+        card_html = (
+            f"<div class='history-card {status_class}' style='cursor:pointer;margin-bottom:12px;"
+            f"display:flex;align-items:center;gap:14px;padding:14px;background:#fff;"
+            f"border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);"
+            f"border-left:5px solid {bar_color};'>"
+            f"<div style='width:56px;height:56px;border-radius:50%;background:{bar_color};"
+            f"color:#fff;display:flex;flex-direction:column;align-items:center;"
+            f"justify-content:center;flex-shrink:0;font-weight:700;'>"
+            f"<div style='font-size:22px;line-height:1;'>{score}</div>"
+            f"<div style='font-size:10px;'>{status_text}</div>"
+            f"</div>"
+            f"<div style='flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;'>"
+            f"<div style='font-size:16px;font-weight:600;white-space:nowrap;"
+            f"overflow:hidden;text-overflow:ellipsis;'>{name}</div>"
+            f"<div style='font-size:13px;color:#616161;'>"
+            f"{additives_count}种添加剂 · {ts}</div>"
+            f"</div>"
+            f"<div style='color:#9E9E9E;flex-shrink:0;'>➡️</div>"
+            f"</div>"
         )
-        if st.button(label, key=f"hist_btn_{idx}", help="查看详情"):
+        st.markdown(card_html, unsafe_allow_html=True)
+        # 覆盖卡片点击区域：用透明按钮
+        if st.button(
+            "查看详情",
+            key=f"hist_btn_{idx}",
+            help="查看详情",
+            use_container_width=True,
+        ):
             st.session_state["selected_history_index"] = idx
             st.session_state["detail_fallback_record"] = item
             switch_page("detail")
@@ -107,7 +130,7 @@ def render_history_page():
 
 
 def render_detail_page():
-    """产品详情页：读取 history_full.json 展示完整识别快照（对齐设计稿）."""
+    """产品详情页：读取 history_full.json 展示完整识别快照."""
     idx = st.session_state.get("selected_history_index", -1)
     fallback = st.session_state.get("detail_fallback_record", {})
     full_records = load_history_full()
@@ -173,8 +196,8 @@ def render_detail_page():
     with st.container():
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("重新评分", width="stretch", key="detail_rescore"):
+            if st.button("重新评分", key="detail_rescore", use_container_width=True):
                 switch_page("scan")
         with col2:
-            if st.button("分享给家人", width="stretch", key="detail_share"):
+            if st.button("分享给家人", key="detail_share", use_container_width=True):
                 st.toast("已复制结果摘要，可直接粘贴给家人")

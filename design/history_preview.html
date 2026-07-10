@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史记录 - 页面优化预览</title>
+    <style>
+        :root {
+            --color-primary: #2E7D32;
+            --color-primary-light: #E8F5E9;
+            --color-bg: #FAFAF5;
+            --color-bg-card: #FFFFFF;
+            --color-text-primary: #212121;
+            --color-text-secondary: #616161;
+            --color-text-tertiary: #9E9E9E;
+            --color-text-inverse: #FFFFFF;
+            --color-border: #E0E0E0;
+            --state-success: #43A047;
+            --state-warning: #F57F17;
+            --state-error: #E53935;
+            --font-family-cn: "PingFang SC", "Source Han Sans CN", "Noto Sans SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-family-num: "Roboto", "DIN Alternate", "Helvetica Neue", "Arial", sans-serif;
+            --radius-full: 9999px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family-cn);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .phone-shell {
+            width: 100%;
+            max-width: 414px;
+            min-height: 100vh;
+            background: var(--color-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部导航 */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--color-bg-card);
+            box-shadow: var(--shadow-card);
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+
+        .top-nav-back {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .top-nav-title { font-size: 18px; font-weight: 700; }
+        .top-nav-spacer { width: 40px; }
+
+        /* 主内容 */
+        .main-content {
+            flex: 1;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 搜索框 */
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            height: 48px;
+            padding: 0 16px;
+            background: var(--color-bg-card);
+            border-radius: var(--radius-full);
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-card);
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 16px;
+            font-family: inherit;
+            color: var(--color-text-primary);
+        }
+
+        .search-box input::placeholder { color: var(--color-text-tertiary); }
+
+        /* 筛选标签 */
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+        }
+
+        .filter-row::-webkit-scrollbar { display: none; }
+
+        .filter-chip {
+            flex-shrink: 0;
+            padding: 8px 18px;
+            border-radius: var(--radius-full);
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .filter-chip.active {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .filter-chip:not(.active) {
+            background: var(--color-bg-card);
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+
+        /* 历史列表 */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px;
+            background: var(--color-bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+            cursor: pointer;
+            transition: transform 0.15s ease;
+            border-left: 5px solid var(--color-border);
+        }
+
+        .history-card:active { transform: scale(0.98); }
+
+        .history-card.safe { border-left-color: var(--state-success); }
+        .history-card.caution { border-left-color: var(--state-warning); }
+        .history-card.danger { border-left-color: var(--state-error); }
+
+        /* 左侧评分徽章 */
+        .score-badge {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
+            font-family: var(--font-family-num);
+        }
+
+        .score-badge.safe { background: var(--state-success); }
+        .score-badge.caution { background: var(--state-warning); }
+        .score-badge.danger { background: var(--state-error); }
+
+        .score-badge-value {
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .score-badge-label {
+            font-size: 10px;
+            margin-top: 2px;
+        }
+
+        /* 中间信息 */
+        .history-info {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .history-name {
+            font-size: 16px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-meta {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        /* 右侧箭头 */
+        .history-arrow {
+            color: var(--color-text-tertiary);
+            flex-shrink: 0;
+        }
+
+        /* 桌面端 */
+        @media (min-width: 768px) {
+            body { background: #E8E8E0; padding: 40px 20px; }
+            .phone-shell {
+                min-height: 800px;
+                border-radius: 24px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+                overflow: hidden;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-shell">
+        <header class="top-nav">
+            <button class="top-nav-back">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <span class="top-nav-title">历史记录</span>
+            <div class="top-nav-spacer"></div>
+        </header>
+
+        <main class="main-content">
+            <!-- 搜索框 -->
+            <div class="search-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" placeholder="搜索产品名称...">
+            </div>
+
+            <!-- 筛选标签 -->
+            <div class="filter-row">
+                <button class="filter-chip active">全部</button>
+                <button class="filter-chip">安全</button>
+                <button class="filter-chip">注意</button>
+                <button class="filter-chip">高风险</button>
+            </div>
+
+            <!-- 历史列表 -->
+            <div class="history-list">
+                <div class="history-card caution">
+                    <div class="score-badge caution">
+                        <div class="score-badge-value">70</div>
+                        <div class="score-badge-label">注意</div>
+                    </div>
+                    <div class="history-info">
+                        <div class="history-name">某品牌无糖苏打饼干</div>
+                        <div class="history-meta">3种添加剂 · 2026-07-08</div>
+                    </div>
+                    <div class="history-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+
+                <div class="history-card safe">
+                    <div class="score-badge safe">
+                        <div class="score-badge-value">92</div>
+                        <div class="score-badge-label">安全</div>
+                    </div>
+                    <div class="history-info">
+                        <div class="history-name">鲜牛奶 250ml</div>
+                        <div class="history-meta">1种添加剂 · 2026-07-06</div>
+                    </div>
+                    <div class="history-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+
+                <div class="history-card danger">
+                    <div class="score-badge danger">
+                        <div class="score-badge-value">45</div>
+                        <div class="score-badge-label">高风险</div>
+                    </div>
+                    <div class="history-info">
+                        <div class="history-name">某品牌辣条</div>
+                        <div class="history-meta">7种添加剂 · 2026-07-03</div>
+                    </div>
+                    <div class="history-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+
+                <div class="history-card safe">
+                    <div class="score-badge safe">
+                        <div class="score-badge-value">88</div>
+                        <div class="score-badge-label">安全</div>
+                    </div>
+                    <div class="history-info">
+                        <div class="history-name">原味坚果混合装</div>
+                        <div class="history-meta">0种添加剂 · 2026-07-01</div>
+                    </div>
+                    <div class="history-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

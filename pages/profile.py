@@ -5,13 +5,34 @@ import streamlit as st
 from components import render_top_nav
 from utils.constants import CONDITION_ITEMS, CONDITION_NAME_MAP
 from utils.data import load_health_data
+from utils.security import _safe
+
+
+# 疾病到图标的映射
+DISEASE_ICONS = {
+    "脑梗/心血管": "❤️",
+    "糖尿病": "🩸",
+    "高血压": "🫀",
+    "痛风": "🦴",
+    "乳糖不耐": "🍼",
+    "肾病": "🌾",
+}
+
+# 过敏原到图标的映射
+ALLERGEN_ICONS = {
+    "花生": "🥜",
+    "牛奶": "🥛",
+    "鸡蛋": "🥚",
+    "鱼类": "🐟",
+    "甲壳类": "🦐",
+    "坚果": "🌰",
+    "小麦": "🌾",
+    "大豆": "🫘",
+}
 
 
 def render_health_profile():
     """健康档案：基本信息 + 基础疾病 + 过敏原 + 当前用药."""
-    st.markdown("## 👤 我的健康档案")
-    st.caption("填写档案后，识别结果会根据您的健康情况给出个性化建议")
-
     if "health_profile" not in st.session_state:
         st.session_state["health_profile"] = {
             "name": "",
@@ -30,40 +51,59 @@ def render_health_profile():
     allergens = health_data.get("allergens", [])
     drug_categories = health_data.get("drugs", [])
 
-    st.markdown("### 📝 基本信息")
-    col1, col2 = st.columns(2)
-    with col1:
-        profile["name"] = st.text_input(
-            "称呼（可选）", value=profile.get("name", ""), placeholder="如：张奶奶"
-        )
-    with col2:
-        profile["age"] = st.number_input(
-            "年龄", min_value=1, max_value=120, value=profile.get("age", 60), step=1
-        )
-
+    # 页面标题卡片
     st.markdown(
-        "<div class='profile-section-title'>我的健康状况</div>", unsafe_allow_html=True
+        "<div class='page-header'>"
+        "<div class='page-title'>❤️ 我的健康档案</div>"
+        "<p class='page-desc'>填写后，识别结果会根据您的健康情况给出个性化建议</p>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
+
+    # 基本信息
+    with st.container():
+        st.markdown(
+            "<div class='result-card-title' style='margin-bottom:14px;'>📝 基本信息</div>",
+            unsafe_allow_html=True,
+        )
+        col1, col2 = st.columns(2)
+        with col1:
+            profile["name"] = st.text_input(
+                "称呼（可选）", value=profile.get("name", ""), placeholder="如：张奶奶"
+            )
+        with col2:
+            profile["age"] = st.number_input(
+                "年龄", min_value=1, max_value=120, value=profile.get("age", 60), step=1
+            )
+
+    # 健康状况
+    st.markdown(
+        "<div class='result-card-title' style='margin:20px 0 6px 0;'>我的健康状况</div>",
+        unsafe_allow_html=True,
     )
     st.markdown(
-        "<div class='profile-section-desc'>可多选，帮助我们提供更准确的建议</div>",
+        "<p style='color:#616161;font-size:13px;margin-bottom:14px;'>"
+        "可多选，帮助我们提供更准确的建议</p>",
         unsafe_allow_html=True,
     )
     selected = set(profile.get("diseases", []))
     cols = st.columns(2)
-    for i, (key, name, icon) in enumerate(CONDITION_ITEMS):
+    for i, (key, name, _) in enumerate(CONDITION_ITEMS):
         with cols[i % 2]:
             is_selected = CONDITION_NAME_MAP[key] in selected
+            disease_name = CONDITION_NAME_MAP[key]
+            icon = DISEASE_ICONS.get(disease_name, "🏷️")
             wrapper_cls = (
                 "condition-card-wrapper selected"
                 if is_selected
                 else "condition-card-wrapper"
             )
             st.markdown(f"<div class='{wrapper_cls}'></div>", unsafe_allow_html=True)
-            label = f"✓ {icon} {name}" if is_selected else f"{icon} {name}"
+            label = f"{icon}\n{name}"
             if st.button(
                 label,
                 key=f"cond_{key}",
-                width="stretch",
+                use_container_width=True,
                 type="primary" if is_selected else "secondary",
             ):
                 if is_selected:
@@ -73,23 +113,16 @@ def render_health_profile():
                 profile["diseases"] = list(selected)
                 st.rerun()
 
+    # 过敏原
     st.markdown(
-        "<div class='profile-section-title'>过敏原</div>", unsafe_allow_html=True
-    )
-    st.markdown(
-        "<div class='profile-section-desc'>如有过敏请点击选择</div>",
+        "<div class='result-card-title' style='margin:20px 0 6px 0;'>过敏原</div>",
         unsafe_allow_html=True,
     )
-    allergen_options = [
-        "花生",
-        "牛奶",
-        "鸡蛋",
-        "鱼类",
-        "甲壳类",
-        "坚果",
-        "小麦",
-        "大豆",
-    ]
+    st.markdown(
+        "<p style='color:#616161;font-size:13px;margin-bottom:14px;'>如有过敏请点击选择</p>",
+        unsafe_allow_html=True,
+    )
+    allergen_options = ["花生", "牛奶", "鸡蛋", "鱼类", "甲壳类", "坚果", "小麦", "大豆"]
     allergen_structured_map = {}
     for a in allergens:
         name = a.get("name", "")
@@ -110,22 +143,22 @@ def render_health_profile():
         if struct.get("name", "") in current_names:
             selected_alg.add(opt)
 
-    st.markdown("<div class='allergen-grid'>", unsafe_allow_html=True)
     cols = st.columns(2)
     for i, name in enumerate(allergen_options):
         with cols[i % 2]:
             is_selected = name in selected_alg
+            icon = ALLERGEN_ICONS.get(name, "🏷️")
             wrapper_cls = (
                 "condition-card-wrapper allergen-card selected"
                 if is_selected
                 else "condition-card-wrapper allergen-card"
             )
             st.markdown(f"<div class='{wrapper_cls}'></div>", unsafe_allow_html=True)
-            label = f"✓ {name}" if is_selected else name
+            label = f"{icon}\n{name}"
             if st.button(
                 label,
                 key=f"alg_{name}",
-                width="stretch",
+                use_container_width=True,
                 type="primary" if is_selected else "secondary",
             ):
                 if is_selected:
@@ -136,17 +169,33 @@ def render_health_profile():
                     allergen_structured_map[n] for n in selected_alg
                 ]
                 st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
     profile["allergens"] = [allergen_structured_map[name] for name in selected_alg]
 
+    # 当前用药
     st.markdown(
-        "<div class='profile-section-title'>💊 当前用药</div>", unsafe_allow_html=True
-    )
-    st.markdown(
-        "<div class='profile-section-desc'>选填，用于配料交互提醒</div>",
+        "<div class='result-card-title' style='margin:20px 0 6px 0;'>💊 当前用药</div>",
         unsafe_allow_html=True,
     )
+    st.markdown(
+        "<p style='color:#616161;font-size:13px;margin-bottom:14px;'>"
+        "选填，用于配料交互提醒</p>",
+        unsafe_allow_html=True,
+    )
+
+    # 已选用药标签
+    current_drugs = profile.get("drugs", [])
+    if current_drugs:
+        tags_html = "<div class='drug-tags'>"
+        for d in current_drugs:
+            if isinstance(d, dict):
+                tags_html += (
+                    f"<div class='drug-tag'>{_safe(d['name'])}（{_safe(d['category'])}）"
+                    f"<button class='drug-tag-remove' disabled>×</button></div>"
+                )
+        tags_html += "</div>"
+        st.markdown(tags_html, unsafe_allow_html=True)
+
     if drug_categories:
         all_drug_options = []
         drug_id_map = {}
@@ -160,7 +209,7 @@ def render_health_profile():
                     "category": cat["name"],
                 }
         selected_drug_labels = st.multiselect(
-            "您目前在吃什么药？",
+            "添加用药",
             options=all_drug_options,
             default=[
                 f"{d['name']}（{d['category']}）"
@@ -168,6 +217,7 @@ def render_health_profile():
                 if isinstance(d, dict) and "category" in d
             ],
             key="hp_drugs",
+            label_visibility="collapsed",
         )
         profile["drugs"] = [drug_id_map[label] for label in selected_drug_labels]
 
@@ -184,8 +234,9 @@ def render_health_profile():
             placeholder="如：特定添加剂、特殊食物",
         )
 
-    st.markdown("<div class='profile-save-bottom-btn'>", unsafe_allow_html=True)
-    if st.button("💾 保存档案", type="primary", width="stretch", key="hp_save_btn"):
+    # 保存按钮吸底
+    st.markdown("<div class='voice-float-bar'>", unsafe_allow_html=True)
+    if st.button("💾 保存档案", type="primary", key="hp_save_btn", use_container_width=True):
         st.session_state["user_profile"] = {
             "drugs": profile.get("drugs", []),
             "allergens": profile.get("allergens", []),
@@ -193,23 +244,6 @@ def render_health_profile():
         st.session_state["health_profile"] = profile
         st.success("✅ 档案已保存")
     st.markdown("</div>", unsafe_allow_html=True)
-
-    if profile.get("diseases") or profile.get("allergens") or profile.get("drugs"):
-        st.divider()
-        st.markdown("### 📋 当前档案")
-        if profile.get("name"):
-            st.markdown(f"- **称呼**：{profile['name']}")
-        st.markdown(f"- **年龄**：{profile.get('age', 60)} 岁")
-        if profile.get("diseases"):
-            st.markdown(f"- **健康状况**：{'、'.join(profile['diseases'])}")
-        if profile.get("allergens"):
-            st.markdown(
-                f"- **过敏原**：{'、'.join(a['name'] for a in profile['allergens'] if isinstance(a, dict))}"
-            )
-        if profile.get("drugs"):
-            st.markdown(
-                f"- **用药**：{'、'.join(d['name'] for d in profile['drugs'] if isinstance(d, dict))}"
-            )
 
 
 def render_health_profile_page():

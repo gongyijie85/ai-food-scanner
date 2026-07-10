@@ -1,5 +1,20 @@
 # 变更日志
 
+## v0.9.0 - 2026-07-10
+
+### AI 食品配料表识别工具 v0.9.0（全站 UI 视觉升级）
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\ai-food-scanner\components\top_nav.py`、`d:\GBT\ai-food-scanner\pages\home.py`、`d:\GBT\ai-food-scanner\pages\scan.py`、`d:\GBT\ai-food-scanner\pages\result.py`、`d:\GBT\ai-food-scanner\pages\profile.py`、`d:\GBT\ai-food-scanner\pages\history.py`、`d:\GBT\ai-food-scanner\pages\onboarding.py`、`d:\GBT\ai-food-scanner\components\score_hero.py`
+- **设计目标**：在保留原有适老化（大字号、大按钮、高对比）基础上，提升整体视觉层次感和专业感，减少"过于简单"的印象，优化用户反馈的按钮/提示重叠问题。
+- **首页改造**：`components/top_nav.py` 新增 `subtitle`、`right_action` 参数支持，`pages/home.py` 顶部标题区使用主标题 + 副标题"拍照即懂，吃得更安心"，右侧"健康档案"改为心形图标入口；健康标签增加 emoji 图标并可横向滚动；扫描大按钮从简单文字改为"📷 扫描配料表"，并增加脉冲光环动画；"点击大按钮开始"提示气泡移到按钮上方，避免与按钮重叠；按钮下方新增光线充足拍照辅助提示。
+- **扫描页改造**：`pages/scan.py` 简化为取景框视觉区（黑色背景 + 绿色四角角标 + 扫描线动画）+ 底部"拍照 / 从相册选择"两个大按钮；选择图片后的预览区保持卡片化，操作按钮改为圆角胶囊。
+- **结果页改造**：`components/score_hero.py` 评分英雄区从纯色数字改为环形进度条 + 大分数 + 状态标签 + 含义说明；`pages/result.py` 新增顶部个人风险提示 banner（黄底红字），优先于添加剂卡片展示；添加剂清单用 A/B/C 等级徽章 + 名称 + 说明的分行设计，并保留安全/注意/高风险色块背景；营养成分 NRV 条改为横向进度条 + 百分比数字，进度条根据占比显示绿/橙/红；健康建议卡片使用图标 + 标题 + 正文的分块样式；语音播报按钮吸底并始终可见；桌面端双栏布局精简为与移动端一致的自适应单列，降低维护成本。
+- **健康档案页改造**：`pages/profile.py` 顶部新增"我的健康档案"标题卡片；疾病和过敏原选择统一为 2 列网格卡片，每个卡片包含 emoji 图标，选中后变绿色并显示右上角对勾；当前用药改成可删除的 pill 标签 + "+ 添加用药"按钮；保存按钮吸底。
+- **历史记录页改造**：`pages/history.py` 新增圆角搜索条 + 横向滚动筛选胶囊（全部/安全/注意/高风险）；每条记录改为横向卡片，左侧是彩色圆形评分徽章（分数 + 状态），右侧是产品名、添加剂数、日期和右箭头；行左侧色条颜色与评分状态一致。
+- **首次引导页改造**：`pages/onboarding.py` 第 1 步增加大食品图标、主标题和副标题；使用步骤改为带数字图标的纵向卡片；第 2 步人群选择复用健康档案页的网格卡片样式；第 3 步使用说明改为单列彩色卡片；底部"上一步 / 下一步"按钮固定；右上角增加"跳过"按钮可一键完成引导。
+- **版本同步**：`app.py`、`.streamlit/style.css`、`README.md`、`CHANGELOG.md` 统一升级到 v0.9.0。
+- **验证**：`python -m py_compile` 检查 `app.py`、`pages/*.py`、`components/top_nav.py`、`components/score_hero.py` 全部通过。
+
 ## v0.8.3 - 2026-07-10
 
 ### AI 食品配料表识别工具 v0.8.3（参赛最终优化）

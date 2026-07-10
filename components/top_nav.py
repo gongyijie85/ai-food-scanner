@@ -8,6 +8,7 @@ from utils.security import _safe
 
 def render_top_nav(
     title: str,
+    subtitle: str = "",
     show_back: bool = True,
     back_target: str = "home",
     right_action: str | None = None,
@@ -24,18 +25,26 @@ def render_top_nav(
         cols = st.columns([1, 4, 1])
         with cols[0]:
             if show_back:
-                if st.button("返回", key=f"tn_back_{title}", help="返回"):
+                if st.button(
+                    "⬅️",
+                    key=f"tn_back_{title}",
+                    help="返回",
+                ):
                     target = st.session_state.get("prev_page", back_target)
                     switch_page(target)
         with cols[1]:
             title_style = (
                 "text-align:left;" if align == "left" else "text-align:center;"
             )
-            st.markdown(
-                f"<div class='top-nav-title' style='{title_style}'>{_safe(title)}</div>",
-                unsafe_allow_html=True,
-            )
+            title_html = f"<div class='top-nav-title' style='{title_style}'>{_safe(title)}</div>"
+            if subtitle:
+                title_html += f"<div class='top-nav-subtitle' style='{title_style}'>{_safe(subtitle)}</div>"
+            st.markdown(title_html, unsafe_allow_html=True)
         with cols[2]:
             if right_action == "profile":
-                if st.button("健康档案", key=f"tn_profile_{title}", help="健康档案"):
+                if st.button(
+                    "❤️",
+                    key=f"tn_profile_{title}",
+                    help="健康档案",
+                ):
                     switch_page("profile")
