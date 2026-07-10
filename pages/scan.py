@@ -1,4 +1,4 @@
-"""扫描上传页渲染（相机优先模式）."""
+"""扫描上传页渲染（拍照/相册统一入口）."""
 
 import os
 
@@ -22,9 +22,9 @@ from utils.helpers import switch_page
 from utils.history import add_history, load_history
 from utils.security import _safe
 
-# 取景框覆盖层 HTML
-_CAMERA_OVERLAY = """
-<div class='scan-frame-overlay'>
+# 取景框视觉提示 HTML
+_CAMERA_FRAME_HINT = """
+<div class='scan-frame-hint'>
     <div class='corner corner-tl'></div>
     <div class='corner corner-tr'></div>
     <div class='corner corner-bl'></div>
@@ -42,11 +42,8 @@ def _scan_common_setup():
 
     if "scan_upload_key" not in st.session_state:
         st.session_state["scan_upload_key"] = 0
-    if "scan_camera_key" not in st.session_state:
-        st.session_state["scan_camera_key"] = 0
     uploader_key = f"scan_uploader_{st.session_state['scan_upload_key']}"
-    camera_key = f"scan_camera_{st.session_state['scan_camera_key']}"
-    return groups, api_key, uploader_key, camera_key
+    return groups, api_key, uploader_key
 
 
 def _scan_validate_and_recognize(uploaded, api_key, groups):
@@ -99,7 +96,6 @@ def _scan_validate_and_recognize(uploaded, api_key, groups):
             status.update(label="识别完成", state="complete")
             st.session_state["last_result"] = result
             add_history(result, default_engine=MODEL_NAME)
-            st.session_state["scan_camera_key"] += 1
             st.session_state["scan_upload_key"] += 1
             switch_page("result")
         else:
@@ -141,10 +137,10 @@ def _render_recent_scans():
 
 
 def render_scan_page():
-    """扫描上传页：相机优先，拍照后自动识别."""
+    """扫描上传页：统一拍照/相册入口."""
     render_top_nav("扫描识别", back_target="home")
 
-    groups, api_key, uploader_key, camera_key = _scan_common_setup()
+    groups, api_key, uploader_key = _scan_common_setup()
 
     st.markdown(
         "<p class='scan-tip' style='text-align:center;color:#616161;font-size:15px;"
@@ -152,35 +148,21 @@ def render_scan_page():
         unsafe_allow_html=True,
     )
 
-    # 相机取景框区域：视觉取景框 + 实际 camera_input
+    # 取景框视觉提示
     st.markdown(
         "<div style='background:#1a1a1a;border-radius:16px;position:relative;"
         "overflow:hidden;padding:20px 16px 16px;text-align:center;'>"
-        f"{_CAMERA_OVERLAY}"
+        f"{_CAMERA_FRAME_HINT}"
         "<p style='color:rgba(255,255,255,0.85);font-size:14px;margin:12px 0 0;'>"
-        "将配料表放入框内，点击快门拍照</p>"
+        "将配料表放入框内，光线充足识别更准确</p>"
         "</div>",
         unsafe_allow_html=True,
     )
-    captured_image = st.camera_input(
-        "拍照",
-        key=camera_key,
-        label_visibility="collapsed",
-        help="对准配料表，点击快门拍照，拍完后自动识别",
-    )
 
-    if captured_image is not None:
-        _scan_validate_and_recognize(captured_image, api_key, groups)
-        return
-
-    # 相册入口
-    st.markdown(
-        "<p style='text-align:center;color:#616161;font-size:14px;margin:8px 0 4px;'>"
-        "或从相册选择已有照片</p>",
-        unsafe_allow_html=True,
-    )
+    # 统一上传入口：手机端点击后可选拍照或相册
+    st.markdown("<div class='scan-upload-area-marker'></div>", unsafe_allow_html=True)
     uploaded = st.file_uploader(
-        "选择配料表图片",
+        "拍照或选择配料表图片",
         type=["jpg", "jpeg", "png"],
         accept_multiple_files=False,
         label_visibility="collapsed",
