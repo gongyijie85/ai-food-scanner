@@ -3,6 +3,7 @@
 import streamlit as st
 
 from utils.constants import CONDITION_ITEMS, CONDITION_NAME_MAP
+from utils.helpers import switch_page
 
 # 疾病到图标的映射
 DISEASE_ICONS = {
@@ -205,4 +206,4 @@ def _finish_onboarding():
     st.session_state.setdefault("user_profile", {"drugs": [], "allergens": []})
     st.session_state["onboarded"] = True
     st.session_state["onboarding_step"] = 1
-    st.switch_page("pages/home.py")
+    switch_page("home")
