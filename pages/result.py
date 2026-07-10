@@ -15,7 +15,7 @@ from components import (
 from services.additive_matcher import AdditiveMatcher
 from services.health_warning_engine import HealthWarningEngine
 from utils.data import get_additive_risk_repository, load_health_data
-from utils.helpers import switch_page
+from utils.helpers import detect_device_type, switch_page
 from utils.security import _safe
 
 

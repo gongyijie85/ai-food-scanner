@@ -5,7 +5,7 @@ import os
 import streamlit as st
 from PIL import Image
 
-from components import render_empty_state, render_error, render_top_nav
+from components import render_error, render_top_nav
 from utils.api import (
     AGNES_API_URL,
     AGNES_MODEL_NAME,
@@ -18,7 +18,6 @@ from utils.api import (
     normalize_model_output,
     parse_result,
 )
-from utils.constants import _BASE_DIR
 from utils.helpers import switch_page
 from utils.history import add_history
 from utils.security import _safe
@@ -116,7 +115,7 @@ def _scan_validate_and_recognize(uploaded, api_key, groups):
 
 def render_scan_page():
     """扫描上传页：根据设备类型自适应渲染."""
-    render_top_nav("扫描识别", back_target="home", right_action="profile")
+    render_top_nav("扫描识别", back_target="home")
 
     groups, api_key, uploader_key = _scan_common_setup()
 
@@ -127,7 +126,6 @@ def render_scan_page():
     )
 
     uploaded = None
-    input_method = "拍照"
 
     # 取景框展示区
     st.markdown(
@@ -169,7 +167,6 @@ def render_scan_page():
             use_container_width=True,
         ):
             # 触发相机输入：Streamlit 无法编程点击，引导用户使用相机组件
-            input_method = "拍照"
             st.toast("请点击上方的相机组件进行拍照", icon="📷")
     with col2:
         if st.button(
@@ -177,7 +174,6 @@ def render_scan_page():
             key="scan_pick_album",
             use_container_width=True,
         ):
-            input_method = "从相册选择"
             st.toast("请点击上方的文件上传区选择图片", icon="🖼️")
 
     st.markdown(

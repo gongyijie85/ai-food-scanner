@@ -3,7 +3,6 @@
 import streamlit as st
 
 from utils.constants import CONDITION_ITEMS, CONDITION_NAME_MAP
-from utils.security import _safe
 
 # 疾病到图标的映射
 DISEASE_ICONS = {
