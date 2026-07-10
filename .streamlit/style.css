@@ -2198,6 +2198,205 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
   background: #C8E6C9;
 }
 
+/* ========== 首页 V2：历史记录 + 底部双按钮 ========== */
+
+/* 历史记录卡片容器 */
+.home-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* 历史记录卡片 */
+.home-history-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--transition-fast);
+}
+
+.home-history-card:active {
+  transform: scale(0.98);
+}
+
+.home-history-card.safe {
+  border-left: 5px solid var(--state-success);
+}
+
+.home-history-card.caution {
+  border-left: 5px solid var(--state-warning);
+}
+
+.home-history-card.danger {
+  border-left: 5px solid var(--state-error);
+}
+
+/* 首页底部双按钮 */
+.st-key-home_btn_scan .stButton > button,
+.st-key-home_btn_profile .stButton > button {
+  height: 54px !important;
+  border-radius: var(--radius-full) !important;
+  font-size: var(--font-size-body-lg) !important;
+  font-weight: var(--font-weight-bold) !important;
+}
+
+.st-key-home_btn_scan .stButton > button {
+  background: var(--color-primary-gradient) !important;
+  color: var(--color-text-inverse) !important;
+  box-shadow: var(--shadow-button) !important;
+}
+
+.st-key-home_btn_profile .stButton > button {
+  background: var(--color-bg-card) !important;
+  color: var(--color-primary) !important;
+  border: 2px solid var(--color-primary) !important;
+}
+
+/* 底部操作栏占位标记 */
+.home-action-bar-marker {
+  margin-top: var(--spacing-lg);
+}
+
+/* ========== 扫描页 V2：相机优先 ========== */
+
+/* 取景框覆盖层 */
+.scan-frame-overlay {
+  position: relative;
+  width: 80%;
+  max-width: 300px;
+  aspect-ratio: 4 / 3;
+  margin: 0 auto;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.scan-frame-overlay .corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-color: var(--color-primary-light);
+  border-style: solid;
+  border-width: 0;
+}
+
+.scan-frame-overlay .corner-tl {
+  top: 0;
+  left: 0;
+  border-top-width: 4px;
+  border-left-width: 4px;
+  border-top-left-radius: 8px;
+}
+
+.scan-frame-overlay .corner-tr {
+  top: 0;
+  right: 0;
+  border-top-width: 4px;
+  border-right-width: 4px;
+  border-top-right-radius: 8px;
+}
+
+.scan-frame-overlay .corner-bl {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 4px;
+  border-left-width: 4px;
+  border-bottom-left-radius: 8px;
+}
+
+.scan-frame-overlay .corner-br {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 4px;
+  border-right-width: 4px;
+  border-bottom-right-radius: 8px;
+}
+
+.scan-frame-overlay .scan-line {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-primary-light), transparent);
+  animation: scan-sweep 2.5s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes scan-sweep {
+  0% {
+    top: 8px;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: calc(100% - 10px);
+    opacity: 0;
+  }
+}
+
+/* 最近拍过的商品：强制横向排列 */
+.scan-recent-list > div[data-testid="stHorizontalBlock"] {
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: var(--spacing-sm) !important;
+}
+
+body.device-mobile .scan-recent-list > div[data-testid="stHorizontalBlock"] {
+  flex-direction: row !important;
+}
+
+.scan-recent-list [data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
+  min-width: 90px !important;
+  max-width: 90px !important;
+  flex: 0 0 90px !important;
+}
+
+.scan-recent-list .stButton > button {
+  height: auto !important;
+  min-height: 90px !important;
+  padding: 10px 4px !important;
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  white-space: pre-line !important;
+  border-radius: 12px !important;
+  background: var(--color-bg) !important;
+  color: var(--color-text-primary) !important;
+  border: 2px solid var(--color-border) !important;
+}
+
+/* 扫描页按钮样式 */
+.st-key-scan_confirm .stButton > button {
+  background: var(--color-primary-gradient) !important;
+  color: var(--color-text-inverse) !important;
+  border-radius: var(--radius-full) !important;
+  height: 48px !important;
+}
+
+.st-key-scan_retake .stButton > button {
+  border-radius: var(--radius-full) !important;
+  height: 48px !important;
+}
+
+/* 扫描页相机输入框容器 */
+.stCameraInput {
+  margin-top: var(--spacing-sm);
+}
+
+/* 手机端扫描页：取景框适配 */
+@media (max-width: 767px) {
+  .scan-frame-overlay {
+    width: 90%;
+  }
+}
+
 /* ========== 历史页搜索与筛选 ========== */
 .history-search-wrap {
   padding: var(--spacing-base) var(--spacing-base) var(--spacing-sm);

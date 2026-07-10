@@ -7,16 +7,6 @@ from utils.constants import CONDITION_ITEMS, CONDITION_NAME_MAP
 from utils.data import load_health_data
 from utils.security import _safe
 
-# 疾病到图标的映射
-DISEASE_ICONS = {
-    "脑梗/心血管": "❤️",
-    "糖尿病": "🩸",
-    "高血压": "🫀",
-    "痛风": "🦴",
-    "乳糖不耐": "🍼",
-    "肾病": "🌾",
-}
-
 # 过敏原到图标的映射
 ALLERGEN_ICONS = {
     "花生": "🥜",
@@ -87,18 +77,16 @@ def render_health_profile():
     )
     selected = set(profile.get("diseases", []))
     cols = st.columns(2)
-    for i, (key, name, _) in enumerate(CONDITION_ITEMS):
+    for i, (key, name, emoji) in enumerate(CONDITION_ITEMS):
         with cols[i % 2]:
             is_selected = CONDITION_NAME_MAP[key] in selected
-            disease_name = CONDITION_NAME_MAP[key]
-            icon = DISEASE_ICONS.get(disease_name, "🏷️")
             wrapper_cls = (
                 "condition-card-wrapper selected"
                 if is_selected
                 else "condition-card-wrapper"
             )
             st.markdown(f"<div class='{wrapper_cls}'></div>", unsafe_allow_html=True)
-            label = f"{icon}\n{name}"
+            label = f"{emoji}\n{name}"
             if st.button(
                 label,
                 key=f"cond_{key}",

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>扫描页 V2 预览 - 相机优先模式</title>
+    <style>
+        :root {
+            --color-primary: #2E7D32;
+            --color-primary-light: #E8F5E9;
+            --color-primary-dark: #1B5E20;
+            --color-primary-gradient: linear-gradient(135deg, #43A047 0%, #2E7D32 100%);
+            --color-bg: #FAFAF5;
+            --color-bg-card: #FFFFFF;
+            --color-text-primary: #212121;
+            --color-text-secondary: #616161;
+            --color-text-tertiary: #9E9E9E;
+            --color-text-inverse: #FFFFFF;
+            --color-border: #E0E0E0;
+            --state-success: #43A047;
+            --state-warning: #F57F17;
+            --state-error: #E53935;
+            --font-family-cn: "PingFang SC", "Source Han Sans CN", "Noto Sans SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --radius-full: 9999px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family-cn);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .phone-shell {
+            width: 100%;
+            max-width: 414px;
+            min-height: 100vh;
+            background: var(--color-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部导航 */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--color-bg-card);
+            box-shadow: var(--shadow-card);
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+
+        .top-nav-back {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .top-nav-title { font-size: 18px; font-weight: 700; }
+        .top-nav-spacer { width: 40px; }
+
+        /* 主内容 */
+        .main-content {
+            flex: 1;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 提示文字 */
+        .scan-tip {
+            text-align: center;
+            color: var(--color-text-secondary);
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        /* 相机取景框区域 */
+        .camera-area {
+            background: #1a1a1a;
+            border-radius: var(--radius-lg);
+            min-height: 360px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .camera-area::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            opacity: 0.9;
+        }
+
+        .scan-frame {
+            position: relative;
+            width: 80%;
+            max-width: 300px;
+            aspect-ratio: 4 / 3;
+            border-radius: 12px;
+            z-index: 1;
+        }
+
+        .corner {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            border-color: #4CAF50;
+            border-style: solid;
+            border-width: 0;
+        }
+
+        .corner-tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 8px; }
+        .corner-tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 8px; }
+        .corner-bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 8px; }
+        .corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 8px; }
+
+        .scan-line {
+            position: absolute;
+            left: 8px;
+            right: 8px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #66BB6A, transparent);
+            animation: scan-sweep 2.5s ease-in-out infinite;
+            z-index: 2;
+        }
+
+        @keyframes scan-sweep {
+            0% { top: 8px; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: calc(100% - 10px); opacity: 0; }
+        }
+
+        /* 快门按钮 */
+        .shutter-btn {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            border: 4px solid rgba(255,255,255,0.5);
+            cursor: pointer;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .shutter-btn::after {
+            content: '';
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            background: white;
+        }
+
+        .shutter-btn:active { transform: translateX(-50%) scale(0.95); }
+
+        /* 底部入口区 */
+        .entry-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .entry-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .entry-btn {
+            flex: 1;
+            height: 56px;
+            border-radius: var(--radius-full);
+            border: none;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.15s ease;
+        }
+
+        .entry-btn:active { transform: scale(0.98); }
+
+        .entry-btn-album {
+            background: white;
+            color: var(--color-primary);
+            border: 2px solid var(--color-primary);
+        }
+
+        .entry-btn-history {
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+        }
+
+        /* 最近识别小卡片 */
+        .recent-section {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .recent-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--color-text-secondary);
+        }
+
+        .recent-list {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+        }
+
+        .recent-list::-webkit-scrollbar { display: none; }
+
+        .recent-item {
+            flex-shrink: 0;
+            width: 80px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .recent-thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-md);
+            background: var(--color-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin-bottom: 6px;
+            border: 2px solid var(--color-border);
+        }
+
+        .recent-name {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .recent-score {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
+        /* 底部提示 */
+        .scan-hint {
+            text-align: center;
+            font-size: 13px;
+            color: var(--color-text-tertiary);
+            padding: 8px 16px 24px;
+            line-height: 1.5;
+        }
+
+        /* 桌面端 */
+        @media (min-width: 768px) {
+            body { background: #E8E8E0; padding: 40px 20px; }
+            .phone-shell {
+                min-height: 800px;
+                border-radius: 24px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+                overflow: hidden;
+            }
+            .camera-area { min-height: 420px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-shell">
+        <header class="top-nav">
+            <button class="top-nav-back">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <span class="top-nav-title">扫描识别</span>
+            <div class="top-nav-spacer"></div>
+        </header>
+
+        <main class="main-content">
+            <p class="scan-tip">对准商品自动识别</p>
+
+            <div class="camera-area">
+                <div class="scan-frame">
+                    <div class="corner corner-tl"></div>
+                    <div class="corner corner-tr"></div>
+                    <div class="corner corner-bl"></div>
+                    <div class="corner corner-br"></div>
+                    <div class="scan-line"></div>
+                </div>
+                <button class="shutter-btn" onclick="alert('调用相机拍照，拍完后自动识别')" title="拍照"></button>
+            </div>
+
+            <div class="entry-section">
+                <div class="entry-row">
+                    <button class="entry-btn entry-btn-album" onclick="alert('打开相册选择图片')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        从相册选择
+                    </button>
+                    <button class="entry-btn entry-btn-history" onclick="alert('跳转到历史记录页')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        最近识别
+                    </button>
+                </div>
+            </div>
+
+            <div class="recent-section">
+                <div class="recent-title">📷 最近拍过的商品</div>
+                <div class="recent-list">
+                    <div class="recent-item">
+                        <div class="recent-thumb">🥛</div>
+                        <div class="recent-score">92分</div>
+                        <div class="recent-name">鲜牛奶</div>
+                    </div>
+                    <div class="recent-item">
+                        <div class="recent-thumb">🍪</div>
+                        <div class="recent-score">70分</div>
+                        <div class="recent-name">苏打饼干</div>
+                    </div>
+                    <div class="recent-item">
+                        <div class="recent-thumb">🌶️</div>
+                        <div class="recent-score">45分</div>
+                        <div class="recent-name">辣条</div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="scan-hint">提示：请尽量正对配料表拍照，保证光线充足</p>
+        </main>
+    </div>
+</body>
+</html>

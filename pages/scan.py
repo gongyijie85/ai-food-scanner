@@ -1,4 +1,4 @@
-"""扫描上传页渲染（自适应移动端 / 桌面端）."""
+"""扫描上传页渲染（相机优先模式）."""
 
 import os
 
@@ -19,12 +19,12 @@ from utils.api import (
     parse_result,
 )
 from utils.helpers import switch_page
-from utils.history import add_history
+from utils.history import add_history, load_history
 from utils.security import _safe
 
-# 取景框 SVG
-_CAMERA_FRAME_SVG = """
-<div class='scan-frame'>
+# 取景框覆盖层 HTML
+_CAMERA_OVERLAY = """
+<div class='scan-frame-overlay'>
     <div class='corner corner-tl'></div>
     <div class='corner corner-tr'></div>
     <div class='corner corner-bl'></div>
@@ -42,8 +42,11 @@ def _scan_common_setup():
 
     if "scan_upload_key" not in st.session_state:
         st.session_state["scan_upload_key"] = 0
+    if "scan_camera_key" not in st.session_state:
+        st.session_state["scan_camera_key"] = 0
     uploader_key = f"scan_uploader_{st.session_state['scan_upload_key']}"
-    return groups, api_key, uploader_key
+    camera_key = f"scan_camera_{st.session_state['scan_camera_key']}"
+    return groups, api_key, uploader_key, camera_key
 
 
 def _scan_validate_and_recognize(uploaded, api_key, groups):
@@ -96,6 +99,8 @@ def _scan_validate_and_recognize(uploaded, api_key, groups):
             status.update(label="识别完成", state="complete")
             st.session_state["last_result"] = result
             add_history(result, default_engine=MODEL_NAME)
+            st.session_state["scan_camera_key"] += 1
+            st.session_state["scan_upload_key"] += 1
             switch_page("result")
         else:
             status.update(label="识别失败", state="error")
@@ -103,42 +108,77 @@ def _scan_validate_and_recognize(uploaded, api_key, groups):
                 render_error("返回内容不是合法 JSON", "请重试或更换图片")
             else:
                 render_error("识别服务暂时不可用", "请检查网络或 API 密钥后重试")
+
+
+def _render_recent_scans():
+    """渲染最近识别的小卡片列表."""
+    history = load_history()
+    if not history:
+        return
+
+    st.markdown(
+        "<div class='result-card-title' style='margin:8px 0 14px 0;'>"
+        "📷 最近拍过的商品</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("<div class='scan-recent-list'>", unsafe_allow_html=True)
+    cols = st.columns(min(len(history[:3]), 3))
+    for idx, item in enumerate(history[:3]):
+        score = item.get("score", 0)
+        name = _safe(item.get("product_name", "未知"))
+        emoji = "🥛" if "牛奶" in name else ("🍪" if "饼干" in name else "🍜")
+        short_name = name[:6] + "..." if len(name) > 6 else name
+        with cols[idx]:
             if st.button(
-                "重新拍摄/选择图片",
-                type="primary",
+                f"{emoji}\n{short_name}\n{score}分",
+                key=f"scan_recent_{idx}",
                 use_container_width=True,
-                key="scan_retake_on_error",
             ):
-                st.session_state["scan_upload_key"] += 1
-                st.rerun()
+                st.session_state["selected_history_index"] = idx
+                st.session_state["detail_fallback_record"] = item
+                switch_page("detail")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_scan_page():
-    """扫描上传页：根据设备类型自适应渲染."""
+    """扫描上传页：相机优先，拍照后自动识别."""
     render_top_nav("扫描识别", back_target="home")
 
-    groups, api_key, uploader_key = _scan_common_setup()
+    groups, api_key, uploader_key, camera_key = _scan_common_setup()
 
     st.markdown(
-        "<p class='scan-tip' style='text-align:center;color:#616161;font-size:14px;"
-        "margin:0 0 16px 0;'>对准包装上的配料表<br>保证光线充足、文字清晰</p>",
+        "<p class='scan-tip' style='text-align:center;color:#616161;font-size:15px;"
+        "font-weight:500;margin:0 0 16px 0;'>对准商品自动识别</p>",
         unsafe_allow_html=True,
     )
 
-    uploaded = None
-
-    # 取景框展示区
+    # 相机取景框区域：视觉取景框 + 实际 camera_input
     st.markdown(
-        "<div style='background:#1a1a1a;border-radius:16px;min-height:320px;"
-        "display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;'>"
-        f"{_CAMERA_FRAME_SVG}"
-        "<p style='position:absolute;bottom:24px;left:0;right:0;text-align:center;"
-        "color:rgba(255,255,255,0.85);font-size:14px;margin:0;'>将配料表放入框内</p>"
+        "<div style='background:#1a1a1a;border-radius:16px;position:relative;"
+        "overflow:hidden;padding:20px 16px 16px;text-align:center;'>"
+        f"{_CAMERA_OVERLAY}"
+        "<p style='color:rgba(255,255,255,0.85);font-size:14px;margin:12px 0 0;'>"
+        "将配料表放入框内，点击快门拍照</p>"
         "</div>",
         unsafe_allow_html=True,
     )
+    captured_image = st.camera_input(
+        "拍照",
+        key=camera_key,
+        label_visibility="collapsed",
+        help="对准配料表，点击快门拍照，拍完后自动识别",
+    )
 
-    # 隐藏的文件上传器，供底部按钮触发
+    if captured_image is not None:
+        _scan_validate_and_recognize(captured_image, api_key, groups)
+        return
+
+    # 相册入口
+    st.markdown(
+        "<p style='text-align:center;color:#616161;font-size:14px;margin:8px 0 4px;'>"
+        "或从相册选择已有照片</p>",
+        unsafe_allow_html=True,
+    )
     uploaded = st.file_uploader(
         "选择配料表图片",
         type=["jpg", "jpeg", "png"],
@@ -148,51 +188,12 @@ def render_scan_page():
         key=uploader_key,
     )
 
-    camera_key = f"camera_{uploader_key}"
-    # 隐藏的相机输入，供底部按钮触发
-    st.camera_input(
-        "拍照",
-        key=camera_key,
-        label_visibility="collapsed",
-        help="点击快门拍摄配料表",
-    )
-
-    # 底部操作按钮
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button(
-            "📷 拍照",
-            type="primary",
-            key="scan_take_photo",
-            use_container_width=True,
-        ):
-            # 触发相机输入：Streamlit 无法编程点击，引导用户使用相机组件
-            st.toast("请点击上方的相机组件进行拍照", icon="📷")
-    with col2:
-        if st.button(
-            "🖼️ 从相册选择",
-            key="scan_pick_album",
-            use_container_width=True,
-        ):
-            st.toast("请点击上方的文件上传区选择图片", icon="🖼️")
-
-    st.markdown(
-        "<p class='scan-card-hint' style='text-align:center;color:#9E9E9E;"
-        "font-size:13px;margin-top:8px;'>支持 jpg / png，最大 5MB</p>",
-        unsafe_allow_html=True,
-    )
-
     if uploaded is not None:
-        st.markdown("<div class='preview-card-marker'></div>", unsafe_allow_html=True)
         st.markdown(
-            "<div class='preview-card-title'>已选择图片</div>",
+            f"<div style='text-align:center;color:#616161;font-size:14px;padding:10px;'>"
+            f"已选择：{_safe(uploaded.name)} · {uploaded.size / 1024:.0f}KB</div>",
             unsafe_allow_html=True,
         )
-        st.markdown(
-            f"<div class='preview-file-meta'>{_safe(uploaded.name)} · {uploaded.size / 1024:.0f}KB</div>",
-            unsafe_allow_html=True,
-        )
-        st.image(uploaded, use_container_width=True)
         col1, col2 = st.columns(2)
         with col1:
             if st.button("重新选择", key="scan_retake", use_container_width=True):
@@ -200,9 +201,12 @@ def render_scan_page():
                 st.rerun()
         with col2:
             if st.button(
-                "使用照片", type="primary", key="scan_confirm", use_container_width=True
+                "开始识别", type="primary", key="scan_confirm", use_container_width=True
             ):
                 _scan_validate_and_recognize(uploaded, api_key, groups)
+
+    # 最近识别
+    _render_recent_scans()
 
     st.markdown(
         "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",

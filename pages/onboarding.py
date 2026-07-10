@@ -5,16 +5,6 @@ import streamlit as st
 from utils.constants import CONDITION_ITEMS, CONDITION_NAME_MAP
 from utils.helpers import switch_page
 
-# 疾病到图标的映射
-DISEASE_ICONS = {
-    "脑梗/心血管": "❤️",
-    "糖尿病": "🩸",
-    "高血压": "🫀",
-    "痛风": "🦴",
-    "乳糖不耐": "🍼",
-    "肾病": "🌾",
-}
-
 
 def render_onboarding():
     """首次访问的 4 步引导：欢迎 → 选人群 → 使用说明 → 开始."""
@@ -96,11 +86,10 @@ def render_onboarding():
 
         selected = set(st.session_state.get("onboarding_groups", []))
         cols = st.columns(2)
-        for i, (key, name, _) in enumerate(CONDITION_ITEMS):
+        for i, (key, name, emoji) in enumerate(CONDITION_ITEMS):
             with cols[i % 2]:
                 disease_name = CONDITION_NAME_MAP[key]
                 is_selected = disease_name in selected
-                icon = DISEASE_ICONS.get(disease_name, "🏷️")
                 wrapper_cls = (
                     "condition-card-wrapper selected"
                     if is_selected
@@ -109,7 +98,7 @@ def render_onboarding():
                 st.markdown(
                     f"<div class='{wrapper_cls}'></div>", unsafe_allow_html=True
                 )
-                label = f"{icon}\n{name}"
+                label = f"{emoji}\n{name}"
                 if st.button(
                     label,
                     key=f"ob_cond_{key}",
