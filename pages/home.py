@@ -55,7 +55,12 @@ def render_home_page():
                 "</div>",
                 unsafe_allow_html=True,
             )
-            if st.button("📷\n扫描配料表", type="primary", key="home_goto_scan"):
+            if st.button(
+                "📷\n扫描配料表",
+                type="primary",
+                key="home_goto_scan",
+                use_container_width=True,
+            ):
                 switch_page("scan")
 
         st.markdown(

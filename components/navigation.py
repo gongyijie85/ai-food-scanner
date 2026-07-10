@@ -38,7 +38,7 @@ def render_mobile_bottom_nav(switch_page_func):
                     )
                     if st.button(
                         label,
-                        width="stretch",
+                        use_container_width=True,
                         key=f"mobile_nav_{page}",
                     ):
                         switch_page_func(page)
@@ -52,24 +52,24 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
     with st.sidebar:
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("首页", width="stretch", key="sidebar_home"):
+            if st.button("首页", use_container_width=True, key="sidebar_home"):
                 switch_page_func("home")
         with c2:
             if st.button(
                 "历史",
-                width="stretch",
+                use_container_width=True,
                 key="sidebar_history",
             ):
                 switch_page_func("history")
 
         st.markdown("<div style='height:8px;'></div>", unsafe_allow_html=True)
 
-        if st.button("扫描", width="stretch", key="sidebar_scan"):
+        if st.button("扫描", use_container_width=True, key="sidebar_scan"):
             switch_page_func("scan")
 
         if st.button(
             "健康档案",
-            width="stretch",
+            use_container_width=True,
             key="sidebar_profile",
         ):
             switch_page_func("profile")
@@ -96,9 +96,9 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
                 st.session_state["selected_model"] = model_choice
         with st.expander("📄 法律声明"):
             st.caption("AI识别仅供参考，不构成医疗建议")
-            if st.button("查看用户协议", width="stretch", key="sidebar_ua"):
+            if st.button("查看用户协议", use_container_width=True, key="sidebar_ua"):
                 switch_page_func("legal_ua")
-            if st.button("查看隐私政策", width="stretch", key="sidebar_pp"):
+            if st.button("查看隐私政策", use_container_width=True, key="sidebar_pp"):
                 switch_page_func("legal_pp")
 
         st.divider()

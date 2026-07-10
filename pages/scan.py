@@ -106,7 +106,7 @@ def _scan_validate_and_recognize(uploaded, api_key, groups):
             if st.button(
                 "重新拍摄/选择图片",
                 type="primary",
-                width="stretch",
+                use_container_width=True,
                 key="scan_retake_on_error",
             ):
                 st.session_state["scan_upload_key"] += 1
@@ -192,7 +192,7 @@ def render_scan_page():
             f"<div class='preview-file-meta'>{_safe(uploaded.name)} · {uploaded.size / 1024:.0f}KB</div>",
             unsafe_allow_html=True,
         )
-        st.image(uploaded, width="stretch")
+        st.image(uploaded, use_container_width=True)
         col1, col2 = st.columns(2)
         with col1:
             if st.button("重新选择", key="scan_retake", use_container_width=True):

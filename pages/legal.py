@@ -37,7 +37,7 @@ def render_legal_consent():
     if st.button(
         "开始使用",
         type="primary",
-        width="stretch",
+        use_container_width=True,
         disabled=start_disabled,
         key="legal_start_btn",
     ):

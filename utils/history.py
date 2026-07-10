@@ -129,5 +129,7 @@ def show_history(switch_page_func, safe_func, max_items: int = 3):
             st.session_state["detail_fallback_record"] = item
             switch_page_func("detail")
     if len(history) > max_items:
-        if st.button("查看全部历史记录", width="stretch", key="sb_view_all_history"):
+        if st.button(
+            "查看全部历史记录", use_container_width=True, key="sb_view_all_history"
+        ):
             switch_page_func("history")
