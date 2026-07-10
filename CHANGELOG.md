@@ -24,7 +24,8 @@
   - `CONTEXT.md` 新增"配料表区域""AI 推断"术语。
   - `app.py`、`.streamlit/style.css` 版本号同步为 `v0.8.1`。
   - `README.md` 版本徽章与最新更新区新增 v0.8.1 条目。
-- **验证**：`python -m py_compile` 全量通过；`python -m black --check --diff` 无差异；`python -m pytest tests/ -v` 66 项全量通过。
+- **CI 修复**：修复 v0.8.0 遗留的 flake8 警告：移除 `components/personal_warnings.py` 未使用的 `HealthWarning` 导入、`services/additive_matcher.py` 未使用的 `re` 导入、`services/health_warning_engine.py` 未使用的 `Tuple` 导入；在 `utils/score.py` 补全缺失的 `load_health_data` 导入。
+- **验证**：`python -m py_compile` 全量通过；`python -m black --check --diff` 无差异；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m pytest tests/ -v` 66 项全量通过。
 
 ## v0.7.7 - 2026-07-10
 

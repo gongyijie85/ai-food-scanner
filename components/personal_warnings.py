@@ -2,7 +2,6 @@
 
 import streamlit as st
 
-from services.health_warning_engine import HealthWarning
 from utils.security import _safe
 
 

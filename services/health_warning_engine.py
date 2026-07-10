@@ -1,7 +1,7 @@
 """健康风险提示引擎：统一生成药物冲突、过敏原、人群敏感、原料风险警告."""
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence
 
 from services.additive_matcher import AdditiveMatcher
 

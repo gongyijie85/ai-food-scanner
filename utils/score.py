@@ -5,7 +5,7 @@ from services.additive_matcher import (
     is_supplement_excipient,
 )
 from services.additive_matcher import AdditiveMatcher
-from utils.data import get_additive_risk_repository, load_gb2760_risk
+from utils.data import get_additive_risk_repository, load_gb2760_risk, load_health_data
 
 # 评分公式常量（A=绿/B=黄/C=红）
 SCORE_PENALTY = {"A": 0, "B": 8, "C": 25}

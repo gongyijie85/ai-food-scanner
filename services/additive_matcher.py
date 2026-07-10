@@ -1,6 +1,5 @@
 """添加剂分类服务：把模型识别的添加剂名称映射为风险等级."""
 
-import re
 from typing import Tuple
 
 from repositories.additive_risk import AdditiveRiskRepository
