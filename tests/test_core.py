@@ -13,6 +13,9 @@ import streamlit as st
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from repositories.additive_risk import CsvAdditiveRiskRepository
+from services.additive_matcher import AdditiveMatcher
+from services.health_warning_engine import HealthWarningEngine
 from utils.api import _generate_advice, normalize_model_output, parse_result
 from utils.data import load_gb2760_risk
 from utils.helpers import detect_device_type
@@ -507,6 +510,134 @@ class TestCallApiWithFallback:
             "mimo_key", "img", "prompt", agnes_key="agnes_key"
         )
         assert result is None
+
+
+class TestAdditiveRiskRepository:
+    """测试 GB 2760 CSV 仓库适配器"""
+
+    def _repo(self):
+        from utils.data import _GB2760_RISK_PATH
+
+        return CsvAdditiveRiskRepository(_GB2760_RISK_PATH)
+
+    def test_exact_match(self):
+        """精确匹配应返回风险信息"""
+        repo = self._repo()
+        risk = repo.find("山梨酸钾")
+        assert risk is not None
+        assert risk.level in {"A", "B", "C"}
+
+    def test_cleaned_match_with_parentheses(self):
+        """带括号残留的名称清洗后应命中"""
+        repo = self._repo()
+        risk = repo.find("山梨酸钾（E202）")
+        assert risk is not None
+
+    def test_fuzzy_match_short_alias(self):
+        """TBHQ 等短别名应模糊命中"""
+        repo = self._repo()
+        risk = repo.find("TBHQ")
+        assert risk is not None
+        assert risk.level == "C"
+
+    def test_missing_additive_returns_none(self):
+        """不存在的添加剂应返回 None"""
+        repo = self._repo()
+        assert repo.find("根本不存在的添加剂名字") is None
+
+
+class TestAdditiveMatcher:
+    """测试添加剂分类器"""
+
+    def _matcher(self):
+        from utils.data import get_additive_risk_repository
+
+        return AdditiveMatcher(get_additive_risk_repository())
+
+    def test_blocklisted_basic_ingredient(self):
+        """黑名单基础配料应返回 A 级"""
+        level, _, note = self._matcher().classify("白砂糖")
+        assert level == "A"
+        assert "基础配料" in note
+
+    def test_supplement_excipient(self):
+        """保健品辅料应返回 A 级"""
+        level, _, note = self._matcher().classify("鱼油")
+        assert level == "A"
+        assert "辅料" in note
+
+    def test_known_c_level_additive(self):
+        """已知 C 级添加剂应返回 C 级"""
+        level, _, _ = self._matcher().classify("特丁基对苯二酚")
+        assert level == "C"
+
+    def test_unknown_returns_b(self):
+        """未匹配名称默认 B 级"""
+        level, _, _ = self._matcher().classify("某种未知合成物")
+        assert level == "B"
+
+
+class TestHealthWarningEngine:
+    """测试健康风险提示引擎"""
+
+    def _engine(self):
+        from utils.data import get_additive_risk_repository, load_health_data
+
+        matcher = AdditiveMatcher(get_additive_risk_repository())
+        health_data = load_health_data()
+        return HealthWarningEngine(
+            matcher,
+            conflicts=health_data.get("conflicts", []),
+            allergens=health_data.get("allergens", []),
+        )
+
+    def test_drug_conflict_aspirin_alcohol(self):
+        """阿司匹林 + 酒精应产生药物冲突警告"""
+        engine = self._engine()
+        result = {
+            "ingredients": ["白酒", "水", "食用香精"],
+            "additives": [],
+        }
+        profile = {
+            "drugs": [{"id": "D051", "name": "阿司匹林"}],
+        }
+        warnings = engine.analyze(result, profile)
+        assert any(w.category == "drug_conflict" for w in warnings)
+
+    def test_allergen_milk(self):
+        """牛奶过敏 + 配料含牛奶应产生过敏原警告"""
+        engine = self._engine()
+        result = {
+            "ingredients": ["牛奶", "白砂糖"],
+            "additives": [],
+        }
+        profile = {
+            "allergens": [{"name": "乳及乳制品", "examples": ["牛奶"]}],
+        }
+        warnings = engine.analyze(result, profile)
+        assert any(w.category == "allergen" for w in warnings)
+
+    def test_ingredient_risk_hydrogenated_oil(self):
+        """氢化植物油应产生原料风险警告"""
+        engine = self._engine()
+        result = {
+            "ingredients": ["氢化植物油", "白砂糖"],
+            "additives": [],
+        }
+        warnings = engine.analyze(result, {})
+        assert any(
+            w.category == "ingredient_risk" and w.severity == "high" for w in warnings
+        )
+
+    def test_no_profile_no_warnings(self):
+        """无健康档案且无风险配料时应返回空列表"""
+        engine = self._engine()
+        result = {
+            "ingredients": ["水", "小麦粉"],
+            "additives": [],
+        }
+        warnings = engine.analyze(result, {})
+        assert warnings == []
 
 
 if __name__ == "__main__":

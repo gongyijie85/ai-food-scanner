@@ -1,10 +1,11 @@
 """本地数据加载工具（GB 2760、健康档案、Markdown 文档）。"""
 
-import csv
 import json
 import os
 
 import streamlit as st
+
+from repositories.additive_risk import CsvAdditiveRiskRepository
 
 # 项目根目录
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -48,21 +49,24 @@ def load_health_data():
 
 
 @st.cache_resource
+def get_additive_risk_repository():
+    """返回 GB 2760 风险库仓库实例（带 Streamlit 缓存）."""
+    return CsvAdditiveRiskRepository(_GB2760_RISK_PATH)
+
+
+@st.cache_resource
 def load_gb2760_risk():
-    """加载 GB 2760 添加剂风险分级表，返回 dict[中文名] -> {level, adi, warnings, note}."""
-    risk_map = {}
-    try:
-        with open(_GB2760_RISK_PATH, encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                key = row["cn_name"].strip()
-                if key:
-                    risk_map[key] = {
-                        "level": row.get("risk_level", "B").strip(),
-                        "adi": row.get("adi_value", "").strip(),
-                        "warnings": row.get("health_warnings", "").strip(),
-                        "note": row.get("note", "").strip(),
-                    }
-    except FileNotFoundError:
-        pass
-    return risk_map
+    """加载 GB 2760 添加剂风险分级表，返回 dict[中文名] -> {level, adi, warnings, note}.
+
+    保留此函数以兼容现有调用方；内部通过 repository 获取数据。
+    """
+    repo = get_additive_risk_repository()
+    return {
+        name: {
+            "level": risk.level,
+            "adi": risk.adi,
+            "warnings": risk.warnings,
+            "note": risk.note,
+        }
+        for name, risk in repo._data.items()
+    }

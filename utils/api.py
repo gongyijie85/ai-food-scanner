@@ -12,8 +12,8 @@ import requests
 import streamlit as st
 from PIL import Image
 
+from services.additive_matcher import _clean_name
 from utils.score import (
-    _clean_name,
     _is_blocklisted,
     compute_score_from_additives,
     normalize_additive,

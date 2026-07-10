@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.7.7-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.8.0-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -15,6 +15,7 @@
 
 ## 最新更新
 
+- **v0.8.0（2026-07-10）**：完成架构深化与健康风险提示引擎落地。拆分 GB 2760 风险数据仓库（`repositories/additive_risk.py`）与添加剂分类器（`services/additive_matcher.py`），新增 `HealthWarningEngine` 统一生成药物冲突、过敏原、疾病敏感、原料风险四类警告；结果页（普通食品/保健食品）统一调用引擎并渲染个性化警告；扩展单元测试覆盖 repository/service 模块。`py_compile`、`pytest` 63 项、`black --check` 全量通过。
 - **v0.7.7（2026-07-10）**：继续优化配料表小字识别与异常交互。根据 MiMo 图片理解文档，Base64 编码图片上限为 50MB，因此进一步提高 `utils/api.py` 中 `encode_image_to_base64` 默认 `max_size` 从 1200 到 2000，base64 上限从 106KB 放宽到 2MB（仍保留自适应 quality 降级与 1600px 回退保护），让配料表小字获得更多像素；扫描页识别失败时（API 异常或 JSON 解析失败）新增大号「重新拍摄/选择图片」按钮，引导老人直接重拍而不用手动返回上一步；结果页原有免责声明保留不变。`py_compile`、`pytest` 51 项、`black --check` 全量通过。
 - **v0.7.6（2026-07-09）**：修复测试反馈的山楂糕配料表识别不稳定问题。同一包装多次扫描结果不一致，判断图片压缩可能损失了小字细节。在 `utils/api.py` 中把 `encode_image_to_base64` 默认 `max_size` 从 768 提高到 1200，插值从 `BILINEAR` 改为 `LANCZOS`，默认 `quality` 从 75 提高到 85，并新增 106KB base64 上限自适应保护（超限时自动降 quality，仍超限则回退 768px）。`py_compile`、`pytest` 51 项全量通过。
 - **v0.7.5（2026-07-09）**：修复测试反馈的 OCR 误识别问题。同一款山楂糕配料表实际为「山楂（添加量≥50%）、低聚果糖（益生元）（添加量≥35%）、浓缩苹果汁」，但模型返回的 `ocr_text` 是「配料：山楂、白砂糖、食用盐」，说明 OCR 阶段就把包装上的其他文字误当成配料表。在 `utils/api.py` 中新增环境变量 `PRIMARY_PROVIDER=agnes` 切换主模型，默认 MiMo 为主、Agnes 兜底，设置后 Agnes 为主、MiMo 兜底，方便快速对比两个模型对同一配料表的识别效果。`py_compile`、`pytest` 51 项全量通过。

@@ -14,8 +14,40 @@ from components import (
     render_top_nav,
     voice_control_panel,
 )
+from services.additive_matcher import AdditiveMatcher
+from services.health_warning_engine import HealthWarningEngine
+from utils.data import get_additive_risk_repository, load_health_data
 from utils.helpers import detect_device_type, switch_page
 from utils.security import _safe
+
+
+def _build_health_profile():
+    """从 session_state 组装 HealthWarningEngine 需要的健康档案."""
+    health_profile = st.session_state.get("health_profile", {})
+    user_profile = st.session_state.get("user_profile", {})
+    profile = {
+        "groups": health_profile.get("diseases", []),
+        "drugs": user_profile.get("drugs") or health_profile.get("drugs", []),
+        "allergens": user_profile.get("allergens")
+        or health_profile.get("allergens", []),
+    }
+    # 过滤空值，减少引擎无效计算
+    return {k: v for k, v in profile.items() if v}
+
+
+def _analyze_warnings(result):
+    """根据识别结果和当前用户档案生成健康警告列表."""
+    profile = _build_health_profile()
+    if not profile:
+        return []
+    matcher = AdditiveMatcher(get_additive_risk_repository())
+    health_data = load_health_data()
+    engine = HealthWarningEngine(
+        matcher,
+        conflicts=health_data.get("conflicts", []),
+        allergens=health_data.get("allergens", []),
+    )
+    return engine.analyze(result, profile)
 
 
 def render_food_page(result):
@@ -50,7 +82,8 @@ def render_food_page(result):
 
         with right:
             _render_additive_card(additives)
-            render_personal_warnings(result, ingredients)
+            warnings = _analyze_warnings(result)
+            render_personal_warnings(warnings)
             render_nutrition_bars(result)
             if advice:
                 st.markdown(
@@ -91,7 +124,8 @@ def render_food_page(result):
                 unsafe_allow_html=True,
             )
 
-        render_personal_warnings(result, ingredients)
+        warnings = _analyze_warnings(result)
+        render_personal_warnings(warnings)
 
         if ingredients:
             with st.expander("查看全部配料"):
@@ -198,6 +232,8 @@ def render_supplement_page(result):
                     f"<div class='result-card' style='border-left:4px solid #FF9800;'><div class='result-card-title'>⚠️ 不适宜人群（包装原文）</div><p style='color:#E65100;'>{_safe(unsuitable)}</p></div>",
                     unsafe_allow_html=True,
                 )
+            warnings = _analyze_warnings(result)
+            render_personal_warnings(warnings)
             if usage and usage != "未显示":
                 st.markdown(
                     f"<div class='result-card'><div class='result-card-title'>💊 食用方法（包装原文）</div><p>{_safe(usage)}</p></div>",
@@ -258,6 +294,9 @@ def render_supplement_page(result):
                 f"<div class='result-card' style='border-left:4px solid #FF9800;'><div class='result-card-title'>⚠️ 不适宜人群（包装原文）</div><p style='color:#E65100;'>{_safe(unsuitable)}</p></div>",
                 unsafe_allow_html=True,
             )
+
+        warnings = _analyze_warnings(result)
+        render_personal_warnings(warnings)
 
         if usage and usage != "未显示":
             st.markdown(
