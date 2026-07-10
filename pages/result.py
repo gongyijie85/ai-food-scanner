@@ -1,7 +1,5 @@
 """识别结果页渲染（普通食品 / 保健食品 / 分发器）."""
 
-import os
-
 import streamlit as st
 
 from components import (
@@ -134,10 +132,6 @@ def render_food_page(result):
                 if ocr_text:
                     st.caption(f"识别到的配料表原文：{_safe(ocr_text)}")
 
-        if os.getenv("DEBUG") == "1":
-            with st.expander("查看原始 JSON（调试用）"):
-                st.json(result)
-
         voice_control_panel(
             speak_content,
             key_prefix="tts_food",
@@ -246,10 +240,6 @@ def render_supplement_page(result):
                 wrapper_class="voice-control-wrap",
             )
 
-        if os.getenv("DEBUG") == "1":
-            with st.expander("查看原始 JSON（调试用）"):
-                st.json(result)
-
         col1, col2 = st.columns(2)
         with col1:
             if st.button("再扫一个", width="stretch", key="supp_btn_scan_desktop"):
@@ -307,10 +297,6 @@ def render_supplement_page(result):
         if ingredients:
             with st.expander("查看全部原料"):
                 st.write("、".join(ingredients))
-
-        if os.getenv("DEBUG") == "1":
-            with st.expander("查看原始 JSON（调试用）"):
-                st.json(result)
 
         voice_control_panel(
             speak_content,

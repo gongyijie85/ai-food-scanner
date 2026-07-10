@@ -1,5 +1,15 @@
 # 变更日志
 
+## v0.8.3 - 2026-07-10
+
+### AI 食品配料表识别工具 v0.8.3（参赛最终优化）
+
+- **文件**：`d:\GBT\ai-food-scanner\app.py`、`d:\GBT\ai-food-scanner\pages\scan.py`、`d:\GBT\ai-food-scanner\pages\result.py`、`d:\GBT\ai-food-scanner\components\navigation.py`、`d:\GBT\ai-food-scanner\components\voice_panel.py`、`d:\GBT\ai-food-scanner\.streamlit\style.css`、`d:\GBT\初赛Demo帖_AI食品配料表识别工具.md`
+- **关闭 DEBUG 模式**：彻底移除所有 DEBUG 相关代码，`app.py` 日志级别强制设为 INFO，删除 `DEBUG=1` 调试信息块；`pages/scan.py` 删除 API key 手动输入框和原始返回展示；`pages/result.py` 删除原始 JSON 调试展开；`components/navigation.py` 删除重新查看引导按钮。
+- **首页扫描按钮位置调整**：`.streamlit/style.css` 中卡片 padding 从 `spacing-xl` 降至 `spacing-lg`，扫描区域 `min-height` 从 180px 降至 140px，`justify-content` 改为 `flex-start`；提示气泡移到按钮下方避免遮挡。
+- **TTS 语音优化**：`components/voice_panel.py` 扩展语音选择优先级，优先选择 Microsoft Xiaoxiao（晓晓），其次是 Yaoyao（瑶瑶）、Google 普通话、Google 中文，最后 fallback 到 zh-CN 通用语音。
+- **Demo 帖更新**：版本号从 v0.6.6 更新到 v0.8.2，补充 v0.7.x ~ v0.8.x 更新记录，新增 7 月 10 日 Session ID。
+
 ## v0.8.2 - 2026-07-10
 
 ### AI 食品配料表识别工具 v0.8.2（ponytail-audit 极限优化）

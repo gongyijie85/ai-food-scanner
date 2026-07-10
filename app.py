@@ -1,4 +1,4 @@
-"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.8.2
+"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.8.3
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 三端适配 + 评委快速模式
 运行环境：Python 3.10+
@@ -34,15 +34,15 @@ from pages import (
     render_result_page,
     render_scan_page,
 )
-from utils.api import API_URL, MODEL_NAME, get_api_key
+
 from utils.constants import _BASE_DIR
 from utils.helpers import detect_device_type, switch_page
 from utils.history import show_history
 from utils.security import _safe
 
 # ========== 日志配置 ==========
-# 生产环境 INFO，本地 DEBUG=1 时 DEBUG
-_log_level = logging.DEBUG if os.getenv("DEBUG") == "1" else logging.INFO
+# 生产环境强制 INFO，DEBUG 模式已移除
+_log_level = logging.INFO
 logging.basicConfig(
     level=_log_level,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -165,16 +165,6 @@ def main():
         """,
         height=0,
     )
-
-    # DEBUG 信息块：仅当环境变量 DEBUG=1 时显示，用于本地排查 API 配置
-    # 生产环境（Streamlit Cloud）严禁设置 DEBUG=1，避免泄露 API key 信息
-    if os.getenv("DEBUG") == "1":
-        with st.expander("🔧 调试信息（DEBUG=1）", expanded=True):
-            mimo_key = get_api_key()
-            st.markdown(f"- **MiMo API URL**: `{API_URL}`")
-            st.markdown(f"- **MiMo Model**: `{MODEL_NAME}`")
-            st.markdown(f"- **MiMo API Key 已配置**: {'是' if mimo_key else '否'}")
-            st.markdown("- **Auth Header 类型**: `api-key`")
 
     # 默认模型选择
     if "selected_model" not in st.session_state:

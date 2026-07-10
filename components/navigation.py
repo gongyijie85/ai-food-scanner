@@ -1,7 +1,5 @@
 """全局导航组件：移动端底部标签栏 + 桌面端侧边栏."""
 
-import os
-
 import streamlit as st
 
 from utils.helpers import detect_device_type
@@ -96,12 +94,6 @@ def render_desktop_sidebar(switch_page_func, safe_func, show_history_func):
                     ),
                 )
                 st.session_state["selected_model"] = model_choice
-                if os.getenv("DEBUG") == "1":
-                    if st.button("重新查看引导", width="stretch", key="replay_ob"):
-                        st.session_state["onboarded"] = False
-                        st.session_state["onboarding_step"] = 1
-                        st.rerun()
-
         with st.expander("📄 法律声明"):
             st.caption("AI识别仅供参考，不构成医疗建议")
             if st.button("查看用户协议", width="stretch", key="sidebar_ua"):

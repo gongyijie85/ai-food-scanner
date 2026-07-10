@@ -93,9 +93,6 @@ def _scan_validate_and_recognize(uploaded, api_key, groups):
                 render_error("返回内容不是合法 JSON", "请重试或更换图片")
             else:
                 render_error("识别服务暂时不可用", "请检查网络或 API 密钥后重试")
-            if os.getenv("DEBUG") == "1" and raw:
-                with st.expander("查看原始返回（调试用）"):
-                    st.text(raw)
             if st.button(
                 "重新拍摄/选择图片",
                 type="primary",
@@ -111,20 +108,6 @@ def render_scan_page():
     render_top_nav("扫描识别", back_target="home", right_action="profile")
 
     groups, api_key, uploader_key = _scan_common_setup()
-
-    if not api_key and os.getenv("DEBUG") == "1":
-        # 仅本地开发允许手动输入密钥：通过 Host 头判断，避免 Streamlit Cloud 误配 DEBUG=1 后被任意访客滥用
-        try:
-            host = st.context.headers.get("Host", "") if hasattr(st, "context") else ""
-        except Exception:
-            host = ""
-        local_hosts = ("localhost", "127.0.0.1", "0.0.0.0")  # nosec B104
-        is_local = any(h in host for h in local_hosts)
-        if is_local:
-            st.warning("未检测到 MIMO_API_KEY，请在 .env 或 Secrets 中配置")
-            api_key = st.text_input("API 密钥", type="password")
-        else:
-            st.error("API 密钥未配置，请联系管理员")
 
     is_desktop = detect_device_type() == "desktop"
 

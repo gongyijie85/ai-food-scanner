@@ -119,11 +119,20 @@ def _render_tts_namespace():
                     for (var i = 0; i < voices.length; i++) {
                         var name = voices[i].name || '';
                         var lang = voices[i].lang || '';
-                        if (name.indexOf('Yaoyao') >= 0 || name.indexOf('yaoyao') >= 0) {
+                        var lowerName = name.toLowerCase();
+                        if (!selected && (lowerName.indexOf('xiaoxiao') >= 0 || lowerName.indexOf('晓晓') >= 0)) {
                             selected = voices[i];
-                            break;
                         }
-                        if (!selected && (lang.indexOf('zh') === 0 || lang.indexOf('cmn') === 0)) {
+                        if (!selected && (lowerName.indexOf('yaoyao') >= 0 || lowerName.indexOf('瑶瑶') >= 0)) {
+                            selected = voices[i];
+                        }
+                        if (!selected && name.indexOf('Google 普通话') >= 0) {
+                            selected = voices[i];
+                        }
+                        if (!selected && name.indexOf('Google 中文') >= 0) {
+                            selected = voices[i];
+                        }
+                        if (!selected && (lang.indexOf('zh-CN') === 0 || lang.indexOf('cmn-CN') === 0)) {
                             selected = voices[i];
                         }
                     }
