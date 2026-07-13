@@ -64,6 +64,42 @@ def render_health_profile():
                 "年龄", min_value=1, max_value=120, value=profile.get("age", 60), step=1
             )
 
+    # 年龄滑块 + 快捷选择
+    st.markdown("<div class='age-section-marker'></div>", unsafe_allow_html=True)
+    age_value = profile.get("age", 60)
+    st.markdown(
+        f"<div class='age-display'>{age_value}<span>岁</span></div>",
+        unsafe_allow_html=True,
+    )
+    profile["age"] = st.slider(
+        "调整年龄",
+        min_value=1,
+        max_value=120,
+        value=age_value,
+        step=1,
+        key="hp_age_slider",
+        label_visibility="collapsed",
+    )
+
+    age_ranges = [
+        ("40岁以下", 35, lambda a: a < 40),
+        ("40-59岁", 50, lambda a: 40 <= a <= 59),
+        ("60-79岁", 70, lambda a: 60 <= a <= 79),
+        ("80岁以上", 85, lambda a: a >= 80),
+    ]
+    cols = st.columns(len(age_ranges))
+    for i, (label, default_age, in_range) in enumerate(age_ranges):
+        with cols[i]:
+            if st.button(
+                label,
+                key=f"hp_age_{i}",
+                type="primary" if in_range(profile["age"]) else "secondary",
+                use_container_width=True,
+            ):
+                st.session_state["hp_age_slider"] = default_age
+                profile["age"] = default_age
+                st.rerun()
+
     # 健康状况
     st.markdown(
         "<div class='result-card-title' style='margin:20px 0 6px 0;'>我的健康状况</div>",

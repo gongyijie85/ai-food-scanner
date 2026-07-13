@@ -2444,6 +2444,57 @@ body.device-mobile .scan-recent-list > div[data-testid="stHorizontalBlock"] {
   padding: 0 12px !important;
 }
 
+/* ========== 健康档案页：年龄滑块区域 ========== */
+
+.age-section-marker {
+  display: none;
+}
+
+/* 年龄大字显示 */
+.age-display {
+  text-align: center;
+  font-size: 48px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  line-height: 1;
+  margin: 8px 0 12px;
+}
+
+.age-display span {
+  font-size: 18px;
+  margin-left: 4px;
+  color: var(--color-text-secondary);
+}
+
+/* 年龄滑块轨道加粗 */
+.age-section-marker ~ div[data-testid="stSlider"] [data-testid="stTickBar"] {
+  display: none;
+}
+
+.age-section-marker ~ div[data-testid="stSlider"] [role="slider"] {
+  height: 24px !important;
+  width: 24px !important;
+  margin-top: -10px !important;
+  border-radius: 50% !important;
+  background: var(--color-primary) !important;
+  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.4) !important;
+}
+
+.age-section-marker ~ div[data-testid="stSlider"] [data-testid="stSliderThumbValue"] {
+  display: none !important;
+}
+
+/* 年龄段快捷按钮 */
+.st-key-hp_age_0 .stButton > button,
+.st-key-hp_age_1 .stButton > button,
+.st-key-hp_age_2 .stButton > button,
+.st-key-hp_age_3 .stButton > button {
+  height: 40px !important;
+  border-radius: var(--radius-full) !important;
+  font-size: var(--font-size-body-sm) !important;
+  padding: 0 8px !important;
+}
+
 /* ========== 扫描页上传按钮：覆盖全局 .stFileUploader 的中文 "选择文件" 样式 ========== */
 div[data-testid="stVerticalBlock"]:has(.scan-frame-hint) .stFileUploader button[data-testid="stBaseButton-secondary"],
 div[data-testid="stVerticalBlock"]:has(.scan-frame-overlay) .stFileUploader button[data-testid="stBaseButton-secondary"] {

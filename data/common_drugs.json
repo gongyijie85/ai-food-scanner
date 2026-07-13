@@ -1,9 +1,9 @@
 {
   "_meta": {
-    "version": "1.2",
-    "updated": "2026-07-01",
+    "version": "1.3",
+    "updated": "2026-07-13",
     "source": "NMPA 药品目录 + 国家老年健康宣传周 2026 老年人慢病用药指导 + 中国药典",
-    "note": "覆盖老年人 90%+ 常用药，按系统分类；本次新增 7 个头孢菌素类药物（D356-D362）及甲硝唑、替硝唑（D363-D364）"
+    "note": "覆盖老年人 90%+ 常用药，按系统分类；本次新增痛风用药、常见中成药/辅助、消化动力/通便、睡眠、前列腺及维生素类药物"
   },
   "categories": [
     {
@@ -178,6 +178,79 @@
           "category": "硝酸酯",
           "common": true,
           "elder_use": true
+        },
+        {
+          "id": "D055",
+          "name": "复方丹参滴丸",
+          "en_name": "compound danshen dripping pills",
+          "category": "中成药",
+          "common": true,
+          "elder_use": true,
+          "freq": "胸闷/心绞痛"
+        },
+        {
+          "id": "D056",
+          "name": "速效救心丸",
+          "en_name": "suxiao jiuxin pills",
+          "category": "中成药",
+          "common": true,
+          "elder_use": true
+        },
+        {
+          "id": "D057",
+          "name": "麝香保心丸",
+          "en_name": "shexiang baoxin pills",
+          "category": "中成药",
+          "common": true,
+          "elder_use": true
+        },
+        {
+          "id": "D058",
+          "name": "曲美他嗪",
+          "en_name": "trimetazidine",
+          "category": "心肌代谢",
+          "common": true,
+          "elder_use": true
+        }
+      ]
+    },
+    {
+      "code": "GOUT",
+      "name": "痛风/高尿酸",
+      "drugs": [
+        {
+          "id": "D550",
+          "name": "别嘌醇",
+          "en_name": "allopurinol",
+          "category": "降尿酸药",
+          "common": true,
+          "elder_use": true,
+          "freq": "降尿酸"
+        },
+        {
+          "id": "D551",
+          "name": "非布司他",
+          "en_name": "febuxostat",
+          "category": "降尿酸药",
+          "common": true,
+          "elder_use": true
+        },
+        {
+          "id": "D552",
+          "name": "苯溴马隆",
+          "en_name": "benzbromarone",
+          "category": "促尿酸排泄",
+          "common": true,
+          "elder_use": true
+        },
+        {
+          "id": "D553",
+          "name": "秋水仙碱",
+          "en_name": "colchicine",
+          "category": "痛风急性期",
+          "common": true,
+          "elder_use": true,
+          "freq": "急性发作"
         }
       ]
     },
@@ -425,6 +498,48 @@
           "category": "抗酸剂",
           "common": true,
           "elder_use": true
+        },
+        {
+          "id": "D209",
+          "name": "莫沙必利",
+          "en_name": "mosapride",
+          "category": "促胃肠动力药",
+          "common": true,
+          "elder_use": true,
+          "freq": "腹胀/消化不良"
+        },
+        {
+          "id": "D210",
+          "name": "多潘立酮",
+          "en_name": "domperidone",
+          "category": "促胃肠动力药",
+          "common": true,
+          "elder_use": true
+        },
+        {
+          "id": "D211",
+          "name": "乳果糖",
+          "en_name": "lactulose",
+          "category": "通便药",
+          "common": true,
+          "elder_use": true,
+          "freq": "便秘"
+        },
+        {
+          "id": "D212",
+          "name": "聚乙二醇",
+          "en_name": "polyethylene glycol",
+          "category": "通便药",
+          "common": true,
+          "elder_use": true
+        },
+        {
+          "id": "D213",
+          "name": "复方消化酶",
+          "en_name": "compound digestive enzymes",
+          "category": "消化酶",
+          "common": true,
+          "elder_use": true
         }
       ]
     },
@@ -480,6 +595,23 @@
           "name": "阿普唑仑",
           "en_name": "alprazolam",
           "category": "苯二氮䓬类",
+          "common": true,
+          "elder_use": true
+        },
+        {
+          "id": "D256",
+          "name": "佐匹克隆",
+          "en_name": "zopiclone",
+          "category": "镇静催眠药",
+          "common": true,
+          "elder_use": true,
+          "freq": "失眠"
+        },
+        {
+          "id": "D257",
+          "name": "唑吡坦",
+          "en_name": "zolpidem",
+          "category": "镇静催眠药",
           "common": true,
           "elder_use": true
         }
@@ -570,6 +702,77 @@
           "name": "双氯芬酸",
           "en_name": "diclofenac",
           "category": "NSAIDs",
+          "common": true,
+          "elder_use": true
+        },
+        {
+          "id": "D310",
+          "name": "氨基葡萄糖",
+          "en_name": "glucosamine",
+          "category": "关节软骨保护",
+          "common": true,
+          "elder_use": true,
+          "freq": "骨关节炎"
+        },
+        {
+          "id": "D311",
+          "name": "依托考昔",
+          "en_name": "etoricoxib",
+          "category": "NSAIDs",
+          "common": true,
+          "elder_use": true
+        }
+      ]
+    },
+    {
+      "code": "URO",
+      "name": "泌尿系统/前列腺",
+      "drugs": [
+        {
+          "id": "D520",
+          "name": "坦索罗辛",
+          "en_name": "tamsulosin",
+          "category": "α受体阻滞剂",
+          "common": true,
+          "elder_use": true,
+          "freq": "前列腺增生"
+        },
+        {
+          "id": "D521",
+          "name": "非那雄胺",
+          "en_name": "finasteride",
+          "category": "5α还原酶抑制剂",
+          "common": true,
+          "elder_use": true
+        }
+      ]
+    },
+    {
+      "code": "VIT",
+      "name": "维生素/营养",
+      "drugs": [
+        {
+          "id": "D530",
+          "name": "维生素D",
+          "en_name": "vitamin D",
+          "category": "维生素",
+          "common": true,
+          "elder_use": true,
+          "freq": "补钙/骨质疏松"
+        },
+        {
+          "id": "D531",
+          "name": "复合维生素B",
+          "en_name": "vitamin B complex",
+          "category": "维生素",
+          "common": true,
+          "elder_use": true
+        },
+        {
+          "id": "D532",
+          "name": "辅酶Q10",
+          "en_name": "coenzyme Q10",
+          "category": "营养补充",
           "common": true,
           "elder_use": true
         }
