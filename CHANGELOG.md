@@ -1,5 +1,40 @@
 # 变更日志
 
+## v0.9.6 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.9.6（初赛 Demo 帖 30 秒宣传视频上传成功）
+
+- **文件**：`design/demo_assets/demo_video_30s.mp4`、`_tmp_upload_video.py`、`_tmp_playwright_update_forum_api.py`、`初赛Demo帖_AI食品配料表识别工具.md`
+- **论坛视频上传**：通过 Discourse `/uploads.json` API 上传 `design/demo_assets/demo_video_30s.mp4`（4.25 MB）到论坛，获取短链接 `upload://ybJWHzVVvqiah3YGGnNOPWDNfNG.mp4`。
+- **占位符修复**：发现 `![...|video](upload://...)` 是唯一能让论坛渲染为视频播放器的 Markdown 语法；`upload://` 单独一行、`<video>` HTML、普通 CDN URL 均无法正确渲染。
+- **帖子更新**：使用 `_tmp_playwright_update_forum_api.py` 将初赛 Demo 帖（https://forum.trae.cn/t/topic/51391）的"30 秒演示视频"章节更新为正确的视频嵌入语法。
+- **验证**：Playwright 截图确认论坛帖中视频区域已渲染为带播放按钮的视频播放器；视频链接可在帖子中直接点击播放。
+- **版本同步**：README.md 版本徽章从 v0.9.3 更新到 v0.9.6，并补充 v0.9.4/v0.9.5/v0.9.6 最新更新摘要。
+
+## v0.9.5 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.9.5（初赛 Demo 30 秒宣传视频 HyperFrames 化）
+
+- **文件**：`design/demo_assets/demo_video_30s.mp4`、`ai-food-scanner-video/index.html`、`ai-food-scanner-video/_tmp_capture_designs.py`
+- **HyperFrames 工程化**：在 `d:\GBT\ai-food-scanner-video` 初始化 HyperFrames 项目，创建 1080×1920 竖屏、30fps、30 秒时长的 HTML 合成视频。
+- **分镜脚本**：0–4s 痛点引入（配料表小字看不清）；4–8s 产品亮相（App 首页）；8–14s 使用方式（扫描识别页 + ①拍照 ②识别 ③看结果 步骤徽章）；14–22s 识别结果（结果页 + 红黄绿三色风险徽章）；22–26s 语音播报（麦克风图标 + 一键播报文案）；26–30s 行动号召（产品名 + 赛事名 + 公开体验链接）。
+- **素材来源**：使用 Playwright 截取本地设计稿 `design/home_preview.html`、`design/scan_preview.html`、`design/result_preview.html` 的手机壳区域，生成 `home.png`、`scan.png`、`result.png`，避免旧截图中 Material 图标占位文本和首页空白问题。
+- **渲染验证**：`npm run check` 通过（0 error，4 warnings 为文件过大/轨道元素密集建议）；`npm run render -- -o demo_video_30s.mp4` 成功生成 4.3 MB MP4；视频逐帧检查确认中文清晰、截图完整、无截断。
+- **交付物**：最终视频复制到 `design/demo_assets/demo_video_30s.mp4`，用于初赛 Demo 帖 30 秒演示视频上传。
+
+## v0.9.4 - 2026-07-13
+
+### AI 食品配料表识别工具 v0.9.4（新增 TTS 方案对比 Demo）
+
+- **文件**：`demos/tts_comparison/README.md`、`demos/tts_comparison/browser_tts_demo.html`、`demos/tts_comparison/edge_tts_demo.py`、`demos/tts_comparison/kokoro_tts_demo.py`、`demos/tts_comparison/tts_compare_app.py`、`demos/tts_comparison/requirements_demo.txt`
+- **新增 TTS 对比 Demo**：在 `demos/tts_comparison/` 创建独立目录，提供三种免费 TTS 方案的最小可运行示例，不改动主项目代码和依赖。
+  - `browser_tts_demo.html`：浏览器原生 Web Speech API，双击即可试听，优先 Microsoft Xiaoxiao/Yaoyao。
+  - `edge_tts_demo.py`：调用微软在线接口，一行代码生成 `edge_tts_demo.mp3`。
+  - `kokoro_tts_demo.py`：本地开源推理，首次下载约 350MB 模型后生成 `kokoro_demo.wav`。
+  - `tts_compare_app.py`：统一 Streamlit 对比页，同一文本可分别试听三种方案。
+- **依赖隔离**：Demo 专用依赖写入 `demos/tts_comparison/requirements_demo.txt`；新增 `misaki[zh]>=0.9.4` 以补齐 Kokoro 中文语音合成所需的 `ordered_set`、`pypinyin`、`cn2an` 等子依赖。
+- **运行验证**：`python edge_tts_demo.py` 成功生成 MP3；`python kokoro_tts_demo.py` 成功生成 WAV；`python -m py_compile` 检查三个 Python 文件通过。
+
 ## v0.9.3 - 2026-07-13
 
 ### AI 食品配料表识别工具 v0.9.3（初赛收口：收紧健康结论表述 + 评委快速模式样例 + 扫描页非图片校验）
