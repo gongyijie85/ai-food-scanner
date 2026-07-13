@@ -5,7 +5,6 @@ import streamlit as st
 from components import render_top_nav
 from utils.constants import CONDITION_ITEMS, CONDITION_NAME_MAP
 from utils.data import load_health_data
-from utils.security import _safe
 
 # 过敏原到图标的映射
 ALLERGEN_ICONS = {
@@ -179,18 +178,7 @@ def render_health_profile():
         unsafe_allow_html=True,
     )
 
-    # 已选用药标签
-    current_drugs = profile.get("drugs", [])
-    if current_drugs:
-        tags_html = "<div class='drug-tags'>"
-        for d in current_drugs:
-            if isinstance(d, dict):
-                tags_html += (
-                    f"<div class='drug-tag'>{_safe(d['name'])}（{_safe(d['category'])}）"
-                    f"<button class='drug-tag-remove' disabled>×</button></div>"
-                )
-        tags_html += "</div>"
-        st.markdown(tags_html, unsafe_allow_html=True)
+    st.markdown("<div class='drug-section-marker'></div>", unsafe_allow_html=True)
 
     if drug_categories:
         all_drug_options = []
@@ -204,18 +192,31 @@ def render_health_profile():
                     "name": d["name"],
                     "category": cat["name"],
                 }
+
+        default_labels = [
+            f"{d['name']}（{d['category']}）"
+            for d in profile.get("drugs", [])
+            if isinstance(d, dict) and "category" in d
+        ]
+
         selected_drug_labels = st.multiselect(
-            "添加用药",
+            "搜索并选择当前用药",
             options=all_drug_options,
-            default=[
-                f"{d['name']}（{d['category']}）"
-                for d in profile.get("drugs", [])
-                if isinstance(d, dict) and "category" in d
-            ],
+            default=default_labels,
             key="hp_drugs",
+            placeholder="输入药品名搜索，如：氨氯地平",
             label_visibility="collapsed",
         )
         profile["drugs"] = [drug_id_map[label] for label in selected_drug_labels]
+
+        # 已选药品 Chip 展示 + 快捷清空
+        if selected_drug_labels:
+            cols = st.columns([1, 0.3])
+            with cols[1]:
+                if st.button("清空", key="hp_clear_drugs", use_container_width=True):
+                    st.session_state["hp_drugs"] = []
+                    profile["drugs"] = []
+                    st.rerun()
 
     with st.expander("📝 补充说明（可选）"):
         profile["medications_free"] = st.text_area(

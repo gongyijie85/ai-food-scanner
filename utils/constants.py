@@ -14,10 +14,10 @@ _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 第三个字段使用语义化 emoji 小图标，与档案页、引导页保持一致
 CONDITION_ITEMS = [
     ("stroke", "脑梗/心血管", "❤️"),
-    ("diabetes", "糖尿病", "🩸"),
+    ("diabetes", "糖尿病", "💉"),
     ("hypertension", "高血压", "🫀"),
     ("gout", "痛风", "🦴"),
     ("lactose", "乳糖不耐", "🍼"),
-    ("kidney", "肾病", "🌾"),
+    ("kidney", "肾病", "🫘"),
 ]
 CONDITION_NAME_MAP = {k: v for k, v, _ in CONDITION_ITEMS}

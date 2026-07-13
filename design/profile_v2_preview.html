@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康档案页 V2 预览 - 当前用药优化</title>
+    <style>
+        :root {
+            --color-primary: #2E7D32;
+            --color-primary-light: #E8F5E9;
+            --color-primary-dark: #1B5E20;
+            --color-primary-gradient: linear-gradient(135deg, #43A047 0%, #2E7D32 100%);
+            --color-bg: #FAFAF5;
+            --color-bg-card: #FFFFFF;
+            --color-text-primary: #212121;
+            --color-text-secondary: #616161;
+            --color-text-tertiary: #9E9E9E;
+            --color-text-inverse: #FFFFFF;
+            --color-border: #E0E0E0;
+            --state-success: #43A047;
+            --radius-full: 9999px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.15);
+            --font-family-cn: "PingFang SC", "Source Han Sans CN", "Noto Sans SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family-cn);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .phone-shell {
+            width: 100%;
+            max-width: 414px;
+            min-height: 100vh;
+            background: var(--color-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            padding-bottom: 100px;
+        }
+
+        /* 顶部导航 */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            margin-bottom: 8px;
+        }
+        .top-nav-back {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--color-primary-light); color: var(--color-primary);
+            border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .top-nav-title { font-size: 18px; font-weight: 700; }
+        .top-nav-spacer { width: 40px; }
+
+        /* 页面标题卡片 */
+        .page-header {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-card);
+            margin-bottom: 16px;
+        }
+        .page-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+        .page-desc { font-size: 14px; color: var(--color-text-secondary); line-height: 1.5; }
+
+        /* 分组标题 */
+        .section-title {
+            font-size: 17px;
+            font-weight: 700;
+            margin: 20px 0 6px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .section-desc {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            margin-bottom: 14px;
+        }
+
+        /* 基本信息 */
+        .basic-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .input-label {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+        .input-field {
+            height: 48px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 0 12px;
+            font-size: 16px;
+            background: white;
+        }
+
+        /* 卡片网格 */
+        .card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .card {
+            padding: 14px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-border);
+            background: white;
+            text-align: center;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .card.selected {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+            box-shadow: 0 4px 12px rgba(46,125,50,0.25);
+        }
+
+        /* 用药区域 */
+        .drug-section {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-card);
+        }
+        .drug-search {
+            width: 100%;
+            height: 48px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-full);
+            padding: 0 16px;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+        .selected-drugs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+            min-height: 32px;
+        }
+        .drug-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+            border-radius: var(--radius-full);
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .drug-chip .remove {
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .drug-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .drug-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            background: white;
+            cursor: pointer;
+        }
+        .drug-option:hover { background: var(--color-bg); }
+        .drug-option .check {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--color-border);
+            display: flex; align-items: center; justify-content: center;
+            color: transparent;
+        }
+        .drug-option.selected .check {
+            background: var(--color-primary);
+            border-color: var(--color-primary);
+            color: white;
+        }
+
+        /* 保存按钮 */
+        .save-btn {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 414px;
+            padding: 16px;
+            background: rgba(250,250,245,0.98);
+            border-top: 1px solid var(--color-border);
+        }
+        .save-btn button {
+            width: 100%;
+            height: 54px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: var(--color-primary-gradient);
+            color: white;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(46,125,50,0.3);
+        }
+
+        @media (min-width: 768px) {
+            body { background: #E8E8E0; padding: 40px 20px; }
+            .phone-shell {
+                min-height: 800px;
+                border-radius: 24px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+                overflow: hidden;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="phone-shell">
+        <header class="top-nav">
+            <button class="top-nav-back">⬅️</button>
+            <span class="top-nav-title">健康档案</span>
+            <div class="top-nav-spacer"></div>
+        </header>
+
+        <div class="page-header">
+            <div class="page-title">❤️ 我的健康档案</div>
+            <p class="page-desc">填写后，识别结果会根据您的健康情况给出个性化建议</p>
+        </div>
+
+        <div class="section-title">📝 基本信息</div>
+        <div class="basic-info">
+            <div class="input-group">
+                <label class="input-label">称呼（可选）</label>
+                <input class="input-field" placeholder="如：张奶奶" />
+            </div>
+            <div class="input-group">
+                <label class="input-label">年龄</label>
+                <input class="input-field" value="60" />
+            </div>
+        </div>
+
+        <div class="section-title">我的健康状况</div>
+        <p class="section-desc">可多选，帮助我们提供更准确的建议</p>
+        <div class="card-grid">
+            <div class="card selected">❤️ 脑梗/心血管</div>
+            <div class="card">🩸 糖尿病</div>
+            <div class="card selected">🫀 高血压</div>
+            <div class="card">🦴 痛风</div>
+            <div class="card">🍼 乳糖不耐</div>
+            <div class="card">🌾 肾病</div>
+        </div>
+
+        <div class="section-title">过敏原</div>
+        <p class="section-desc">如有过敏请点击选择</p>
+        <div class="card-grid">
+            <div class="card">🥜 花生</div>
+            <div class="card">🥛 牛奶</div>
+            <div class="card">🥚 鸡蛋</div>
+            <div class="card">🐟 鱼类</div>
+            <div class="card">🦐 甲壳类</div>
+            <div class="card">🌰 坚果</div>
+            <div class="card">🌾 小麦</div>
+            <div class="card">🫘 大豆</div>
+        </div>
+
+        <div class="section-title">💊 当前用药</div>
+        <p class="section-desc">选填，用于配料交互提醒</p>
+        <div class="drug-section">
+            <input class="drug-search" placeholder="搜索药品..." />
+            <div class="selected-drugs">
+                <span class="drug-chip">氨氯地平 <span class="remove">×</span></span>
+                <span class="drug-chip">二甲双胍 <span class="remove">×</span></span>
+            </div>
+            <div class="drug-options">
+                <div class="drug-option selected">
+                    <span>氨氯地平（降压药）</span>
+                    <span class="check">✓</span>
+                </div>
+                <div class="drug-option selected">
+                    <span>二甲双胍（降糖药）</span>
+                    <span class="check">✓</span>
+                </div>
+                <div class="drug-option">
+                    <span>阿司匹林（抗血小板）</span>
+                    <span class="check">✓</span>
+                </div>
+                <div class="drug-option">
+                    <span>阿托伐他汀（降脂药）</span>
+                    <span class="check">✓</span>
+                </div>
+                <div class="drug-option">
+                    <span>胰岛素（降糖药）</span>
+                    <span class="check">✓</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="save-btn">
+            <button>💾 保存档案</button>
+        </div>
+    </div>
+</body>
+</html>
