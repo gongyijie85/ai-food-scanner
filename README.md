@@ -271,7 +271,7 @@ ai-food-scanner/
 ## 参赛信息
 
 - **赛事**：TRAE AI 创造力大赛 - 附加赛题「智慧助老」
-- **报名帖**：https://forum.trae.cn/t/topic/46161
+- **报名帖（已通过审核）**：https://forum.trae.cn/t/topic/46161
 - **Demo 帖**：https://forum.trae.cn/t/topic/51391
 - **赛道**：附加赛题 - 智慧助老
 - **报名通道**：专业评审（300 席）
