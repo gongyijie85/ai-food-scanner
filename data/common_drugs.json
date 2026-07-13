@@ -1,9 +1,11 @@
 {
   "_meta": {
-    "version": "1.3",
+    "version": "2.0",
     "updated": "2026-07-13",
-    "source": "NMPA 药品目录 + 国家老年健康宣传周 2026 老年人慢病用药指导 + 中国药典",
-    "note": "覆盖老年人 90%+ 常用药，按系统分类；本次新增痛风用药、常见中成药/辅助、消化动力/通便、睡眠、前列腺及维生素类药物"
+    "source": "NMPA 药品说明书 + 国家老年健康宣传周 2026 老年人慢病用药指导 + 中国药典",
+    "note": "仅保留与食物、饮料或配料成分有明确相互作用的药物，用于 AI 配料表识别提醒",
+    "scope": "食物/配料成分 × 药物相互作用",
+    "disclaimer": "本数据集仅供参考，不能替代医生或药师指导。"
   },
   "categories": [
     {
@@ -29,22 +31,6 @@
           "freq": "高血压"
         },
         {
-          "id": "D003",
-          "name": "左旋氨氯地平",
-          "en_name": "levamlodipine",
-          "category": "钙通道阻滞剂",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D004",
-          "name": "非洛地平",
-          "en_name": "felodipine",
-          "category": "钙通道阻滞剂",
-          "common": false,
-          "elder_use": true
-        },
-        {
           "id": "D005",
           "name": "美托洛尔",
           "en_name": "metoprolol",
@@ -52,14 +38,6 @@
           "common": true,
           "elder_use": true,
           "freq": "高血压/心绞痛"
-        },
-        {
-          "id": "D006",
-          "name": "比索洛尔",
-          "en_name": "bisoprolol",
-          "category": "β受体阻滞剂",
-          "common": true,
-          "elder_use": true
         },
         {
           "id": "D007",
@@ -71,22 +49,6 @@
           "freq": "高血压"
         },
         {
-          "id": "D008",
-          "name": "依那普利",
-          "en_name": "enalapril",
-          "category": "ACEI",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D009",
-          "name": "贝那普利",
-          "en_name": "benazepril",
-          "category": "ACEI",
-          "common": false,
-          "elder_use": true
-        },
-        {
           "id": "D010",
           "name": "缬沙坦",
           "en_name": "valsartan",
@@ -94,22 +56,6 @@
           "common": true,
           "elder_use": true,
           "freq": "高血压"
-        },
-        {
-          "id": "D011",
-          "name": "厄贝沙坦",
-          "en_name": "irbesartan",
-          "category": "ARB",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D012",
-          "name": "氯沙坦",
-          "en_name": "losartan",
-          "category": "ARB",
-          "common": false,
-          "elder_use": true
         },
         {
           "id": "D013",
@@ -159,56 +105,6 @@
           "name": "氯吡格雷",
           "en_name": "clopidogrel",
           "category": "抗血小板",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D053",
-          "name": "硝酸甘油",
-          "en_name": "nitroglycerin",
-          "category": "硝酸酯",
-          "common": true,
-          "elder_use": true,
-          "freq": "心绞痛"
-        },
-        {
-          "id": "D054",
-          "name": "硝酸异山梨酯",
-          "en_name": "isosorbide dinitrate",
-          "category": "硝酸酯",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D055",
-          "name": "复方丹参滴丸",
-          "en_name": "compound danshen dripping pills",
-          "category": "中成药",
-          "common": true,
-          "elder_use": true,
-          "freq": "胸闷/心绞痛"
-        },
-        {
-          "id": "D056",
-          "name": "速效救心丸",
-          "en_name": "suxiao jiuxin pills",
-          "category": "中成药",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D057",
-          "name": "麝香保心丸",
-          "en_name": "shexiang baoxin pills",
-          "category": "中成药",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D058",
-          "name": "曲美他嗪",
-          "en_name": "trimetazidine",
-          "category": "心肌代谢",
           "common": true,
           "elder_use": true
         }
@@ -276,38 +172,6 @@
           "elder_use": true
         },
         {
-          "id": "D102",
-          "name": "辛伐他汀",
-          "en_name": "simvastatin",
-          "category": "他汀类",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D103",
-          "name": "普伐他汀",
-          "en_name": "pravastatin",
-          "category": "他汀类",
-          "common": false,
-          "elder_use": true
-        },
-        {
-          "id": "D104",
-          "name": "氟伐他汀",
-          "en_name": "fluvastatin",
-          "category": "他汀类",
-          "common": false,
-          "elder_use": true
-        },
-        {
-          "id": "D105",
-          "name": "依折麦布",
-          "en_name": "ezetimibe",
-          "category": "胆固醇吸收抑制剂",
-          "common": true,
-          "elder_use": true
-        },
-        {
           "id": "D106",
           "name": "非诺贝特",
           "en_name": "fenofibrate",
@@ -332,30 +196,6 @@
           "freq": "2 型糖尿病一线"
         },
         {
-          "id": "D151",
-          "name": "格列美脲",
-          "en_name": "glimepiride",
-          "category": "磺脲类",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D152",
-          "name": "格列齐特",
-          "en_name": "gliclazide",
-          "category": "磺脲类",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D153",
-          "name": "格列本脲",
-          "en_name": "glibenclamide",
-          "category": "磺脲类",
-          "common": false,
-          "elder_use": true
-        },
-        {
           "id": "D154",
           "name": "阿卡波糖",
           "en_name": "acarbose",
@@ -363,14 +203,6 @@
           "common": true,
           "elder_use": true,
           "freq": "餐后血糖"
-        },
-        {
-          "id": "D155",
-          "name": "伏格列波糖",
-          "en_name": "voglibose",
-          "category": "α糖苷酶抑制剂",
-          "common": true,
-          "elder_use": true
         },
         {
           "id": "D156",
@@ -385,30 +217,6 @@
           "name": "西格列汀",
           "en_name": "sitagliptin",
           "category": "DPP-4 抑制剂",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D158",
-          "name": "利格列汀",
-          "en_name": "linagliptin",
-          "category": "DPP-4 抑制剂",
-          "common": false,
-          "elder_use": true
-        },
-        {
-          "id": "D159",
-          "name": "恩格列净",
-          "en_name": "empagliflozin",
-          "category": "SGLT-2 抑制剂",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D160",
-          "name": "达格列净",
-          "en_name": "dapagliflozin",
-          "category": "SGLT-2 抑制剂",
           "common": true,
           "elder_use": true
         },
@@ -436,49 +244,9 @@
           "freq": "胃溃疡/反流"
         },
         {
-          "id": "D201",
-          "name": "雷贝拉唑",
-          "en_name": "rabeprazole",
-          "category": "质子泵抑制剂",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D202",
-          "name": "兰索拉唑",
-          "en_name": "lansoprazole",
-          "category": "质子泵抑制剂",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D203",
-          "name": "泮托拉唑",
-          "en_name": "pantoprazole",
-          "category": "质子泵抑制剂",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D204",
-          "name": "埃索美拉唑",
-          "en_name": "esomeprazole",
-          "category": "质子泵抑制剂",
-          "common": true,
-          "elder_use": true
-        },
-        {
           "id": "D205",
           "name": "雷尼替丁",
           "en_name": "ranitidine",
-          "category": "H2 受体拮抗剂",
-          "common": false,
-          "elder_use": true
-        },
-        {
-          "id": "D206",
-          "name": "法莫替丁",
-          "en_name": "famotidine",
           "category": "H2 受体拮抗剂",
           "common": true,
           "elder_use": true
@@ -488,56 +256,6 @@
           "name": "硫糖铝",
           "en_name": "sucralfate",
           "category": "胃黏膜保护剂",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D208",
-          "name": "铝碳酸镁",
-          "en_name": "hydrotalcite",
-          "category": "抗酸剂",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D209",
-          "name": "莫沙必利",
-          "en_name": "mosapride",
-          "category": "促胃肠动力药",
-          "common": true,
-          "elder_use": true,
-          "freq": "腹胀/消化不良"
-        },
-        {
-          "id": "D210",
-          "name": "多潘立酮",
-          "en_name": "domperidone",
-          "category": "促胃肠动力药",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D211",
-          "name": "乳果糖",
-          "en_name": "lactulose",
-          "category": "通便药",
-          "common": true,
-          "elder_use": true,
-          "freq": "便秘"
-        },
-        {
-          "id": "D212",
-          "name": "聚乙二醇",
-          "en_name": "polyethylene glycol",
-          "category": "通便药",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D213",
-          "name": "复方消化酶",
-          "en_name": "compound digestive enzymes",
-          "category": "消化酶",
           "common": true,
           "elder_use": true
         }
@@ -557,31 +275,6 @@
           "freq": "老年痴呆"
         },
         {
-          "id": "D251",
-          "name": "卡巴拉汀",
-          "en_name": "rivastigmine",
-          "category": "胆碱酯酶抑制剂",
-          "common": false,
-          "elder_use": true
-        },
-        {
-          "id": "D252",
-          "name": "美金刚",
-          "en_name": "memantine",
-          "category": "NMDA 拮抗剂",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D253",
-          "name": "银杏叶片",
-          "en_name": "ginkgo leaf",
-          "category": "中成药",
-          "common": true,
-          "elder_use": true,
-          "freq": "脑功能"
-        },
-        {
           "id": "D254",
           "name": "艾司唑仑",
           "en_name": "estazolam",
@@ -589,14 +282,6 @@
           "common": true,
           "elder_use": true,
           "freq": "失眠"
-        },
-        {
-          "id": "D255",
-          "name": "阿普唑仑",
-          "en_name": "alprazolam",
-          "category": "苯二氮䓬类",
-          "common": true,
-          "elder_use": true
         },
         {
           "id": "D256",
@@ -631,14 +316,6 @@
           "freq": "骨质疏松"
         },
         {
-          "id": "D301",
-          "name": "唑来膦酸",
-          "en_name": "zoledronic acid",
-          "category": "双膦酸盐",
-          "common": false,
-          "elder_use": true
-        },
-        {
           "id": "D302",
           "name": "碳酸钙 D3",
           "en_name": "calcium carbonate D3",
@@ -648,36 +325,20 @@
           "freq": "骨质疏松"
         },
         {
-          "id": "D303",
-          "name": "骨化三醇",
-          "en_name": "calcitriol",
-          "category": "活性维生素D",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D304",
-          "name": "阿法骨化醇",
-          "en_name": "alfacalcidol",
-          "category": "活性维生素D",
-          "common": true,
-          "elder_use": true
-        },
-        {
           "id": "D305",
           "name": "甲氨蝶呤",
           "en_name": "methotrexate",
           "category": "免疫抑制剂",
-          "common": false,
+          "common": true,
           "elder_use": true,
-          "note": "风湿/类风湿"
+          "freq": "类风湿/银屑病"
         },
         {
           "id": "D306",
           "name": "来氟米特",
           "en_name": "leflunomide",
           "category": "免疫抑制剂",
-          "common": false,
+          "common": true,
           "elder_use": true
         },
         {
@@ -702,77 +363,6 @@
           "name": "双氯芬酸",
           "en_name": "diclofenac",
           "category": "NSAIDs",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D310",
-          "name": "氨基葡萄糖",
-          "en_name": "glucosamine",
-          "category": "关节软骨保护",
-          "common": true,
-          "elder_use": true,
-          "freq": "骨关节炎"
-        },
-        {
-          "id": "D311",
-          "name": "依托考昔",
-          "en_name": "etoricoxib",
-          "category": "NSAIDs",
-          "common": true,
-          "elder_use": true
-        }
-      ]
-    },
-    {
-      "code": "URO",
-      "name": "泌尿系统/前列腺",
-      "drugs": [
-        {
-          "id": "D520",
-          "name": "坦索罗辛",
-          "en_name": "tamsulosin",
-          "category": "α受体阻滞剂",
-          "common": true,
-          "elder_use": true,
-          "freq": "前列腺增生"
-        },
-        {
-          "id": "D521",
-          "name": "非那雄胺",
-          "en_name": "finasteride",
-          "category": "5α还原酶抑制剂",
-          "common": true,
-          "elder_use": true
-        }
-      ]
-    },
-    {
-      "code": "VIT",
-      "name": "维生素/营养",
-      "drugs": [
-        {
-          "id": "D530",
-          "name": "维生素D",
-          "en_name": "vitamin D",
-          "category": "维生素",
-          "common": true,
-          "elder_use": true,
-          "freq": "补钙/骨质疏松"
-        },
-        {
-          "id": "D531",
-          "name": "复合维生素B",
-          "en_name": "vitamin B complex",
-          "category": "维生素",
-          "common": true,
-          "elder_use": true
-        },
-        {
-          "id": "D532",
-          "name": "辅酶Q10",
-          "en_name": "coenzyme Q10",
-          "category": "营养补充",
           "common": true,
           "elder_use": true
         }
@@ -931,7 +521,7 @@
           "name": "丙硫氧嘧啶",
           "en_name": "propylthiouracil",
           "category": "抗甲状腺",
-          "common": false,
+          "common": true,
           "elder_use": true
         }
       ]
@@ -940,22 +530,6 @@
       "code": "RESP_D",
       "name": "呼吸系统",
       "drugs": [
-        {
-          "id": "D450",
-          "name": "沙美特罗",
-          "en_name": "salmeterol",
-          "category": "β2 受体激动剂",
-          "common": false,
-          "elder_use": true
-        },
-        {
-          "id": "D451",
-          "name": "沙丁胺醇",
-          "en_name": "salbutamol",
-          "category": "β2 受体激动剂",
-          "common": true,
-          "elder_use": true
-        },
         {
           "id": "D452",
           "name": "布地奈德",
@@ -973,14 +547,6 @@
           "common": true,
           "elder_use": true,
           "freq": "哮喘/COPD"
-        },
-        {
-          "id": "D454",
-          "name": "孟鲁司特",
-          "en_name": "montelukast",
-          "category": "白三烯拮抗剂",
-          "common": true,
-          "elder_use": true
         }
       ]
     }

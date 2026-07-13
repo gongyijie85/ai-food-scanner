@@ -1,10 +1,10 @@
 {
   "_meta": {
-    "version": "1.2",
-    "updated": "2026-07-01",
+    "version": "2.0",
+    "updated": "2026-07-13",
     "source": "NMPA 药品说明书（药物相互作用字段）+ 国家老年健康宣传周 2026 老年人慢病用药指导 + 中国临床药学专家共识",
-    "note": "Phase 1 医疗安全修复：移除氯吡格雷-PPI 药物-药物相互作用条目；修正阿卡波糖低血糖表述；软化指令性措辞；补充甲硝唑/替硝唑双硫仑样反应条目；氨茶碱移除证据不足关键词。",
-    "scope": "老年慢病常用药 × 常见食物/饮料/补充剂",
+    "note": "同步精简 common_drugs.json：仅保留与食物/饮料/配料成分有明确相互作用的药物；新增痛风用药、镇静催眠药的相互作用条目。",
+    "scope": "食物/配料成分 × 药物相互作用",
     "disclaimer": "本数据集仅供参考，不能替代医生或药师指导。"
   },
   "conflicts": [
@@ -808,7 +808,116 @@
       "source": "国家老年健康宣传周 2026 糖尿病饮食指导"
     },
     {
+      "conflict_id": "DFC0052",
+      "drug_id": "D550",
+      "drug_name": "别嘌醇",
+      "food_keywords": [
+        "酒精",
+        "白酒",
+        "啤酒",
+        "红酒",
+        "高嘌呤",
+        "动物内脏",
+        "海鲜",
+        "浓肉汤",
+        "沙丁鱼",
+        "凤尾鱼"
+      ],
+      "mechanism": "尿酸生成/排泄影响",
+      "severity": "high",
+      "description": "别嘌醇抑制尿酸生成，酒精和高嘌呤食物会升高血尿酸，抵消药效并诱发痛风发作。",
+      "recommendation": "服药期间建议限制饮酒，减少动物内脏、海鲜、浓肉汤等高嘌呤食物摄入。",
+      "source": "NMPA 别嘌醇说明书 + 中国高尿酸血症与痛风诊疗指南"
+    },
+    {
       "conflict_id": "DFC0053",
+      "drug_id": "D551",
+      "drug_name": "非布司他",
+      "food_keywords": [
+        "酒精",
+        "高嘌呤",
+        "动物内脏",
+        "海鲜",
+        "浓肉汤"
+      ],
+      "mechanism": "尿酸生成/排泄影响",
+      "severity": "high",
+      "description": "非布司他降低尿酸生成，酒精和高嘌呤饮食会升高尿酸水平，增加痛风发作风险。",
+      "recommendation": "建议限制饮酒及高嘌呤食物，保持充足饮水，具体饮食方案请咨询医生。",
+      "source": "NMPA 非布司他说明书"
+    },
+    {
+      "conflict_id": "DFC0054",
+      "drug_id": "D552",
+      "drug_name": "苯溴马隆",
+      "food_keywords": [
+        "酒精",
+        "高嘌呤",
+        "动物内脏",
+        "海鲜",
+        "浓肉汤"
+      ],
+      "mechanism": "尿酸排泄/摄入平衡",
+      "severity": "high",
+      "description": "苯溴马隆促进尿酸排泄，但高嘌呤饮食和酒精会大幅增加尿酸生成，降低疗效。",
+      "recommendation": "服药期间建议低嘌呤饮食、限制饮酒，并多饮水以促进尿酸排泄。",
+      "source": "NMPA 苯溴马隆说明书"
+    },
+    {
+      "conflict_id": "DFC0055",
+      "drug_id": "D553",
+      "drug_name": "秋水仙碱",
+      "food_keywords": [
+        "葡萄柚",
+        "西柚",
+        "柚子",
+        "柚子汁"
+      ],
+      "mechanism": "CYP3A4/P-糖蛋白抑制",
+      "severity": "high",
+      "description": "西柚汁抑制秋水仙碱代谢和肠道外排，可能显著增加血药浓度，导致腹泻、骨髓抑制等毒性反应。",
+      "recommendation": "服药期间建议避免西柚/葡萄柚及其果汁，具体请咨询医生或药师。",
+      "source": "NMPA 秋水仙碱说明书"
+    },
+    {
+      "conflict_id": "DFC0056",
+      "drug_id": "D256",
+      "drug_name": "佐匹克隆",
+      "food_keywords": [
+        "酒精",
+        "白酒",
+        "啤酒",
+        "红酒",
+        "葡萄柚",
+        "西柚",
+        "柚子"
+      ],
+      "mechanism": "中枢抑制/CYP3A4",
+      "severity": "high",
+      "description": "佐匹克隆与酒精同服可导致严重中枢抑制、呼吸抑制；西柚汁抑制代谢增加嗜睡和跌倒风险。",
+      "recommendation": "服药期间避免饮酒，并减少西柚/葡萄柚摄入，老年人尤需注意防跌倒。",
+      "source": "NMPA 佐匹克隆说明书"
+    },
+    {
+      "conflict_id": "DFC0057",
+      "drug_id": "D257",
+      "drug_name": "唑吡坦",
+      "food_keywords": [
+        "酒精",
+        "白酒",
+        "啤酒",
+        "红酒",
+        "高脂",
+        "油腻"
+      ],
+      "mechanism": "中枢抑制/吸收延迟",
+      "severity": "high",
+      "description": "唑吡坦与酒精同服显著增强中枢抑制；高脂饮食延缓吸收，可能降低药效或导致入睡时间延长。",
+      "recommendation": "服药期间避免饮酒，睡前避免高脂饮食，按医嘱时间空腹或清淡饮食后服用。",
+      "source": "NMPA 唑吡坦说明书"
+    },
+    {
+      "conflict_id": "DFC0058",
       "drug_id": "D356",
       "drug_name": "头孢哌酮",
       "food_keywords": [
@@ -821,7 +930,7 @@
       "source": "NMPA 头孢类说明书 + 中国药典"
     },
     {
-      "conflict_id": "DFC0054",
+      "conflict_id": "DFC0059",
       "drug_id": "D357",
       "drug_name": "头孢孟多",
       "food_keywords": [
@@ -834,7 +943,7 @@
       "source": "NMPA 头孢类说明书 + 中国药典"
     },
     {
-      "conflict_id": "DFC0055",
+      "conflict_id": "DFC0060",
       "drug_id": "D358",
       "drug_name": "头孢替坦",
       "food_keywords": [
@@ -847,7 +956,7 @@
       "source": "NMPA 头孢类说明书 + 中国药典"
     },
     {
-      "conflict_id": "DFC0056",
+      "conflict_id": "DFC0061",
       "drug_id": "D359",
       "drug_name": "头孢美唑",
       "food_keywords": [
@@ -860,7 +969,7 @@
       "source": "NMPA 头孢类说明书 + 中国药典"
     },
     {
-      "conflict_id": "DFC0057",
+      "conflict_id": "DFC0062",
       "drug_id": "D360",
       "drug_name": "拉氧头孢",
       "food_keywords": [
@@ -873,7 +982,7 @@
       "source": "NMPA 头孢类说明书 + 中国药典"
     },
     {
-      "conflict_id": "DFC0058",
+      "conflict_id": "DFC0063",
       "drug_id": "D361",
       "drug_name": "头孢甲肟",
       "food_keywords": [
@@ -886,7 +995,7 @@
       "source": "NMPA 头孢类说明书 + 中国药典"
     },
     {
-      "conflict_id": "DFC0059",
+      "conflict_id": "DFC0064",
       "drug_id": "D362",
       "drug_name": "头孢唑肟",
       "food_keywords": [
@@ -899,7 +1008,7 @@
       "source": "NMPA 头孢类说明书 + 中国药典"
     },
     {
-      "conflict_id": "DFC0060",
+      "conflict_id": "DFC0065",
       "drug_id": "D363",
       "drug_name": "甲硝唑",
       "food_keywords": [
@@ -916,7 +1025,7 @@
       "source": "NMPA 甲硝唑说明书 + 中国药典"
     },
     {
-      "conflict_id": "DFC0061",
+      "conflict_id": "DFC0066",
       "drug_id": "D364",
       "drug_name": "替硝唑",
       "food_keywords": [
