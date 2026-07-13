@@ -199,13 +199,10 @@ def render_health_profile():
             if isinstance(d, dict) and "category" in d
         ]
 
-        def _clear_drugs():
+        # 控件创建前执行清空，避免实例化 hp_drugs 后再次赋值
+        if st.session_state.pop("_hp_clear_trigger", False):
             st.session_state["hp_drugs"] = []
             profile["drugs"] = []
-
-        # 控件创建前执行清空回调，避免实例化 hp_drugs 后再次赋值
-        if st.session_state.pop("_hp_clear_trigger", False):
-            _clear_drugs()
             default_labels = []
 
         selected_drug_labels = st.multiselect(

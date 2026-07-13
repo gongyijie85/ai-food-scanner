@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
 
-![版本](https://img.shields.io/badge/version-0.9.1-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.9.2-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -15,7 +15,8 @@
 
 ## 最新更新
 
-- **v0.9.1（2026-07-13）**：统一扫描页图片上传入口。`pages/scan.py` 删除独立摄像头画面与权限请求，仅保留一个 `st.file_uploader`；手机端由系统提供"拍照或从相册选择"，桌面端为普通文件选择；删除"拍照"标题、"或从相册选择"分隔文案、摄像头权限提示以及 `_resolve_uploaded_input` 双输入优先级逻辑；保留图片预览、5MB 限制、JPG/JPEG/PNG 格式校验、有效图片校验和重新选择/开始识别流程。清理 `.streamlit/style.css` 中失效的摄像头相关样式；`tests/test_scan.py` 更新为覆盖统一上传路径的最小回归测试。`pytest` 74 项通过。
+- **v0.9.2（2026-07-13）**：健康档案页代码审查修复。`tests/test_profile.py` 顶部添加 `sys.path.insert` 与模块级 import 对齐 `test_core.py` 约定；`test_age_edit_and_save` 同义反复改为 `test_default_age_render`；`test_drug_clear_trigger` 改为预填真实药品再触发清空；新增 `test_consecutive_renders_no_exception` 连续二次渲染测试捕获原 `hp_age_slider` 状态冲突回归；`pages/profile.py` 内联 `_clear_drugs` 闭包消除 Middle Man；`design/profile_age_preview.html` 标注已废弃。`pytest` 75 项通过。
+- **v0.9.1（2026-07-13）**：健康档案年龄 UI 简化 + 统一扫描页图片上传入口。`pages/profile.py` 移除重复年龄显示/滑块/快捷按钮，仅保留 `st.number_input`，修复 `StreamlitAPIException`；用药"清空"重构为控件创建前清空触发器；移除吸底保存按钮包装。`pages/scan.py` 删除独立摄像头画面与权限请求，仅保留一个 `st.file_uploader`；手机端由系统提供"拍照或从相册选择"，桌面端为普通文件选择；删除"拍照"标题、"或从相册选择"分隔文案、摄像头权限提示以及 `_resolve_uploaded_input` 双输入优先级逻辑；保留图片预览、5MB 限制、JPG/JPEG/PNG 格式校验、有效图片校验和重新选择/开始识别流程。清理 `.streamlit/style.css` 中失效的摄像头相关样式；`tests/test_scan.py` 更新为覆盖统一上传路径的最小回归测试。`pytest` 74 项通过。
 - **v0.9.0（2026-07-10）**：首页/引导页/扫描页重设计 + 全站 UI 视觉升级。引导页疾病标签统一为 6 项并与档案页对齐；首页改为"最近识别记录 + 底部并排双按钮（拍照识别 / 健康档案）"；扫描页改为相机优先模式，取景框提示"对准商品自动识别"，拍照后自动识别，底部展示最近拍过的商品横向列表；同时保留适老化大字号/大按钮/高对比、结果页环形评分/风险提示/吸底语音播报、档案页网格卡片、历史页评分徽章卡片、引导页步骤卡片等视觉升级。同步更新版本号、CHANGELOG、设计预览稿。
 - **v0.8.3（2026-07-10）**：参赛最终优化。彻底移除所有 DEBUG 模式代码，日志级别强制设为 INFO；调整首页扫描按钮位置，减少上方留白，提示气泡移到按钮下方；扩展 TTS 语音选择优先级，优先选择 Microsoft Xiaoxiao、Google 普通话等高质量中文语音；更新 Demo 帖版本号与更新记录。
 - **v0.8.2（2026-07-10）**：执行 ponytail-audit 极限优化。删除本地临时诊断脚本 `diag_tts_*.py`、`inspect_btn.py` 和 `.worktrees/` 目录；移除 `repositories/additive_risk.py` 中仅有单一实现的 `AdditiveRiskRepository` ABC 抽象层，`CsvAdditiveRiskRepository` 直接使用；`utils/score.py` 将 `normalize_additive()` 与 `compute_score_from_additives()` 各自重复创建的 `AdditiveMatcher` 合并为模块级单一实例，避免每次评分重复加载 GB 2760 CSV；同步更新 `repositories/__init__.py`、`services/additive_matcher.py` 的导入与类型提示。`py_compile`、`pytest` 66 项、`black --check`、`flake8` 全量通过。

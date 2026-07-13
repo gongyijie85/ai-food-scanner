@@ -1,9 +1,22 @@
 # 变更日志
 
+## v0.9.2 - 2026-07-13
+
+### AI 食品配料表识别工具 v0.9.2（健康档案页代码审查修复）
+
+- **测试规范对齐**：`tests/test_profile.py` 顶部添加 `sys.path.insert` 与模块级 `import streamlit as st`，与 `tests/test_core.py` 约定一致（修复 S3）。
+- **测试质量修复**：`test_age_edit_and_save` 同义反复改为 `test_default_age_render`（验证 number_input 不破坏既有值）；`test_drug_clear_trigger` 改为预填真实药品再触发清空，验证 populated 数据被清空（修复 P1/P3）。
+- **回归测试增强**：新增 `test_consecutive_renders_no_exception` 连续二次渲染测试，捕获原 `hp_age_slider` 状态冲突类回归（修复 P4）；测试 setup 抽取 `_seed_profile` 辅助函数复用。
+- **代码异味修复**：`pages/profile.py` 内联单次调用的 `_clear_drugs` 闭包，消除 Middle Man（修复 S4）。
+- **文档清理**：`design/profile_age_preview.html` 标注"已废弃"（年龄滑块 UI 已移除，修复 S6）。
+- **版本同步**：`README.md` 版本徽章与最新更新区同步到 v0.9.2；补录 v0.9.1 条目遗漏的 b1c9bd2 健康档案页变更说明（修复 S1/S2/P2）。
+- **验证**：`python -m pytest tests/ -q` 75 项通过；`black --check` / `flake8` / `py_compile` 作用于变更文件通过。
+
 ## v0.9.1 - 2026-07-13
 
-### AI 食品配料表识别工具 v0.9.1（统一扫描页图片上传入口）
+### AI 食品配料表识别工具 v0.9.1（健康档案年龄 UI 简化 + 统一扫描页图片上传入口）
 
+- **健康档案页简化**（b1c9bd2）：`pages/profile.py` 移除重复的年龄大字显示、滑块和四个年龄段快捷按钮，仅保留原生 `st.number_input`；删除 `hp_age_slider` key 写入与相关 CSS，修复 `StreamlitAPIException`；用药"清空"重构为控件创建前清空触发器（`_hp_clear_trigger`），避免控件实例化后再次赋值；移除吸底保存按钮包装 `.voice-float-bar`，防止与移动端底部导航重叠；`.streamlit/style.css` 清理年龄相关样式；新增 `tests/test_profile.py` 回归测试。
 - **扫描页简化**：`pages/scan.py` 删除独立 `st.camera_input` 摄像头画面与权限请求，统一使用单个 `st.file_uploader` 作为图片入口；手机端由系统自动提供"拍照或从相册选择"，桌面端保持普通文件选择；删除"拍照"标题、"或从相册选择"分隔文案、摄像头权限提示以及 `_resolve_uploaded_input` 双输入优先级逻辑。
 - **预览与识别流程保留**：图片选择后的预览、5MB 大小校验、JPG/JPEG/PNG 格式校验、`PIL.Image.verify()` 有效图片校验、"重新选择 / 开始识别"操作以及识别成功后跳转结果页的逻辑保持不变。
 - **样式清理**：`.streamlit/style.css` 移除已失效的 `.scan-camera-wrap`、`.scan-camera-label`、`.stCameraInput`、`.scan-album-label` 等摄像头双入口相关规则，扫描页注释改为"统一图片上传入口"。
