@@ -2437,11 +2437,7 @@ div[data-testid="stVerticalBlock"]:has(.scan-frame-overlay) .stFileUploader butt
 
 div[data-testid="stVerticalBlock"]:has(.scan-frame-hint) .stFileUploader small,
 div[data-testid="stVerticalBlock"]:has(.scan-frame-overlay) .stFileUploader small {
-  display: block;
-  text-align: center;
-  color: var(--color-text-tertiary);
-  font-size: var(--font-size-body-sm);
-  margin-top: var(--spacing-xs);
+  display: none !important;
 }
 
 /* 手机端扫描页：取景框适配 */
