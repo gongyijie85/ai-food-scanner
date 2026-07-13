@@ -64,42 +64,6 @@ def render_health_profile():
                 "年龄", min_value=1, max_value=120, value=profile.get("age", 60), step=1
             )
 
-    # 年龄滑块 + 快捷选择
-    st.markdown("<div class='age-section-marker'></div>", unsafe_allow_html=True)
-    age_value = profile.get("age", 60)
-    st.markdown(
-        f"<div class='age-display'>{age_value}<span>岁</span></div>",
-        unsafe_allow_html=True,
-    )
-    profile["age"] = st.slider(
-        "调整年龄",
-        min_value=1,
-        max_value=120,
-        value=age_value,
-        step=1,
-        key="hp_age_slider",
-        label_visibility="collapsed",
-    )
-
-    age_ranges = [
-        ("40岁以下", 35, lambda a: a < 40),
-        ("40-59岁", 50, lambda a: 40 <= a <= 59),
-        ("60-79岁", 70, lambda a: 60 <= a <= 79),
-        ("80岁以上", 85, lambda a: a >= 80),
-    ]
-    cols = st.columns(len(age_ranges))
-    for i, (label, default_age, in_range) in enumerate(age_ranges):
-        with cols[i]:
-            if st.button(
-                label,
-                key=f"hp_age_{i}",
-                type="primary" if in_range(profile["age"]) else "secondary",
-                use_container_width=True,
-            ):
-                st.session_state["hp_age_slider"] = default_age
-                profile["age"] = default_age
-                st.rerun()
-
     # 健康状况
     st.markdown(
         "<div class='result-card-title' style='margin:20px 0 6px 0;'>我的健康状况</div>",
@@ -235,6 +199,15 @@ def render_health_profile():
             if isinstance(d, dict) and "category" in d
         ]
 
+        def _clear_drugs():
+            st.session_state["hp_drugs"] = []
+            profile["drugs"] = []
+
+        # 控件创建前执行清空回调，避免实例化 hp_drugs 后再次赋值
+        if st.session_state.pop("_hp_clear_trigger", False):
+            _clear_drugs()
+            default_labels = []
+
         selected_drug_labels = st.multiselect(
             "搜索并选择当前用药",
             options=all_drug_options,
@@ -250,8 +223,7 @@ def render_health_profile():
             cols = st.columns([1, 0.3])
             with cols[1]:
                 if st.button("清空", key="hp_clear_drugs", use_container_width=True):
-                    st.session_state["hp_drugs"] = []
-                    profile["drugs"] = []
+                    st.session_state["_hp_clear_trigger"] = True
                     st.rerun()
 
     with st.expander("📝 补充说明（可选）"):
@@ -267,8 +239,7 @@ def render_health_profile():
             placeholder="如：特定添加剂、特殊食物",
         )
 
-    # 保存按钮吸底
-    st.markdown("<div class='voice-float-bar'>", unsafe_allow_html=True)
+    # 保存按钮
     if st.button(
         "💾 保存档案", type="primary", key="hp_save_btn", use_container_width=True
     ):
@@ -278,7 +249,6 @@ def render_health_profile():
         }
         st.session_state["health_profile"] = profile
         st.success("✅ 档案已保存")
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_health_profile_page():
