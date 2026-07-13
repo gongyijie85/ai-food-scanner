@@ -2261,101 +2261,39 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
   margin-top: var(--spacing-lg);
 }
 
-/* ========== 扫描页 V2：相机优先 ========== */
+/* ========== 扫描页：摄像头 + 相册双入口 ========== */
 
-/* 取景框覆盖层 */
-.scan-frame-overlay {
-  position: relative;
-  width: 80%;
-  max-width: 300px;
-  aspect-ratio: 4 / 3;
-  margin: 0 auto;
-  z-index: 10;
-  pointer-events: none;
+/* 摄像头区域标题 */
+.scan-camera-wrap {
+  margin: 8px 0 4px;
 }
 
-.scan-frame-hint,
-.scan-frame-overlay {
-  position: relative;
-  width: 80%;
-  max-width: 300px;
-  aspect-ratio: 4 / 3;
-  margin: 0 auto;
-  z-index: 10;
+.scan-camera-label {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0 0 6px;
 }
 
-.scan-frame-hint .corner,
-.scan-frame-overlay .corner {
-  position: absolute;
-  width: 32px;
-  height: 32px;
-  border-color: var(--color-primary-light);
-  border-style: solid;
-  border-width: 0;
+/* 摄像头输入框 */
+.stCameraInput {
+  margin: 0 0 var(--spacing-sm);
 }
 
-.scan-frame-hint .corner-tl,
-.scan-frame-overlay .corner-tl {
-  top: 0;
-  left: 0;
-  border-top-width: 4px;
-  border-left-width: 4px;
-  border-top-left-radius: 8px;
+/* 相册入口分隔文字 */
+.scan-album-label {
+  text-align: center;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-tertiary);
+  margin: 4px 0 8px;
 }
 
-.scan-frame-hint .corner-tr,
-.scan-frame-overlay .corner-tr {
-  top: 0;
-  right: 0;
-  border-top-width: 4px;
-  border-right-width: 4px;
-  border-top-right-radius: 8px;
-}
-
-.scan-frame-hint .corner-bl,
-.scan-frame-overlay .corner-bl {
-  bottom: 0;
-  left: 0;
-  border-bottom-width: 4px;
-  border-left-width: 4px;
-  border-bottom-left-radius: 8px;
-}
-
-.scan-frame-hint .corner-br,
-.scan-frame-overlay .corner-br {
-  bottom: 0;
-  right: 0;
-  border-bottom-width: 4px;
-  border-right-width: 4px;
-  border-bottom-right-radius: 8px;
-}
-
-.scan-frame-hint .scan-line,
-.scan-frame-overlay .scan-line {
-  position: absolute;
-  left: 8px;
-  right: 8px;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--color-primary-light), transparent);
-  animation: scan-sweep 2.5s ease-in-out infinite;
-  z-index: 2;
-}
-
-@keyframes scan-sweep {
-  0% {
-    top: 8px;
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    top: calc(100% - 10px);
-    opacity: 0;
-  }
+/* 预览信息 */
+.scan-preview-info {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+  padding: 10px 0;
 }
 
 /* 最近拍过的商品：强制横向排列 */
@@ -2401,7 +2339,14 @@ body.device-mobile .scan-recent-list > div[data-testid="stHorizontalBlock"] {
   height: 48px !important;
 }
 
-/* 扫描页统一上传入口：把 file_uploader 按钮做成大按钮 */
+/* 手机端扫描页适配 */
+@media (max-width: 767px) {
+  .stCameraInput > div {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+}
+
 /* ========== 健康档案页：当前用药区域 ========== */
 
 /* 用药区域卡片容器 */
@@ -2493,52 +2438,6 @@ body.device-mobile .scan-recent-list > div[data-testid="stHorizontalBlock"] {
   border-radius: var(--radius-full) !important;
   font-size: var(--font-size-body-sm) !important;
   padding: 0 8px !important;
-}
-
-/* ========== 扫描页上传按钮：覆盖全局 .stFileUploader 的中文 "选择文件" 样式 ========== */
-div[data-testid="stVerticalBlock"]:has(.scan-frame-hint) .stFileUploader button[data-testid="stBaseButton-secondary"],
-div[data-testid="stVerticalBlock"]:has(.scan-frame-overlay) .stFileUploader button[data-testid="stBaseButton-secondary"] {
-  width: 100% !important;
-  height: 54px !important;
-  border-radius: var(--radius-full) !important;
-  background: var(--color-primary-gradient) !important;
-  color: transparent !important;
-  font-size: var(--font-size-body-lg) !important;
-  font-weight: var(--font-weight-bold) !important;
-  box-shadow: var(--shadow-button) !important;
-  border: none !important;
-  position: relative !important;
-}
-
-div[data-testid="stVerticalBlock"]:has(.scan-frame-hint) .stFileUploader button[data-testid="stBaseButton-secondary"]:hover,
-div[data-testid="stVerticalBlock"]:has(.scan-frame-overlay) .stFileUploader button[data-testid="stBaseButton-secondary"]:hover {
-  filter: brightness(1.05);
-}
-
-div[data-testid="stVerticalBlock"]:has(.scan-frame-hint) .stFileUploader button[data-testid="stBaseButton-secondary"]::after,
-div[data-testid="stVerticalBlock"]:has(.scan-frame-overlay) .stFileUploader button[data-testid="stBaseButton-secondary"]::after {
-  content: "📷 拍照 / 从相册选择" !important;
-  position: absolute !important;
-  left: 50% !important;
-  top: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  color: var(--color-text-inverse) !important;
-  font-size: var(--font-size-body-lg) !important;
-  font-weight: var(--font-weight-bold) !important;
-  white-space: nowrap !important;
-}
-
-div[data-testid="stVerticalBlock"]:has(.scan-frame-hint) .stFileUploader small,
-div[data-testid="stVerticalBlock"]:has(.scan-frame-overlay) .stFileUploader small {
-  display: none !important;
-}
-
-/* 手机端扫描页：取景框适配 */
-@media (max-width: 767px) {
-  .scan-frame-hint,
-  .scan-frame-overlay {
-    width: 90%;
-  }
 }
 
 /* ========== 历史页搜索与筛选 ========== */

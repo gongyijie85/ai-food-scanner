@@ -1,4 +1,4 @@
-"""扫描上传页渲染（拍照/相册统一入口）."""
+"""扫描上传页渲染（摄像头 + 相册双入口）."""
 
 import os
 
@@ -22,28 +22,31 @@ from utils.helpers import switch_page
 from utils.history import add_history, load_history
 from utils.security import _safe
 
-# 取景框视觉提示 HTML
-_CAMERA_FRAME_HINT = """
-<div class='scan-frame-hint'>
-    <div class='corner corner-tl'></div>
-    <div class='corner corner-tr'></div>
-    <div class='corner corner-bl'></div>
-    <div class='corner corner-br'></div>
-    <div class='scan-line'></div>
-</div>
-"""
-
 
 def _scan_common_setup():
-    """扫描页通用前置：读取档案、API key、上传 key."""
+    """扫描页通用前置：读取档案、API key、组件 key."""
     profile = st.session_state.get("health_profile", {})
     groups = profile.get("diseases", [])
     api_key = get_api_key()
 
     if "scan_upload_key" not in st.session_state:
         st.session_state["scan_upload_key"] = 0
-    uploader_key = f"scan_uploader_{st.session_state['scan_upload_key']}"
-    return groups, api_key, uploader_key
+    key_prefix = st.session_state["scan_upload_key"]
+    camera_key = f"scan_camera_{key_prefix}"
+    uploader_key = f"scan_uploader_{key_prefix}"
+    return groups, api_key, camera_key, uploader_key
+
+
+def _resolve_uploaded_input(camera_photo, uploaded_file):
+    """在 camera_input 和 file_uploader 之间选择有效输入.
+
+    camera_input 优先级高于 file_uploader，二者互斥。
+    """
+    if camera_photo is not None:
+        return camera_photo
+    if uploaded_file is not None:
+        return uploaded_file
+    return None
 
 
 def _scan_validate_and_recognize(uploaded, api_key, groups):
@@ -113,7 +116,7 @@ def _render_recent_scans():
         return
 
     st.markdown(
-        "<div class='result-card-title' style='margin:8px 0 14px 0;'>"
+        "<div class='result-card-title' style='margin:20px 0 14px 0;'>"
         "📷 最近拍过的商品</div>",
         unsafe_allow_html=True,
     )
@@ -137,55 +140,73 @@ def _render_recent_scans():
 
 
 def render_scan_page():
-    """扫描上传页：统一拍照/相册入口."""
+    """扫描上传页：摄像头 + 相册双入口."""
     render_top_nav("扫描识别", back_target="home")
 
-    groups, api_key, uploader_key = _scan_common_setup()
+    groups, api_key, camera_key, uploader_key = _scan_common_setup()
 
     st.markdown(
         "<p class='scan-tip' style='text-align:center;color:#616161;font-size:15px;"
-        "font-weight:500;margin:0 0 16px 0;'>对准商品自动识别</p>",
+        "font-weight:500;margin:0 0 16px 0;'>对准配料表拍照或从相册选择</p>",
         unsafe_allow_html=True,
     )
 
-    # 取景框视觉提示
+    # 摄像头入口
     st.markdown(
-        "<div style='background:#1a1a1a;border-radius:16px;position:relative;"
-        "overflow:hidden;padding:20px 16px 16px;text-align:center;'>"
-        f"{_CAMERA_FRAME_HINT}"
-        "<p style='color:rgba(255,255,255,0.85);font-size:14px;margin:12px 0 0;'>"
-        "将配料表放入框内，光线充足识别更准确</p>"
-        "</div>",
+        "<div class='scan-camera-wrap'>"
+        "<p class='scan-camera-label'>📷 拍照</p></div>",
         unsafe_allow_html=True,
     )
+    camera_photo = st.camera_input(
+        "拍照识别配料表",
+        key=camera_key,
+        label_visibility="collapsed",
+        help="点击快门拍照，首次使用需要允许浏览器使用摄像头",
+    )
 
-    # 统一上传入口：手机端点击后可选拍照或相册
-    st.markdown("<div class='scan-upload-area-marker'></div>", unsafe_allow_html=True)
-    uploaded = st.file_uploader(
-        "拍照或选择配料表图片",
+    # 相册入口
+    st.markdown(
+        "<div class='scan-album-label'>或从相册选择</div>",
+        unsafe_allow_html=True,
+    )
+    uploaded_file = st.file_uploader(
+        "从相册选择配料表图片",
         type=["jpg", "jpeg", "png"],
         accept_multiple_files=False,
         label_visibility="collapsed",
-        help="支持 jpg/png，大图会自动压缩",
         key=uploader_key,
     )
 
-    if uploaded is not None:
+    # 摄像头权限/不可用提示
+    if camera_photo is None and uploaded_file is None:
+        st.info(
+            "💡 如果摄像头无法使用，请改用下方的“从相册选择”上传图片；"
+            "手机端建议在浏览器设置中允许摄像头权限。"
+        )
+
+    # 选择有效输入并预览
+    selected_input = _resolve_uploaded_input(camera_photo, uploaded_file)
+
+    if selected_input is not None:
+        source_label = "相机拍摄" if selected_input is camera_photo else "相册选择"
         st.markdown(
-            f"<div style='text-align:center;color:#616161;font-size:14px;padding:10px;'>"
-            f"已选择：{_safe(uploaded.name)} · {uploaded.size / 1024:.0f}KB</div>",
+            f"<div class='scan-preview-info'>已选择：{source_label} · "
+            f"{_safe(getattr(selected_input, 'name', '未命名'))} · "
+            f"{selected_input.size / 1024:.0f}KB</div>",
             unsafe_allow_html=True,
         )
+        st.image(selected_input, use_container_width=True)
+
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("重新选择", key="scan_retake", use_container_width=True):
+            if st.button("重新拍摄/选择", key="scan_retake", use_container_width=True):
                 st.session_state["scan_upload_key"] += 1
                 st.rerun()
         with col2:
             if st.button(
                 "开始识别", type="primary", key="scan_confirm", use_container_width=True
             ):
-                _scan_validate_and_recognize(uploaded, api_key, groups)
+                _scan_validate_and_recognize(selected_input, api_key, groups)
 
     # 最近识别
     _render_recent_scans()
