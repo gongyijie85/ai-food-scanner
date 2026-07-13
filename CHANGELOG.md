@@ -14,6 +14,7 @@
 - **扫描页非图片文件即时校验**：`pages/scan.py` 在显示预览与操作按钮前增加 `Image.open(...).verify()`，非有效图片立即 `st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")` 并 `st.stop()`，避免无效文件触发 Streamlit 内部异常堆栈。
 - **清理评委快速模式**：`app.py` 评委模式（`?demo=1`）新增 `_seed_demo_history_if_needed()`，首次进入且历史为空时写入 3 条差异明显的样例（沂蒙公社山楂糕 88 分、阿尔卑斯牛奶硬糖 62 分、某品牌薯片示例 42 分），避免「该产品」「未知」等占位记录，便于评委三步内完成体验。
 - **冒烟测试覆盖四类场景**：`smoke_test.py` 使用无效 API key，回归清晰图/模糊图/非图片（`invalid.jpg`）/接口失败四类场景；更新错误提示选择器为 `stAlertContentError`；验证非图片文件即时提示格式错误、接口失败给出「识别服务暂时不可用」提示。
+- **初赛 Demo 帖配图生成**：在 `design/demo_assets/` 重新生成 `demo_compare_ocr.png`（普通 OCR 与本项目对比）、`demo_case_clear.png`（沂蒙公社山楂糕清晰案例）、`demo_case_blur.png`（模糊图片失败案例）三张配图，用于论坛帖创新性与实用性说明。配图已上传至 GitHub Release `demo-assets-v0.9.3`，使用 GitHub CDN 直链在初赛帖 Markdown 中引用。
 - **版本同步**：`README.md` 版本徽章与最新更新区同步到 v0.9.3。
 - **验证**：`python -m pytest tests/ -q` 75 项通过；`python -m black --check --diff .` 无差异；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m py_compile` 检查变更文件通过。
 
