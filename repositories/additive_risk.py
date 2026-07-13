@@ -1,6 +1,7 @@
 """GB 2760 食品添加剂风险数据仓库适配器."""
 
 import csv
+import os
 import re
 from dataclasses import dataclass
 from typing import Dict, Optional
@@ -26,10 +27,13 @@ class AdditiveRisk:
 class CsvAdditiveRiskRepository:
     """基于 CSV 文件的 GB 2760 风险库实现."""
 
-    def __init__(self, csv_path: str):
+    def __init__(self, csv_path: str, synonym_path: str = "data/additive_synonyms.csv"):
         self.csv_path = csv_path
+        self.synonym_path = synonym_path
         self._data: Dict[str, AdditiveRisk] = {}
+        self._synonyms: Dict[str, str] = {}
         self._load()
+        self._load_synonyms()
 
     def _load(self):
         """从 CSV 加载全部风险数据."""
@@ -50,6 +54,22 @@ class CsvAdditiveRiskRepository:
             # CSV 缺失时保持空库，避免启动崩溃
             pass
 
+    def _load_synonyms(self):
+        """加载俗名 -> 标准名映射表."""
+        if not os.path.exists(self.synonym_path):
+            return
+        try:
+            with open(self.synonym_path, encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    synonym = row.get("synonym", "").strip()
+                    canonical = row.get("canonical_name", "").strip()
+                    if not synonym or not canonical:
+                        continue
+                    self._synonyms[synonym] = canonical
+        except FileNotFoundError:
+            pass
+
     def _normalize(self, name: str) -> str:
         """统一名称格式：去除括号、空格、INS 号残留."""
         # 先去掉括号及其内部内容（如 E202、INS202）
@@ -59,10 +79,15 @@ class CsvAdditiveRiskRepository:
         return s.strip()
 
     def find(self, name: str) -> Optional[AdditiveRisk]:
-        """按名称查找，依次尝试精确匹配、清洗后匹配、模糊匹配."""
+        """按名称查找，依次尝试同义词映射、精确匹配、清洗后匹配、模糊匹配."""
         n = name.strip()
         if not n:
             return None
+
+        # 0) 同义词映射：维生素C -> 抗坏血酸
+        canonical = self._synonyms.get(n)
+        if canonical and canonical in self._data:
+            return self._data[canonical]
 
         # 1) 精确匹配
         if n in self._data:

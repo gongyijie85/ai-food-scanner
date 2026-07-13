@@ -6,7 +6,7 @@ This file configures how agent skills interact with this repository.
 
 ### Issue tracker
 
-Issues are tracked in GitHub Issues for this repo (`gongyijie85/ai-food-scanner`). Use the `gh` CLI to create, list, and update issues. See `docs/agents/issue-tracker.md`.
+Issues are tracked in GitHub Issues for this repo (`gongyijie85/ai-food-scanner`). Use the `gh` CLI to create, list, and update issues. External PRs are not treated as a triage surface. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

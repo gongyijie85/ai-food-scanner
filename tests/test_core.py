@@ -69,6 +69,25 @@ class TestNormalizeAdditive:
         level, ins, note = normalize_additive("水")
         assert level == "A"
 
+    def test_synonym_vitamin_c(self):
+        """维生素C 俗名应映射到 抗坏血酸 并返回 A 级"""
+        level, ins, note = normalize_additive("维生素 C")
+        assert level == "A"
+        assert "未在 GB 2760" not in note
+        assert "维生素C" in note or "抗坏血酸" in note
+
+    def test_synonym_baking_soda(self):
+        """小苏打 俗名应映射到 碳酸氢钠 并返回 A 级"""
+        level, ins, note = normalize_additive("小苏打")
+        assert level == "A"
+        assert "未在 GB 2760" not in note
+
+    def test_synonym_msg(self):
+        """味精 俗名应映射到 谷氨酸钠"""
+        level, ins, note = normalize_additive("味精")
+        assert level == "A"
+        assert "未在 GB 2760" not in note
+
 
 class TestComputeScoreFromAdditives:
     """测试 compute_score_from_additives 函数"""
