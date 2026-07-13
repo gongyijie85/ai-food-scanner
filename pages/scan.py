@@ -189,8 +189,3 @@ def render_scan_page():
 
     # 最近识别
     _render_recent_scans()
-
-    st.markdown(
-        "<div class='disclaimer-text'>提示：请尽量正对配料表拍照，保证光线充足</div>",
-        unsafe_allow_html=True,
-    )
