@@ -38,7 +38,9 @@ class TestUnifiedUploadValidation:
 
     def _patch_stop(self, monkeypatch):
         """把 st.stop 替换为抛出 StopTriggered，方便测试断言."""
-        monkeypatch.setattr("pages.scan.st.stop", lambda: (_ for _ in ()).throw(StopTriggered()))
+        monkeypatch.setattr(
+            "pages.scan.st.stop", lambda: (_ for _ in ()).throw(StopTriggered())
+        )
 
     def test_oversize_file_shows_error_and_stops(self, monkeypatch):
         """超过 5MB 时提示并停止，不继续识别."""
