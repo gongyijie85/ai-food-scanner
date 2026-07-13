@@ -1,5 +1,5 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.9.0 | 更新时间: 2026-07-10 */
+/* 版本: v0.9.1 | 更新时间: 2026-07-13 */
 /* 三端前端彻底重构：简化媒体查询，统一设计系统 */
 
 /* ========== 设计系统变量 ========== */
@@ -2261,32 +2261,7 @@ div[data-testid="stVerticalBlock"]:has(.home-scan-card-marker) {
   margin-top: var(--spacing-lg);
 }
 
-/* ========== 扫描页：摄像头 + 相册双入口 ========== */
-
-/* 摄像头区域标题 */
-.scan-camera-wrap {
-  margin: 8px 0 4px;
-}
-
-.scan-camera-label {
-  font-size: var(--font-size-body);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  margin: 0 0 6px;
-}
-
-/* 摄像头输入框 */
-.stCameraInput {
-  margin: 0 0 var(--spacing-sm);
-}
-
-/* 相册入口分隔文字 */
-.scan-album-label {
-  text-align: center;
-  font-size: var(--font-size-body-sm);
-  color: var(--color-text-tertiary);
-  margin: 4px 0 8px;
-}
+/* ========== 扫描页：统一图片上传入口 ========== */
 
 /* 预览信息 */
 .scan-preview-info {

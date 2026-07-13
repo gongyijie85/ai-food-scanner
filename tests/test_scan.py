@@ -1,6 +1,6 @@
 """扫描页相关单元测试
 
-覆盖：_resolve_uploaded_input 互斥选择逻辑
+覆盖：统一图片上传入口的校验与识别路径
 """
 
 import io
@@ -11,16 +11,16 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from pages.scan import _resolve_uploaded_input
+from pages.scan import _scan_validate_and_recognize
 
 
 class FakeUploadedFile:
-    """模拟 Streamlit UploadedFile / camera_input 返回对象."""
+    """模拟 Streamlit UploadedFile 对象."""
 
-    def __init__(self, name, size):
+    def __init__(self, name, size, content=b"fake image bytes"):
         self.name = name
         self.size = size
-        self._buffer = io.BytesIO(b"fake image bytes")
+        self._buffer = io.BytesIO(content)
 
     def seek(self, pos):
         self._buffer.seek(pos)
@@ -29,32 +29,37 @@ class FakeUploadedFile:
         return self._buffer.read(size)
 
 
-class TestResolveUploadedInput:
-    """测试 _resolve_uploaded_input 在 camera_input 与 file_uploader 之间的选择逻辑."""
-
-    def test_none_returns_none(self):
-        """两者都为空时返回 None."""
-        assert _resolve_uploaded_input(None, None) is None
-
-    def test_camera_wins_over_file(self):
-        """camera 和 file 同时存在时优先返回 camera."""
-        camera = FakeUploadedFile("camera.jpg", 1024)
-        file_obj = FakeUploadedFile("album.jpg", 2048)
-        selected = _resolve_uploaded_input(camera, file_obj)
-        assert selected is camera
-
-    def test_file_used_when_camera_none(self):
-        """只有 file 时返回 file."""
-        file_obj = FakeUploadedFile("album.jpg", 2048)
-        selected = _resolve_uploaded_input(None, file_obj)
-        assert selected is file_obj
-
-    def test_camera_used_when_file_none(self):
-        """只有 camera 时返回 camera."""
-        camera = FakeUploadedFile("camera.jpg", 1024)
-        selected = _resolve_uploaded_input(camera, None)
-        assert selected is camera
+class StopTriggered(Exception):
+    """模拟 Streamlit st.stop() 中断脚本执行."""
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+class TestUnifiedUploadValidation:
+    """测试统一上传入口的校验与识别路径."""
+
+    def _patch_stop(self, monkeypatch):
+        """把 st.stop 替换为抛出 StopTriggered，方便测试断言."""
+        monkeypatch.setattr("pages.scan.st.stop", lambda: (_ for _ in ()).throw(StopTriggered()))
+
+    def test_oversize_file_shows_error_and_stops(self, monkeypatch):
+        """超过 5MB 时提示并停止，不继续识别."""
+        errors = []
+        monkeypatch.setattr("pages.scan.st.error", errors.append)
+        self._patch_stop(monkeypatch)
+
+        oversized = FakeUploadedFile("big.jpg", 6 * 1024 * 1024)
+        with pytest.raises(StopTriggered):
+            _scan_validate_and_recognize(oversized, "fake-api-key", [])
+
+        assert any("5MB" in msg for msg in errors)
+
+    def test_missing_api_key_shows_error_and_stops(self, monkeypatch):
+        """未配置 API key 时提示并停止."""
+        errors = []
+        monkeypatch.setattr("pages.scan.st.error", errors.append)
+        self._patch_stop(monkeypatch)
+
+        uploaded = FakeUploadedFile("test.jpg", 1024)
+        with pytest.raises(StopTriggered):
+            _scan_validate_and_recognize(uploaded, "", [])
+
+        assert any("API 密钥" in msg for msg in errors)

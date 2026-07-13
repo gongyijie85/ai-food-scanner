@@ -1,5 +1,16 @@
 # 变更日志
 
+## v0.9.1 - 2026-07-13
+
+### AI 食品配料表识别工具 v0.9.1（统一扫描页图片上传入口）
+
+- **扫描页简化**：`pages/scan.py` 删除独立 `st.camera_input` 摄像头画面与权限请求，统一使用单个 `st.file_uploader` 作为图片入口；手机端由系统自动提供"拍照或从相册选择"，桌面端保持普通文件选择；删除"拍照"标题、"或从相册选择"分隔文案、摄像头权限提示以及 `_resolve_uploaded_input` 双输入优先级逻辑。
+- **预览与识别流程保留**：图片选择后的预览、5MB 大小校验、JPG/JPEG/PNG 格式校验、`PIL.Image.verify()` 有效图片校验、"重新选择 / 开始识别"操作以及识别成功后跳转结果页的逻辑保持不变。
+- **样式清理**：`.streamlit/style.css` 移除已失效的 `.scan-camera-wrap`、`.scan-camera-label`、`.stCameraInput`、`.scan-album-label` 等摄像头双入口相关规则，扫描页注释改为"统一图片上传入口"。
+- **测试更新**：`tests/test_scan.py` 删除 `_resolve_uploaded_input` 双输入旧测试；新增 `TestUnifiedUploadValidation` 覆盖统一上传路径的 5MB 超限校验与 API key 缺失校验。
+- **版本同步**：`README.md` 版本徽章与最新更新区同步到 v0.9.1。
+- **验证**：`python -m pytest tests/ -q` 74 项通过；`python -m py_compile` 检查 `app.py`、`pages/*.py`、`components/*.py`、`utils/*.py` 通过。
+
 ## v0.9.0 - 2026-07-10
 
 ### AI 食品配料表识别工具 v0.9.0（首页/引导页/扫描页重设计）
