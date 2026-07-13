@@ -10,8 +10,8 @@ from utils.security import _safe
 def _render_score_hero(score: int, product_name: str, show_slow_replay: bool = True):
     """渲染评分英雄区（环形进度 + 产品名 + 评级 + 含义）."""
     if score >= 80:
-        label, bg = "可放心食用", "#43A047"
-        meaning = "添加剂少，适合日常食用"
+        label, bg = "暂未发现已知高风险提示", "#43A047"
+        meaning = "按当前档案暂未发现高风险配料"
     elif score >= 60:
         label, bg = "特定人群注意", "#FF9800"
         meaning = "含少量需注意的成分"

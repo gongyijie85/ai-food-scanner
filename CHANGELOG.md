@@ -1,5 +1,22 @@
 # 变更日志
 
+## v0.9.3 - 2026-07-13
+
+### AI 食品配料表识别工具 v0.9.3（初赛收口：收紧健康结论表述 + 评委快速模式样例 + 扫描页非图片校验）
+
+- **文件**：`app.py`、`README.md`、`CHANGELOG.md`、`components/score_hero.py`、`pages/home.py`、`pages/history.py`、`components/additive_card.py`、`utils/api.py`、`utils/score.py`、`pages/scan.py`、`smoke_test.py`
+- **收紧健康结论表述**：
+  - `README.md`：首页 slogan 从「3 秒内语音读出"这块食品能不能吃"」改为「3 秒内语音读出配料风险，帮助看懂包装上的添加剂」。
+  - `components/score_hero.py`：评分 ≥80 分标签从「可放心食用」改为「暂未发现已知高风险提示」，含义说明从「添加剂少，适合日常食用」改为「按当前档案暂未发现高风险配料」。
+  - `pages/home.py`、`pages/history.py`：历史状态标签从「安全」改为「良好」；历史页筛选标签同步改为「良好」。
+  - `components/additive_card.py`：A 级/绿色添加剂标签从「可食用」改为「较友好」；图例「圆=安全」改为「圆=较友好」。
+  - `utils/api.py`、`utils/score.py`：注释/文档字符串中的「客户端权威判定」改为「客户端本地 GB 2760 名称匹配和分类」。
+- **扫描页非图片文件即时校验**：`pages/scan.py` 在显示预览与操作按钮前增加 `Image.open(...).verify()`，非有效图片立即 `st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")` 并 `st.stop()`，避免无效文件触发 Streamlit 内部异常堆栈。
+- **清理评委快速模式**：`app.py` 评委模式（`?demo=1`）新增 `_seed_demo_history_if_needed()`，首次进入且历史为空时写入 3 条差异明显的样例（沂蒙公社山楂糕 88 分、阿尔卑斯牛奶硬糖 62 分、某品牌薯片示例 42 分），避免「该产品」「未知」等占位记录，便于评委三步内完成体验。
+- **冒烟测试覆盖四类场景**：`smoke_test.py` 使用无效 API key，回归清晰图/模糊图/非图片（`invalid.jpg`）/接口失败四类场景；更新错误提示选择器为 `stAlertContentError`；验证非图片文件即时提示格式错误、接口失败给出「识别服务暂时不可用」提示。
+- **版本同步**：`README.md` 版本徽章与最新更新区同步到 v0.9.3。
+- **验证**：`python -m pytest tests/ -q` 75 项通过；`python -m black --check --diff .` 无差异；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m py_compile` 检查变更文件通过。
+
 ## v0.9.2 - 2026-07-13
 
 ### AI 食品配料表识别工具 v0.9.2（健康档案页代码审查修复）

@@ -81,7 +81,13 @@ ui_ux_report.html
 # 本地冒烟测试数据与诊断脚本
 data/history.json
 data/history_full.json
+inspect_*.py
+inspect_*.png
 inspect_btn.py
 smoke_home.png
 smoke_history.png
 smoke_detail.png
+smoke_scan*.png
+invalid.jpg
+test_label_blur.jpg
+demo_*.png

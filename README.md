@@ -1,8 +1,8 @@
 # 拍了就懂 · AI 食品配料表识别工具
 
-> 老人打开手机，拍照配料表，**3 秒内语音读出**"这块食品能不能吃"。
+> 老人打开手机，拍照配料表，**3 秒内语音读出**配料风险，帮助看懂包装上的添加剂。
 
-![版本](https://img.shields.io/badge/version-0.9.2-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.9.3-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -15,6 +15,7 @@
 
 ## 最新更新
 
+- **v0.9.3（2026-07-13）**：初赛收口，收紧健康结论表述并优化评委快速模式。把 README 与结果页的「能不能吃」「可放心食用」等绝对化表述统一改为「帮助看懂配料风险」「暂未发现已知高风险提示」；历史/首页状态「安全」改为「良好」，添加剂图例「圆=安全」改为「圆=较友好」；`utils/api.py` 与 `utils/score.py` 的「权威判定」注释改为「本地 GB 2760 名称匹配和分类」。评委快速模式（`?demo=1`）首次进入时自动写入 3 条差异明显的样例记录（山楂糕 88 分/牛奶硬糖 62 分/薯片示例 42 分），便于三步内体验完整流程。扫描页增加上传后即时图片校验，避免非图片文件直接触发 Streamlit 异常；`smoke_test.py` 扩展为清晰图/模糊图/非图片/接口失败四类场景回归。`pytest` 75 项通过。
 - **v0.9.2（2026-07-13）**：健康档案页代码审查修复。`tests/test_profile.py` 顶部添加 `sys.path.insert` 与模块级 import 对齐 `test_core.py` 约定；`test_age_edit_and_save` 同义反复改为 `test_default_age_render`；`test_drug_clear_trigger` 改为预填真实药品再触发清空；新增 `test_consecutive_renders_no_exception` 连续二次渲染测试捕获原 `hp_age_slider` 状态冲突回归；`pages/profile.py` 内联 `_clear_drugs` 闭包消除 Middle Man；`design/profile_age_preview.html` 标注已废弃。`pytest` 75 项通过。
 - **v0.9.1（2026-07-13）**：健康档案年龄 UI 简化 + 统一扫描页图片上传入口。`pages/profile.py` 移除重复年龄显示/滑块/快捷按钮，仅保留 `st.number_input`，修复 `StreamlitAPIException`；用药"清空"重构为控件创建前清空触发器；移除吸底保存按钮包装。`pages/scan.py` 删除独立摄像头画面与权限请求，仅保留一个 `st.file_uploader`；手机端由系统提供"拍照或从相册选择"，桌面端为普通文件选择；删除"拍照"标题、"或从相册选择"分隔文案、摄像头权限提示以及 `_resolve_uploaded_input` 双输入优先级逻辑；保留图片预览、5MB 限制、JPG/JPEG/PNG 格式校验、有效图片校验和重新选择/开始识别流程。清理 `.streamlit/style.css` 中失效的摄像头相关样式；`tests/test_scan.py` 更新为覆盖统一上传路径的最小回归测试。`pytest` 74 项通过。
 - **v0.9.0（2026-07-10）**：首页/引导页/扫描页重设计 + 全站 UI 视觉升级。引导页疾病标签统一为 6 项并与档案页对齐；首页改为"最近识别记录 + 底部并排双按钮（拍照识别 / 健康档案）"；扫描页改为相机优先模式，取景框提示"对准商品自动识别"，拍照后自动识别，底部展示最近拍过的商品横向列表；同时保留适老化大字号/大按钮/高对比、结果页环形评分/风险提示/吸底语音播报、档案页网格卡片、历史页评分徽章卡片、引导页步骤卡片等视觉升级。同步更新版本号、CHANGELOG、设计预览稿。

@@ -17,7 +17,7 @@ from utils.security import _safe
 
 def render_history_page():
     """历史记录页：搜索栏 + 筛选标签 + 竖向卡片列表."""
-    render_top_nav("历史记录", back_target="home")
+    render_top_nav("历史记录_TEST", back_target="home")
 
     # 搜索栏
     st.markdown(
@@ -37,7 +37,7 @@ def render_history_page():
     # 筛选标签
     filter_options = [
         ("全部", "all", "all"),
-        ("安全", "safe", "safe"),
+        ("良好", "safe", "safe"),
         ("注意", "caution", "caution"),
         ("高风险", "danger", "danger"),
     ]
@@ -62,7 +62,7 @@ def render_history_page():
         score = item.get("score", 0)
         if search and search.lower() not in name.lower():
             continue
-        if current_filter == "安全" and score < 80:
+        if current_filter == "良好" and score < 80:
             continue
         if current_filter == "注意" and not (60 <= score < 80):
             continue
@@ -89,7 +89,7 @@ def render_history_page():
     for idx, item in filtered:
         score = item.get("score", 0)
         if score >= 80:
-            status_class, status_text, bar_color = "safe", "安全", "#43A047"
+            status_class, status_text, bar_color = "safe", "良好", "#43A047"
         elif score >= 60:
             status_class, status_text, bar_color = "caution", "注意", "#F57F17"
         else:

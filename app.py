@@ -1,4 +1,4 @@
-"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.9.2
+"""AI食品配料表识别工具 - Streamlit Demo 优化版 v0.9.3
 用途：上传配料表图片，调用 MiMo Vision API，展示识别结果
 特性：适老化样式 + 语音播报 + 历史记录 + 健康档案 + 三端适配 + 评委快速模式
 运行环境：Python 3.10+
@@ -98,6 +98,84 @@ def _dispatch_page(page: str):
 # ========== 评委快速模式 ==========
 
 
+def _seed_demo_history_if_needed():
+    """评委模式下若历史为空，写入 3 条差异明显的样例记录."""
+    if st.session_state.get("demo_history_seeded"):
+        return
+    st.session_state["demo_history_seeded"] = True
+    from utils.history import (
+        load_history,
+        load_history_full,
+        save_history,
+        save_history_full,
+    )
+
+    if load_history():
+        return
+    now = "2026-07-13T12:00:00"
+    samples = [
+        {
+            "timestamp": now,
+            "product_name": "沂蒙公社山楂糕",
+            "score": 88,
+            "type": "food",
+            "additives_count": 0,
+            "engine": "MiMo",
+        },
+        {
+            "timestamp": "2026-07-13T11:30:00",
+            "product_name": "阿尔卑斯牛奶硬糖",
+            "score": 62,
+            "type": "food",
+            "additives_count": 3,
+            "engine": "MiMo",
+        },
+        {
+            "timestamp": "2026-07-13T11:00:00",
+            "product_name": "某品牌薯片（示例）",
+            "score": 42,
+            "type": "food",
+            "additives_count": 5,
+            "engine": "MiMo",
+        },
+    ]
+    full_samples = [
+        {
+            **samples[0],
+            "additives": [],
+            "ingredients": ["鲜山楂", "低聚果糖", "浓缩苹果汁"],
+            "advice": "配料简洁，按当前档案暂未发现高风险配料。",
+        },
+        {
+            **samples[1],
+            "additives": [
+                {"name": "氢化植物油", "risk": "high", "category": "油脂"},
+                {"name": "大豆磷脂", "risk": "low", "category": "乳化剂"},
+                {"name": "乳酸", "risk": "low", "category": "酸度调节剂"},
+            ],
+            "ingredients": ["白砂糖", "葡萄糖浆", "植物油", "乳粉", "食用香精"],
+            "advice": "含氢化植物油，脑梗/心血管人群建议少吃。",
+        },
+        {
+            **samples[2],
+            "additives": [
+                {"name": "谷氨酸钠", "risk": "medium", "category": "增味剂"},
+                {"name": "食用香精", "risk": "low", "category": "香精"},
+                {"name": "柠檬酸", "risk": "low", "category": "酸度调节剂"},
+                {"name": "抗氧化剂", "risk": "medium", "category": "抗氧化剂"},
+                {"name": "日落黄", "risk": "high", "category": "着色剂"},
+            ],
+            "ingredients": ["马铃薯", "植物油", "食用盐", "味精", "香精"],
+            "advice": "添加剂较多，建议咨询医生或选择更简单的零食。",
+        },
+    ]
+    for record, full in zip(samples, full_samples):
+        save_history(record)
+        save_history_full(full)
+    load_history.clear()
+    load_history_full.clear()
+
+
 def _apply_demo_mode():
     """检测 URL 参数 ?demo=1，为评委自动完成法律同意、引导并预填健康档案.
 
@@ -121,6 +199,8 @@ def _apply_demo_mode():
     profile.setdefault("drugs", [])
     # 保持与引导页一致的默认模型
     st.session_state["selected_model"] = "mimo"
+    # 评委模式注入样例历史，便于三步内体验完整流程
+    _seed_demo_history_if_needed()
 
 
 # ========== 主程序 ==========

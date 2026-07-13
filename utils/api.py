@@ -502,7 +502,7 @@ def parse_result(raw, health_groups=None):
     if name and re.fullmatch(r"[A-Za-z\s\-\.\&]+", name):
         result["product_name"] = "该产品"
 
-    # 仅对普通食品做客户端权威判定
+    # 仅对普通食品做客户端本地 GB 2760 名称匹配和分类
     if result.get("type") == "food":
         additives = result.get("additives", [])
         if isinstance(additives, list):

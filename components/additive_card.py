@@ -8,8 +8,8 @@ from utils.security import _safe
 def _get_level_info(level: str) -> tuple[str, str, str]:
     """统一返回添加剂等级信息：标签、颜色、形状图标."""
     mapping = {
-        "A": ("可食用", "#43A047", "●"),
-        "green": ("可食用", "#43A047", "●"),
+        "A": ("较友好", "#43A047", "●"),
+        "green": ("较友好", "#43A047", "●"),
         "B": ("特定人群注意", "#FF9800", "▲"),
         "yellow": ("特定人群注意", "#FF9800", "▲"),
         "C": ("建议少吃", "#E53935", "■"),
@@ -91,7 +91,7 @@ def _render_additive_card(additives, key="additive_card"):
 
     legend_html = (
         "<div class='result-additive-legend'>"
-        "<div class='legend-item'><span class='legend-shape' style='background:#43A047;clip-path:circle(50%);'></span><span>圆=安全</span></div>"
+        "<div class='legend-item'><span class='legend-shape' style='background:#43A047;clip-path:circle(50%);'></span><span>圆=较友好</span></div>"
         "<div class='legend-item'><span class='legend-shape' style='background:#FF9800;clip-path:polygon(50% 0%,0% 100%,100% 100%);'></span><span>三角=中等</span></div>"
         "<div class='legend-item'><span class='legend-shape' style='background:#E53935;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);'></span><span>方块=高风险</span></div>"
         "</div>"

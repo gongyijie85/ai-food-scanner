@@ -148,6 +148,14 @@ def render_scan_page():
     )
 
     if uploaded_file is not None:
+        try:
+            uploaded_file.seek(0)
+            Image.open(uploaded_file).verify()
+            uploaded_file.seek(0)
+        except Exception:
+            st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")
+            st.stop()
+
         st.markdown(
             f"<div class='scan-preview-info'>已选择："
             f"{_safe(getattr(uploaded_file, 'name', '未命名'))} · "

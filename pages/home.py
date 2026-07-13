@@ -48,7 +48,7 @@ def render_home_page():
             score = item.get("score", 0)
             status_class, bar_color = _status_style(score)
             status_text = (
-                "安全" if score >= 80 else ("注意" if score >= 60 else "高风险")
+                "良好" if score >= 80 else ("注意" if score >= 60 else "高风险")
             )
             ts = item.get("timestamp", "")[:10]
             name = _safe(item.get("product_name", "未知"))

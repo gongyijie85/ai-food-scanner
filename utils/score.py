@@ -1,4 +1,4 @@
-"""评分与添加剂判定工具（客户端权威判定层）。"""
+"""评分与添加剂判定工具（客户端本地匹配层）。"""
 
 from services.additive_matcher import (
     _is_blocklisted,
