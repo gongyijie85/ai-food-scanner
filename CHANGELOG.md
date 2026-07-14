@@ -1,5 +1,13 @@
 # 变更日志
 
+## v0.10.10 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.10（修复 CI 因缺少 pdfplumber 无法收集测试）
+
+- **文件**：`scripts/import_gb2760.py`
+- **修复 CI 测试收集崩溃**：GitHub Actions 的 test job 仅安装 `requirements.txt`，未安装 `scripts/requirements_import.txt` 中的 `pdfplumber`；`tests/test_import_gb2760.py` 导入 `scripts.import_gb2760` 时会因模块顶层的 `import pdfplumber` 失败而直接 `SystemExit`，导致 pytest 收集阶段 `INTERNALERROR`。将 `pdfplumber` 改为在真正解析 PDF 的函数内延迟导入，并新增 `_require_pdfplumber()` 辅助函数，缺失时仍给出原安装提示；模块级常量 `DB_PATH` / `SHA256_PATH` 不再依赖 pdfplumber 即可导入。
+- **全量质量门禁结果**：`python -m pytest -q` 93 项通过；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .` 通过；`python -m compileall -q .` 通过；`python -m bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees` 无 issue。
+
 ## v0.10.9 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.9（修复 Cloud 识别 sqlite3.ProgrammingError）
