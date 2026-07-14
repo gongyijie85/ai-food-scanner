@@ -1,5 +1,17 @@
 # 变更日志
 
+## v0.10.3 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.3（Task 6：重构历史记录页）
+
+- **文件**：`pages/history.py`、`.streamlit/style.css`
+- **标题修复**：`render_top_nav()` 标题从「历史记录_TEST」改回正式「历史记录」。
+- **搜索保持原生**：继续使用 `st.text_input` 作为历史记录搜索框，保留 `label_visibility="collapsed"` 与占位提示。
+- **筛选改为 segmented_control**：移除自定义按钮组与手动 `st.rerun()`，改用 `st.segmented_control`（选项：全部 / 良好 / 注意 / 高风险），组件自身管理状态，搜索与风险筛选按 AND 组合。
+- **整行可点击按钮**：历史记录列表改为 `history-row-btn-marker` + `st.button` 实现整行可点击，删除每条记录独立的「查看详情」按钮；按钮标签包含分数圆圈、产品名、添加剂数量与日期，左侧状态色条沿用 `.history-row-btn-marker` 已有样式。
+- **代码简化**：删除旧版卡片 HTML 与透明覆盖按钮的冗余实现，新增 `_history_row_label()` 辅助函数构造按钮标签。
+- **验证**：`python -m py_compile pages/history.py` 通过；`python -m pytest tests/test_core.py -q` 69 项通过、1 项跳过。
+
 ## v0.10.2 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.2（Task 4：更新组件与样式）

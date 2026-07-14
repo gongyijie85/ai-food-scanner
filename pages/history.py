@@ -15,45 +15,44 @@ from utils.history import load_history, load_history_full
 from utils.security import _safe
 
 
-def render_history_page():
-    """历史记录页：搜索栏 + 筛选标签 + 竖向卡片列表."""
-    render_top_nav("历史记录_TEST", back_target="home")
-
-    # 搜索栏
-    st.markdown(
-        "<div class='history-search-wrap'>"
-        "<div class='history-search-box'>"
-        "<span class='history-search-icon'>🔍</span>",
-        unsafe_allow_html=True,
+def _history_row_label(score, status_text, bar_color, name, additives_count, ts):
+    """构造历史页整行可点击按钮的 HTML 标签."""
+    return (
+        f"<div style='display:flex;align-items:center;gap:14px;width:100%;'>"
+        f"<div style='width:56px;height:56px;border-radius:50%;background:{bar_color};"
+        f"color:#fff;display:flex;flex-direction:column;align-items:center;"
+        f"justify-content:center;flex-shrink:0;font-weight:700;'>"
+        f"<div style='font-size:22px;line-height:1;'>{score}</div>"
+        f"<div style='font-size:10px;'>{status_text}</div></div>"
+        f"<div style='flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;text-align:left;'>"
+        f"<div style='font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>"
+        f"{name}</div>"
+        f"<div style='font-size:13px;color:#616161;'>{additives_count}种添加剂 · {ts}</div></div>"
+        f"<div style='color:#9E9E9E;flex-shrink:0;'>➡️</div></div>"
     )
+
+
+def render_history_page():
+    """历史记录页：搜索栏 + 分段控制器 + 整行可点击列表."""
+    render_top_nav("历史记录", back_target="home")
+
+    # 搜索栏（原生 st.text_input）
     search = st.text_input(
         "搜索产品名称",
         key="history_search",
         placeholder="搜索产品名称...",
         label_visibility="collapsed",
     )
-    st.markdown("</div></div>", unsafe_allow_html=True)
 
-    # 筛选标签
-    filter_options = [
-        ("全部", "all", "all"),
-        ("良好", "safe", "safe"),
-        ("注意", "caution", "caution"),
-        ("高风险", "danger", "danger"),
-    ]
-    current_filter = st.session_state.get("history_filter", "全部")
-
-    st.markdown("<div class='history-filter-row'>", unsafe_allow_html=True)
-    for label, value, css in filter_options:
-        wrapper_cls = f"history-filter-chip-wrapper {css}"
-        if current_filter == label:
-            wrapper_cls += " active"
-        st.markdown(f"<div class='{wrapper_cls}'>", unsafe_allow_html=True)
-        if st.button(label, key=f"hist_filter_{value}"):
-            st.session_state["history_filter"] = label
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    # 风险筛选：原生 segmented_control，无需手动 rerun
+    filter_options = ["全部", "良好", "注意", "高风险"]
+    current_filter = st.segmented_control(
+        "风险筛选",
+        options=filter_options,
+        default="全部",
+        key="history_filter_segmented",
+        label_visibility="collapsed",
+    ) or "全部"
 
     history = load_history()
     filtered = []
@@ -84,8 +83,7 @@ def render_history_page():
             st.info("没有匹配的记录")
         return
 
-    # 历史列表卡片
-    st.markdown("<div class='history-list-wrap'>", unsafe_allow_html=True)
+    # 历史列表：整行可点击按钮
     for idx, item in filtered:
         score = item.get("score", 0)
         if score >= 80:
@@ -98,38 +96,20 @@ def render_history_page():
         name = _safe(item.get("product_name", "未知"))
         additives_count = item.get("additives_count", 0)
 
-        card_html = (
-            f"<div class='history-card {status_class}' style='cursor:pointer;margin-bottom:12px;"
-            f"display:flex;align-items:center;gap:14px;padding:14px;background:#fff;"
-            f"border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);"
-            f"border-left:5px solid {bar_color};'>"
-            f"<div style='width:56px;height:56px;border-radius:50%;background:{bar_color};"
-            f"color:#fff;display:flex;flex-direction:column;align-items:center;"
-            f"justify-content:center;flex-shrink:0;font-weight:700;'>"
-            f"<div style='font-size:22px;line-height:1;'>{score}</div>"
-            f"<div style='font-size:10px;'>{status_text}</div>"
-            f"</div>"
-            f"<div style='flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;'>"
-            f"<div style='font-size:16px;font-weight:600;white-space:nowrap;"
-            f"overflow:hidden;text-overflow:ellipsis;'>{name}</div>"
-            f"<div style='font-size:13px;color:#616161;'>"
-            f"{additives_count}种添加剂 · {ts}</div>"
-            f"</div>"
-            f"<div style='color:#9E9E9E;flex-shrink:0;'>➡️</div>"
-            f"</div>"
+        label = _history_row_label(score, status_text, bar_color, name, additives_count, ts)
+        # marker 供 CSS :has 定位，给相邻按钮加左侧状态色条
+        st.markdown(
+            f"<div class='history-row-btn-marker {status_class}'></div>",
+            unsafe_allow_html=True,
         )
-        st.markdown(card_html, unsafe_allow_html=True)
-        # 覆盖卡片点击区域：用透明按钮
         if st.button(
-            "查看详情",
+            label,
             key=f"hist_btn_{idx}",
-            help="查看详情",
             use_container_width=True,
         ):
             st.session_state["selected_history_index"] = idx
             st.session_state["detail_fallback_record"] = item
             switch_page("detail")
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_detail_page():

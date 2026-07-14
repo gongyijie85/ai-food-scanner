@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**配料风险，帮助看懂包装上的添加剂。
 
-![版本](https://img.shields.io/badge/version-0.10.2-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.10.3-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -17,6 +17,7 @@
 
 ## 最新更新
 
+- **v0.10.3（2026-07-14）**：Task 6 重构历史记录页。标题恢复为「历史记录」；搜索保持原生 `st.text_input`；筛选改为 `st.segmented_control`（全部 / 良好 / 注意 / 高风险），移除自定义按钮组与手动 `st.rerun()`；历史记录列表改为整行可点击按钮，删除逐条「查看详情」按钮，分数圆圈、产品名、添加剂数量与日期集成在一行，左侧状态色条沿用 `.history-row-btn-marker` 样式。`py_compile` 通过；`pytest tests/test_core.py` 69 项通过、1 项跳过。
 - **v0.10.2（2026-07-14）**：Task 4 更新组件与样式。`components/additive_card.py` 重写等级信息与排序，展示标准名、CNS/INS/功能、匹配状态（待评估/待核对）并内置图例；`components/score_hero.py` 改为中性灰「配料参考分」摘要，移除彩色大卡片与环形进度；`components/voice_panel.py` 播报/停止按钮默认改为同排，语速调整仍折叠；`.streamlit/style.css` 同步新增压缩评分、元信息、语音同排、pills 触控样式并取消语音面板 sticky 浮动。`py_compile` 通过；`pytest tests/test_core.py` 69 项通过、1 项跳过。
 - **v0.10.1（2026-07-14）**：Task 2 拆分 GB 2760 标准库与风险覆盖表。新增 `SqliteAdditiveRepository` 只读查询 `data/gb2760_2024.sqlite` 法规事实；`CsvAdditiveRiskRepository` 仅保留 `cn_name,risk_level,health_warnings,note` 四列作为应用自定义覆盖表；`AdditiveRisk` 删除 `adi` 字段；`utils/data.py` 中 `get_additive_risk_repository()` 改为返回 SQLite 标准库，新增 `get_additive_override_repository()` 返回 CSV 覆盖表；`load_gb2760_risk()` 兼容旧接口并从覆盖表读取。`py_compile` 通过；`pytest tests/test_core.py` 56 项通过、12 项因 matcher 尚未适配新接口而失败（Task 3 修复）。
 - **v0.10.0（2026-07-14）**：GB 2760—2024 全量结构化导入。以官方 PDF 为来源，使用 `pdfplumber` 离线解析附录 A-F，生成 `data/gb2760_2024.sqlite` 结构化数据库；法规数据与应用程序评分逻辑分离；新增 `scripts/requirements_import.txt` 隔离导入依赖；`requirements.txt` 不新增运行时依赖；TDD 开发并通过 `pytest` 5 项测试。
