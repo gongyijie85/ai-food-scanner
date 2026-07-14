@@ -1,5 +1,19 @@
 # 变更日志
 
+## v0.10.4 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.4（Task 7：重构健康档案页）
+
+- **文件**：`pages/profile.py`
+- **删除重复标题卡**：移除 `page-header` 大标题卡片，页面标题由顶部导航统一承载。
+- **三分组布局**：页面压缩为「📝 基本信息」「🩺 个性化风险」「💊 当前用药」三个分组。
+- **疾病改为原生 pills**：使用 `st.pills` 多选基础疾病，选项带 emoji 图标，自动换行；移除自定义双列按钮网格与手动 `st.rerun()`，保持 `CONDITION_ITEMS` 与 `CONDITION_NAME_MAP` 兼容。
+- **过敏原改为原生 pills**：使用 `st.pills` 多选过敏原，选项带食物图标，自动换行；保持 `allergen_structured_map` 与 `profile["allergens"]` 字典结构兼容。
+- **用药清空优化**：继续使用可搜索 `st.multiselect` 选择药品；「清空」按钮仅在已选药品时出现，且改为整行按钮。
+- **补充说明折叠**：「其他用药/其他过敏」默认折叠在 `st.expander` 内。
+- **保存按钮位置**：保持在内容末尾的普通按钮，不采用悬浮覆盖。
+- **验证**：`python -m py_compile pages/profile.py` 通过；`python -m pytest tests/test_profile.py tests/test_core.py -q` 73 项通过、1 项跳过。
+
 ## v0.10.3 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.3（Task 6：重构历史记录页）
