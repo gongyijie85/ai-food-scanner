@@ -91,3 +91,7 @@ smoke_scan*.png
 invalid.jpg
 test_label_blur.jpg
 demo_*.png
+
+# TTS demo 生成的音频文件（本地试听，不进仓库）
+demos/tts_comparison/*.mp3
+demos/tts_comparison/*.wav
