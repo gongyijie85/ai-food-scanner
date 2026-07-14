@@ -1,5 +1,18 @@
 # 变更日志
 
+## v0.10.1 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.1（Task 2：拆分 GB 2760 标准库与风险覆盖表）
+
+- **文件**：`repositories/additive_risk.py`、`repositories/__init__.py`、`utils/data.py`、`data/gb2760_risk.csv`、`data/additive_synonyms.csv`
+- **拆分仓库职责**：
+  - 新增 `SqliteAdditiveRepository`：只读连接 `data/gb2760_2024.sqlite`，提供 `find_standard`（按标准名查法规事实）、`find_alias`（按别名查标准名）、`list_aliases`（全部别名映射）。
+  - 重构 `CsvAdditiveRiskRepository`：仅读取 `cn_name,risk_level,health_warnings,note` 四列，作为应用自定义风险覆盖表，不再冒充完整 GB 2760。
+- **数据模型调整**：`AdditiveRisk` 删除 `adi` 字段，仅保留 `level/warnings/note`；新增 `StandardAdditive` 数据类，包含 `canonical_name/cns/ins/functions/scopes_summary/page_ref`。
+- **数据文件迁移**：`data/gb2760_risk.csv` 删除 `ins_no/adi_value/adi_unit` 三列，保留 179 条已评估覆盖条目；`data/additive_synonyms.csv` 追加卵磷脂/大豆磷脂/大豆卵磷脂 → 磷脂的显式别名。
+- **utils/data.py 接口更新**：`get_additive_risk_repository()` 改为返回 `SqliteAdditiveRepository`；新增 `get_additive_override_repository()` 返回 `CsvAdditiveRiskRepository`；`load_gb2760_risk()` 改为从覆盖表读取，返回 `{level, warnings, note}` 兼容旧接口。
+- **验证**：`python -m py_compile repositories/additive_risk.py repositories/__init__.py utils/data.py` 通过；`python -m pytest tests/test_core.py -q` 56 项通过、12 项因 `AdditiveMatcher` 尚未适配新仓库接口而失败（预期内，Task 3 统一修复 matcher）。
+
 ## v0.10.0 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.0（GB 2760—2024 全量结构化导入）

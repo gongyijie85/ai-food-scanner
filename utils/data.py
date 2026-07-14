@@ -5,12 +5,16 @@ import os
 
 import streamlit as st
 
-from repositories.additive_risk import CsvAdditiveRiskRepository
+from repositories.additive_risk import (
+    CsvAdditiveRiskRepository,
+    SqliteAdditiveRepository,
+)
 
 # 项目根目录
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _DATA_DIR = os.path.join(_BASE_DIR, "data")
 
+_GB2760_DB_PATH = os.path.join(_DATA_DIR, "gb2760_2024.sqlite")
 _GB2760_RISK_PATH = os.path.join(_DATA_DIR, "gb2760_risk.csv")
 _DISEASES_PATH = os.path.join(_DATA_DIR, "common_diseases.json")
 _ALLERGENS_PATH = os.path.join(_DATA_DIR, "allergens.json")
@@ -50,21 +54,26 @@ def load_health_data():
 
 @st.cache_resource
 def get_additive_risk_repository():
-    """返回 GB 2760 风险库仓库实例（带 Streamlit 缓存）."""
+    """返回 GB 2760 标准库仓库实例（只读 SQLite，带 Streamlit 缓存）."""
+    return SqliteAdditiveRepository(_GB2760_DB_PATH)
+
+
+@st.cache_resource
+def get_additive_override_repository():
+    """返回应用自定义风险覆盖表仓库实例（CSV，带 Streamlit 缓存）."""
     return CsvAdditiveRiskRepository(_GB2760_RISK_PATH)
 
 
 @st.cache_resource
 def load_gb2760_risk():
-    """加载 GB 2760 添加剂风险分级表，返回 dict[中文名] -> {level, adi, warnings, note}.
+    """加载 GB 2760 添加剂风险覆盖表，返回 dict[中文名] -> {level, warnings, note}.
 
-    保留此函数以兼容现有调用方；内部通过 repository 获取数据。
+    保留此函数以兼容现有调用方；数据来自应用自定义覆盖表，不再包含 ADI。
     """
-    repo = get_additive_risk_repository()
+    repo = get_additive_override_repository()
     return {
         name: {
             "level": risk.level,
-            "adi": risk.adi,
             "warnings": risk.warnings,
             "note": risk.note,
         }
