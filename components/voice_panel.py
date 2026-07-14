@@ -214,7 +214,7 @@ def voice_control_panel(
 
     _render_tts_namespace()
     html_block = (
-        f"<div class='{wrapper_class}'>"
+        f"<div class='{wrapper_class} voice-control-inline'>"
         f"<button id='{btn_id}' aria-label='语音播报识别结果' "
         f"class='food-scanner-tts-btn voice-float-btn' data-action='speak' "
         f"data-err-id='{err_id}' data-text='{safe}' data-rate='{rate}'>"

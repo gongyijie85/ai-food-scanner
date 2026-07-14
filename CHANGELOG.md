@@ -1,5 +1,16 @@
 # 变更日志
 
+## v0.10.2 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.2（Task 4：更新组件与样式）
+
+- **文件**：`components/additive_card.py`、`components/score_hero.py`、`components/voice_panel.py`、`.streamlit/style.css`
+- **添加剂卡片增强**：`components/additive_card.py` 重写 `_get_level_info()`，新增 `status` 参数，支持 `MatchStatus.pending` 显示「等级待评估」、`MatchStatus.unmatched` 显示「名称待核对」；`_render_additive_card()` 展示原始名称、标准名（canonical_name）、CNS/INS/功能元信息、AI 推断标签与匹配状态标签；排序逻辑把 `unmatched` 与 B 级放在同一优先级，让用户优先看到待核对条目。
+- **评分英雄区压缩**：`components/score_hero.py` 移除 `math` 依赖与彩色大卡片/环形进度条，改为中性灰「配料参考分」摘要，左大分数、右标签+含义，底部加免责声明，避免老人误解为「分数高=健康」。
+- **语音面板同排**：`components/voice_panel.py` 在 `voice_control_panel()` 的外层 wrapper 追加 `voice-control-inline`，播报/停止按钮默认同排，语速调整仍折叠在 `st.expander` 内；函数签名保持不变，调用方无需修改。
+- **样式同步更新**：`.streamlit/style.css` 新增 `.result-score-hero-compact`、`.result-additive-canonical`、`.result-additive-meta`、`.voice-control-inline` 以及 segmented control / pills 触控高度样式；移除 `.voice-float-bar` 的 sticky 浮动，改为普通文档流，避免遮挡内容。
+- **验证**：`python -m py_compile components/additive_card.py components/score_hero.py components/voice_panel.py` 通过；`python -m pytest tests/test_core.py -q` 69 项通过、1 项跳过。
+
 ## v0.10.1 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.1（Task 2：拆分 GB 2760 标准库与风险覆盖表）
