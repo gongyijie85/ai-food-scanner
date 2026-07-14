@@ -1,5 +1,18 @@
 # 变更日志
 
+## v0.10.12 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.12（结果页分数圈放大 + 动态效果 + 配料标签云）
+
+- **文件**：`components/score_hero.py`、`pages/result.py`、`.streamlit/style.css`、`design/result_optimized_v2.html`
+- **分数圈放大与动态化**：
+  - `components/score_hero.py`：分数圈 HTML 新增 `.score-ring` 旋转刻度装饰元素。
+  - `.streamlit/style.css`：`.score-circle` 尺寸从 72×72 px 放大到 110×110 px；`.score-number` 字号从 30px 放大到 40px；`.score-label` 字号调整为 14px；新增 `scorePopIn` 入场弹跳、`scorePulseRing` 外圈呼吸光环、`scoreRotateRing` 虚线刻度旋转动画；评分卡右上角新增与状态色呼应的装饰性径向渐变；状态标签 `.status-pill` 改为圆角胶囊样式，字体加粗更醒目；底部免责声明与慢速重听改为底部左右分布。
+- **配料展开改为标签云**：`pages/result.py` 中「查看全部配料」展开后不再使用纯文本顿号连接，而是渲染 `.ingredient-tag` 标签云；`.streamlit/style.css` 新增 `.ingredient-tags` / `.ingredient-tag` 样式，圆角胶囊、浅灰背景、细边框，提升可读性。
+- **内容卡片加边框**：`.content-card` 增加 1px 细边框，与白色背景区分更清晰，保持适老化高对比度。
+- **设计稿归档**：新增 `design/result_optimized_v2.html` 高保真设计稿，含安全/注意/危险三种状态切换演示。
+- **全量质量门禁结果**：`python -m pytest -q` 94 项通过；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .` 通过；`python -m compileall -q .` 通过；`python -m bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees` 无 issue。
+
 ## v0.10.11 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.11（识别结果页按 HTML 设计稿重构布局）

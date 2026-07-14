@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分数圈放大 + 动态效果 Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "PingFang SC", "Source Han Sans CN", "Microsoft YaHei", sans-serif;
+      background: #FAFAF5;
+      padding: 40px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+    }
+
+    h1 {
+      font-size: 22px;
+      color: #212121;
+      text-align: center;
+    }
+
+    .demo-card {
+      width: 100%;
+      max-width: 414px;
+      background: #E8F5E9;
+      border-radius: 16px;
+      padding: 24px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .product-info { flex: 1; min-width: 0; }
+    .product-name {
+      font-size: 20px;
+      font-weight: 700;
+      color: #212121;
+      line-height: 1.25;
+    }
+    .product-meta {
+      font-size: 14px;
+      color: #9E9E9E;
+      margin-top: 6px;
+    }
+
+    /* ===== 分数圈：放大 + 动态效果 ===== */
+    .score-circle {
+      position: relative;
+      flex-shrink: 0;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      /* 入场弹跳 */
+      animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    }
+
+    /* 外圈光环 */
+    .score-circle::before {
+      content: "";
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      border: 3px solid currentColor;
+      opacity: 0.25;
+      animation: pulseRing 2.2s ease-out infinite;
+    }
+
+    /* 旋转刻度装饰 */
+    .score-ring {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px dashed currentColor;
+      opacity: 0.2;
+      animation: rotateRing 12s linear infinite;
+    }
+
+    .score-number {
+      font-family: "Roboto", "DIN Alternate", "Helvetica Neue", Arial, sans-serif;
+      font-size: 48px;
+      font-weight: 700;
+      line-height: 1;
+      transition: color 0.4s ease;
+    }
+
+    .score-label {
+      font-size: 14px;
+      color: #616161;
+      margin-top: 4px;
+      transition: color 0.4s ease;
+    }
+
+    /* 安全状态 */
+    .score-circle.safe {
+      color: #43A047;
+    }
+    .score-circle.safe .score-number { color: #1B5E20; }
+
+    /* 注意状态 */
+    .score-circle.caution {
+      color: #FDD835;
+    }
+    .score-circle.caution .score-number { color: #E65100; }
+
+    /* 危险状态 */
+    .score-circle.danger {
+      color: #E53935;
+    }
+    .score-circle.danger .score-number { color: #C62828; }
+
+    /* 悬停放大 */
+    .score-circle:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.3); opacity: 0; }
+      60% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes pulseRing {
+      0% { transform: scale(1); opacity: 0.3; }
+      70% { transform: scale(1.12); opacity: 0; }
+      100% { transform: scale(1.12); opacity: 0; }
+    }
+
+    @keyframes rotateRing {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* 数字滚动时闪一下 */
+    .score-number.tick {
+      animation: tickPop 0.18s ease;
+    }
+
+    @keyframes tickPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .controls button {
+      min-height: 48px;
+      padding: 0 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #2E7D32;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(46,125,50,0.3);
+      transition: transform 0.1s ease;
+    }
+
+    .controls button:active { transform: scale(0.96); }
+    .controls button.secondary {
+      background: #fff;
+      color: #2E7D32;
+      border: 2px solid #2E7D32;
+      box-shadow: none;
+    }
+
+    .note {
+      font-size: 14px;
+      color: #616161;
+      text-align: center;
+      max-width: 414px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <h1>分数圈放大 + 动态效果 Demo</h1>
+
+  <div class="demo-card">
+    <div class="product-info">
+      <div class="product-name">伊利纯牛奶</div>
+      <div class="product-meta">配料表识别于 2026-07-14</div>
+    </div>
+    <div class="score-circle safe" id="scoreCircle">
+      <div class="score-ring"></div>
+      <span class="score-number" id="scoreNumber">0</span>
+      <span class="score-label">安全分</span>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button onclick="animateScore(100, 'safe')">100分（安全）</button>
+    <button onclick="animateScore(72, 'caution')">72分（注意）</button>
+    <button onclick="animateScore(45, 'danger')">45分（危险）</button>
+    <button class="secondary" onclick="replay()">重新播放动画</button>
+  </div>
+
+  <p class="note">
+    效果说明：圆圈从 0 弹入 → 外圈呼吸光环 → 数字从 0 滚动到目标分数 → 状态色随分数切换。鼠标悬停会再放大 5%。<br>
+    当前尺寸：120×120 px（比原 72×72 放大 67%），字号 48 px。
+  </p>
+
+  <script>
+    const circle = document.getElementById('scoreCircle');
+    const numberEl = document.getElementById('scoreNumber');
+    let currentScore = 0;
+    let currentState = 'safe';
+
+    function setState(state) {
+      circle.classList.remove('safe', 'caution', 'danger');
+      circle.classList.add(state);
+      currentState = state;
+    }
+
+    function animateScore(target, state) {
+      setState(state);
+      const start = currentScore;
+      const duration = 900;
+      const startTime = performance.now();
+
+      function step(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // easeOutCubic
+        const ease = 1 - Math.pow(1 - progress, 3);
+        const value = Math.round(start + (target - start) * ease);
+
+        if (numberEl.textContent !== String(value)) {
+          numberEl.textContent = value;
+          numberEl.classList.remove('tick');
+          void numberEl.offsetWidth; // 强制重绘，让 tick 动画可重复触发
+          numberEl.classList.add('tick');
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          currentScore = target;
+        }
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    function replay() {
+      currentScore = 0;
+      numberEl.textContent = '0';
+      // 重新触发入场动画
+      circle.style.animation = 'none';
+      void circle.offsetWidth;
+      circle.style.animation = '';
+      setTimeout(() => animateScore(100, 'safe'), 200);
+    }
+
+    // 页面首次加载自动演示
+    window.addEventListener('load', () => {
+      setTimeout(() => animateScore(100, 'safe'), 300);
+    });
+  </script>
+</body>
+</html>

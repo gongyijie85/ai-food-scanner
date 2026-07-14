@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**配料风险，帮助看懂包装上的添加剂。
 
-![版本](https://img.shields.io/badge/version-0.10.11-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.10.12-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -17,6 +17,7 @@
 
 ## 最新更新
 
+- **v0.10.12（2026-07-14）**：结果页分数圈放大并添加动态效果。分数圈从 72×72 放大到 110×110 px，数字从 30px 放大到 40px，新增入场弹跳、呼吸光环、旋转刻度动画；状态标签改为圆角胶囊；配料展开改为标签云展示；内容卡片增加细边框。涉及 `components/score_hero.py`、`pages/result.py`、`.streamlit/style.css`。
 - **v0.10.11（2026-07-14）**：识别结果页按 HTML 设计稿「文字排布优化版」重构布局。评分英雄区改为产品名+分数圆形横向排布，新增状态标签与慢速重听；添加剂清单空状态改为卡片成功行；一般建议改为图标+正文卡片；配料展开、语音控制按钮、底部操作栏均按设计稿样式化。涉及 `components/score_hero.py`、`components/additive_card.py`、`pages/result.py`、`.streamlit/style.css`。
 - **v0.10.10（2026-07-14）**：修复 GitHub Actions CI 因未安装 `pdfplumber` 导致 pytest 收集阶段 `INTERNALERROR`。将 `scripts/import_gb2760.py` 的 `pdfplumber` 改为延迟导入，模块级常量 `DB_PATH` / `SHA256_PATH` 可在无导入依赖时正常读取，CI test job 无需额外安装导入依赖即可收集并执行 `tests/test_import_gb2760.py`。
 - **v0.10.9（2026-07-14）**：修复 Streamlit Cloud 点击“开始识别”后 `sqlite3.ProgrammingError`。根因是 `SqliteAdditiveRepository` 默认 `check_same_thread=True`，而 `@st.cache_resource` 全局缓存与模块级 matcher 使 SQLite 连接被多线程复用；在只读连接创建时显式设置 `check_same_thread=False`，并新增 `tests/test_core.py` 跨线程回归测试。

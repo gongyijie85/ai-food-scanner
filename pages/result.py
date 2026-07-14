@@ -101,7 +101,14 @@ def render_food_page(result):
                 "<div class='expand-section-marker'></div>", unsafe_allow_html=True
             )
             with st.expander("查看全部配料"):
-                st.write("、".join(ingredients))
+                tags_html = "".join(
+                    f"<span class='ingredient-tag'>{_safe(item)}</span>"
+                    for item in ingredients
+                )
+                st.markdown(
+                    f"<div class='ingredient-tags'>{tags_html}</div>",
+                    unsafe_allow_html=True,
+                )
                 ocr_text = result.get("ocr_text", "")
                 if ocr_text:
                     st.caption(f"识别到的配料表原文：{_safe(ocr_text)}")

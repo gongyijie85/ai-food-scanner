@@ -10,10 +10,11 @@ def _render_score_hero(
 ):
     """渲染新版评分摘要卡片.
 
-    布局参考 result-optimized.html：
-    - 顶部横向：左侧产品名+识别时间，右侧分数圆形
-    - 中部：状态标签 + 状态含义
+    布局参考 result_optimized_v2.html：
+    - 顶部横向：左侧产品名+识别时间，右侧放大分数圆形
+    - 中部：圆角胶囊状态标签 + 状态含义
     - 底部：免责声明 + 慢速重听按钮
+    - 分数圈带 popIn / pulseRing / rotateRing 动画
     根据分数使用绿/橙/红三色状态，保持适老化高对比度。
     """
     if score >= 80:
@@ -36,8 +37,8 @@ def _render_score_hero(
             "<line x1='12' y1='9' x2='12' y2='13'/><line x1='12' y1='17' x2='12.01' y2='17'/></svg>"
         )
     else:
-        label = "建议咨询医生"
-        meaning = "添加剂较多，请谨慎选择"
+        label = "含多项需关注成分"
+        meaning = "该食品含多种高关注配料，建议查看详情后再选择"
         score_class = "score-danger"
         pill_icon = (
             "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' "
@@ -70,6 +71,7 @@ def _render_score_hero(
         f"{meta_html}"
         f"</div>"
         f"<div class='score-circle'>"
+        f"<div class='score-ring'></div>"
         f"<span class='score-number'>{score}</span>"
         f"<span class='score-label'>安全分</span>"
         f"</div></div>"
