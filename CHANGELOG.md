@@ -1,5 +1,13 @@
 # 变更日志
 
+## v0.10.6 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.6（Task 9：测试与哨兵验证修复）
+
+- **文件**：`pages/result.py`
+- **修复结果页 matcher 实例化**：`pages/result.py` 的 `_analyze_warnings()` 中 `AdditiveMatcher` 缺少 `override_repo` 参数，仅传入了标准库仓库，运行时会在有个性化档案时触发 `TypeError`；已补充导入 `get_additive_override_repository` 并传入 CSV 风险覆盖表仓库，与 `tests/test_core.py` 中的双仓库用法保持一致。
+- **验证**：`python -m py_compile pages/result.py` 通过；`python -m pytest -q` 80 项通过、1 项跳过（含 `tests/test_import_gb2760.py` 5 项哨兵验证）。
+
 ## v0.10.5 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.5（Task 8：重构识别结果页）

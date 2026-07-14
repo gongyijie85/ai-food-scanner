@@ -14,7 +14,11 @@ from components import (
 )
 from services.additive_matcher import AdditiveMatcher
 from services.health_warning_engine import HealthWarningEngine
-from utils.data import get_additive_risk_repository, load_health_data
+from utils.data import (
+    get_additive_override_repository,
+    get_additive_risk_repository,
+    load_health_data,
+)
 from utils.helpers import detect_device_type, switch_page
 from utils.security import _safe
 
@@ -38,7 +42,9 @@ def _analyze_warnings(result):
     profile = _build_health_profile()
     if not profile:
         return []
-    matcher = AdditiveMatcher(get_additive_risk_repository())
+    matcher = AdditiveMatcher(
+        get_additive_risk_repository(), get_additive_override_repository()
+    )
     health_data = load_health_data()
     engine = HealthWarningEngine(
         matcher,
