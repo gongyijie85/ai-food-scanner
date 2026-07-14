@@ -6,6 +6,7 @@
 import json
 import os
 import sys
+import threading
 
 import pytest
 import streamlit as st
@@ -729,6 +730,26 @@ class TestHealthWarningEngine:
         }
         warnings = engine.analyze(result, {})
         assert warnings == []
+
+
+class TestSqliteThreadSafety:
+    """测试 SQLite 只读连接可在非创建线程使用（Streamlit Cloud 多线程场景）。"""
+
+    def test_normalize_additive_from_other_thread(self):
+        """从不同线程调用 normalize_additive 不应触发 sqlite3.ProgrammingError。"""
+        from utils.score import normalize_additive
+
+        container = {}
+
+        def worker():
+            container["result"] = normalize_additive("山梨酸钾")
+
+        t = threading.Thread(target=worker)
+        t.start()
+        t.join()
+        assert "result" in container
+        level, ins, note = container["result"]
+        assert level == "B"
 
 
 if __name__ == "__main__":
