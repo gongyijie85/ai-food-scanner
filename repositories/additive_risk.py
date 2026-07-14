@@ -102,7 +102,9 @@ class SqliteAdditiveRepository:
             print_page,
         ) = row
         # 优先用印刷页码，没有则回退 PDF 页码
-        page_ref = str(print_page) if print_page else (str(pdf_page) if pdf_page else "")
+        page_ref = (
+            str(print_page) if print_page else (str(pdf_page) if pdf_page else "")
+        )
         return StandardAdditive(
             canonical_name=canonical_name or "",
             cns=cns or "",
@@ -122,12 +124,8 @@ class SqliteAdditiveRepository:
 
     def list_aliases(self) -> Dict[str, str]:
         """返回全部 alias -> canonical 映射字典."""
-        cur = self._conn.execute(
-            "SELECT alias, canonical_name FROM additive_aliases"
-        )
-        return {
-            alias: canonical for alias, canonical in cur if alias and canonical
-        }
+        cur = self._conn.execute("SELECT alias, canonical_name FROM additive_aliases")
+        return {alias: canonical for alias, canonical in cur if alias and canonical}
 
     def close(self) -> None:
         """显式关闭 SQLite 连接，释放文件句柄."""

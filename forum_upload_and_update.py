@@ -35,12 +35,18 @@ LOCAL_MARKDOWN_PATH = Path(r"d:\GBT\初赛Demo帖_AI食品配料表识别工具.
 
 def _unprotect_data(data: bytes) -> bytes:
     """调用 Windows DPAPI CryptUnprotectData 解密 bytes."""
+
     class DATA_BLOB(ctypes.Structure):
-        _fields_ = [("cbData", ctypes.c_ulong), ("pbData", ctypes.POINTER(ctypes.c_ubyte))]
+        _fields_ = [
+            ("cbData", ctypes.c_ulong),
+            ("pbData", ctypes.POINTER(ctypes.c_ubyte)),
+        ]
 
     blob_in = DATA_BLOB()
     blob_in.cbData = len(data)
-    blob_in.pbData = ctypes.cast(ctypes.create_string_buffer(data), ctypes.POINTER(ctypes.c_ubyte))
+    blob_in.pbData = ctypes.cast(
+        ctypes.create_string_buffer(data), ctypes.POINTER(ctypes.c_ubyte)
+    )
 
     blob_out = DATA_BLOB()
     if not ctypes.windll.crypt32.CryptUnprotectData(
@@ -78,7 +84,10 @@ def _get_session_cookie() -> str:
     """从 Chrome/Edge 解密读取 _forum_session."""
     user_data_dirs = [
         Path(os.path.expandvars(r"%LOCALAPPDATA%")) / "Google" / "Chrome" / "User Data",
-        Path(os.path.expandvars(r"%LOCALAPPDATA%")) / "Microsoft" / "Edge" / "User Data",
+        Path(os.path.expandvars(r"%LOCALAPPDATA%"))
+        / "Microsoft"
+        / "Edge"
+        / "User Data",
     ]
     for user_data_dir in user_data_dirs:
         if not user_data_dir.exists():
@@ -110,7 +119,9 @@ def _get_session_cookie() -> str:
             print(f"无法读取 {cookie_db}，可能浏览器正在运行")
         except Exception as exc:
             print(f"读取 {user_data_dir.name} cookie 失败：{exc}")
-    raise RuntimeError("未找到 forum.trae.cn 的 _forum_session cookie，请确认已登录并关闭浏览器")
+    raise RuntimeError(
+        "未找到 forum.trae.cn 的 _forum_session cookie，请确认已登录并关闭浏览器"
+    )
 
 
 def _get_csrf(session: requests.Session) -> str:
@@ -143,7 +154,9 @@ def upload_images(session: requests.Session, csrf: str) -> dict[str, str]:
         with open(path, "rb") as f:
             files = {"file": (name, f, "image/png")}
             data = {"type": "composer", "authenticity_token": csrf}
-            resp = session.post(upload_url, headers=headers, files=files, data=data, timeout=60)
+            resp = session.post(
+                upload_url, headers=headers, files=files, data=data, timeout=60
+            )
         print(f"{name}: HTTP {resp.status_code}")
         print(resp.text[:500])
         if resp.status_code == 200:
@@ -169,13 +182,14 @@ def _clean_title(title: str) -> str:
     return cleaned
 
 
-def update_post(session: requests.Session, csrf: str, post_id: int, cdn_map: dict[str, str]):
+def update_post(
+    session: requests.Session, csrf: str, post_id: int, cdn_map: dict[str, str]
+):
     """更新帖子正文：用本地 Markdown 内容，替换占位符为 CDN 链接."""
     raw_md = LOCAL_MARKDOWN_PATH.read_text(encoding="utf-8")
 
     # 替换占位符为 CDN 链接
     for filename, cdn_url in cdn_map.items():
-        placeholder = f"![{filename.replace('.png', '')}]({filename})"
         # 匹配不同 alt 文本
         raw_md = re.sub(
             rf"!\[[^\]]*\]\({re.escape(filename)}\)",

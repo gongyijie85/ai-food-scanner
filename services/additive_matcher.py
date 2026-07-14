@@ -6,7 +6,6 @@ from enum import Enum
 from typing import Optional, Tuple
 
 from repositories.additive_risk import (
-    AdditiveRisk,
     CsvAdditiveRiskRepository,
     SqliteAdditiveRepository,
     StandardAdditive,

@@ -46,13 +46,16 @@ def render_history_page():
 
     # 风险筛选：原生 segmented_control，无需手动 rerun
     filter_options = ["全部", "良好", "注意", "高风险"]
-    current_filter = st.segmented_control(
-        "风险筛选",
-        options=filter_options,
-        default="全部",
-        key="history_filter_segmented",
-        label_visibility="collapsed",
-    ) or "全部"
+    current_filter = (
+        st.segmented_control(
+            "风险筛选",
+            options=filter_options,
+            default="全部",
+            key="history_filter_segmented",
+            label_visibility="collapsed",
+        )
+        or "全部"
+    )
 
     history = load_history()
     filtered = []
@@ -96,7 +99,9 @@ def render_history_page():
         name = _safe(item.get("product_name", "未知"))
         additives_count = item.get("additives_count", 0)
 
-        label = _history_row_label(score, status_text, bar_color, name, additives_count, ts)
+        label = _history_row_label(
+            score, status_text, bar_color, name, additives_count, ts
+        )
         # marker 供 CSS :has 定位，给相邻按钮加左侧状态色条
         st.markdown(
             f"<div class='history-row-btn-marker {status_class}'></div>",

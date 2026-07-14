@@ -42,9 +42,13 @@ def _render_additive_card(additives, key="additive_card"):
 
     # 按风险等级排序：C/红=0，unmatched/B/黄=1，A/绿=2，让高风险与待核对项优先可见
     level_order = {
-        "C": 0, "red": 0,
-        "unmatched": 1, "B": 1, "yellow": 1,
-        "A": 2, "green": 2,
+        "C": 0,
+        "red": 0,
+        "unmatched": 1,
+        "B": 1,
+        "yellow": 1,
+        "A": 2,
+        "green": 2,
     }
 
     def _sort_key(x):
@@ -83,11 +87,13 @@ def _render_additive_card(additives, key="additive_card"):
 
         # 元信息：CNS / INS / 功能，用 · 连接
         meta_parts = [
-            p for p in [
+            p
+            for p in [
                 f"CNS {cns}" if cns else "",
                 f"INS {ins}" if ins else "",
                 function,
-            ] if p
+            ]
+            if p
         ]
         meta = " · ".join(meta_parts)
 

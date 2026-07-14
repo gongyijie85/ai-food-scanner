@@ -3,7 +3,7 @@
 import streamlit as st
 
 from components import render_top_nav
-from utils.constants import CONDITION_ITEMS, CONDITION_NAME_MAP
+from utils.constants import CONDITION_ITEMS
 from utils.data import load_health_data
 
 # 过敏原到图标的映射
@@ -73,7 +73,9 @@ def render_health_profile():
     }
     selected_disease_names = set(profile.get("diseases", []))
     default_disease_labels = [
-        lbl for lbl, name in disease_label_to_name.items() if name in selected_disease_names
+        lbl
+        for lbl, name in disease_label_to_name.items()
+        if name in selected_disease_names
     ]
     selected_disease_labels = st.pills(
         "基础疾病",
@@ -89,7 +91,14 @@ def render_health_profile():
 
     # 过敏原：原生 pills，自动换行
     allergen_options = [
-        "花生", "牛奶", "鸡蛋", "鱼类", "甲壳类", "坚果", "小麦", "大豆"
+        "花生",
+        "牛奶",
+        "鸡蛋",
+        "鱼类",
+        "甲壳类",
+        "坚果",
+        "小麦",
+        "大豆",
     ]
     allergen_structured_map = {}
     for a in allergens:
@@ -110,7 +119,9 @@ def render_health_profile():
         for opt in allergen_options
         if allergen_structured_map.get(opt, {}).get("name", "") in current_names
     ]
-    allergen_labels = [f"{ALLERGEN_ICONS.get(opt, '🏷️')} {opt}" for opt in allergen_options]
+    allergen_labels = [
+        f"{ALLERGEN_ICONS.get(opt, '🏷️')} {opt}" for opt in allergen_options
+    ]
     allergen_label_to_name = {
         f"{ALLERGEN_ICONS.get(opt, '🏷️')} {opt}": opt for opt in allergen_options
     }

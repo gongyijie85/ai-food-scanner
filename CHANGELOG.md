@@ -1,5 +1,14 @@
 # 变更日志
 
+## v0.10.7 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.7（Task 11：全量质量门禁）
+
+- **文件**：`demos/tts_comparison/edge_tts_demo.py`、`scripts/import_gb2760.py`
+- **修复 flake8 F541**：`edge_tts_demo.py` 第 46 行 `print(f"语速：1.0x（edge-tts 默认）")` 是无占位符的 f-string，改为普通字符串，消除 CI lint 警告。
+- **修复 bandit B608**：`scripts/import_gb2760.py` 中 `_ensure_supplement_additives()` 使用 f-string 拼接参数化 SQL，被 bandit 标记为潜在 SQL 注入向量；改为字符串拼接仅组合本地生成的 `?` 占位符，保持参数化查询并消除安全扫描告警。
+- **全量质量门禁结果**：`python -m pytest -q` 80 项通过、1 项跳过；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .` 通过；`python -m compileall -q .` 通过；`python -m bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees` 无 issue。
+
 ## v0.10.6 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.6（Task 9：测试与哨兵验证修复）

@@ -1,9 +1,8 @@
 """GB 2760-2024 导入脚本测试."""
+
 import os
 import sqlite3
 import sys
-
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -54,9 +53,7 @@ def test_foreign_keys_enabled():
     row = conn.execute("PRAGMA foreign_keys").fetchone()
     assert row[0] == 1
     # 确认 usage_scopes 表存在外键定义
-    fk_rows = conn.execute(
-        "PRAGMA foreign_key_list(additive_usage_scopes)"
-    ).fetchall()
+    fk_rows = conn.execute("PRAGMA foreign_key_list(additive_usage_scopes)").fetchall()
     assert any(r["table"] == "additives" for r in fk_rows)
     conn.close()
 

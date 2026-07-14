@@ -17,7 +17,9 @@ def _status_style(score: int):
     return "danger", "#E53935"
 
 
-def _history_button_label(item, score, status_text, bar_color, name, additives_count, ts):
+def _history_button_label(
+    item, score, status_text, bar_color, name, additives_count, ts
+):
     """构造首页历史记录整行按钮的 HTML 标签（分数圆圈 + 产品信息 + 箭头）."""
     return (
         f"<div style='display:flex;align-items:center;gap:14px;width:100%;'>"

@@ -43,7 +43,7 @@ async def generate_speech(text: str, voice: str, output_path: str) -> None:
 async def main() -> None:
     """主入口：生成示例音频并打印信息."""
     print(f"音色：{DEFAULT_VOICE}")
-    print(f"语速：1.0x（edge-tts 默认）")
+    print("语速：1.0x（edge-tts 默认）")
     print(f"文本：{DEFAULT_TEXT}")
     print("正在生成音频...")
 

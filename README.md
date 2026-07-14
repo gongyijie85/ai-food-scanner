@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**配料风险，帮助看懂包装上的添加剂。
 
-![版本](https://img.shields.io/badge/version-0.10.6-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.10.7-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -17,6 +17,7 @@
 
 ## 最新更新
 
+- **v0.10.7（2026-07-14）**：Task 11 全量质量门禁。修复 `demos/tts_comparison/edge_tts_demo.py` 无占位符 f-string（flake8 F541）与 `scripts/import_gb2760.py` 参数化 SQL 被 bandit 误报的 B608 告警；完整 pytest 80 项通过、1 项跳过，flake8/black/compileall/bandit 全量通过。
 - **v0.10.6（2026-07-14）**：Task 9 测试与哨兵验证修复。修复 `pages/result.py` 中 `_analyze_warnings()` 的 `AdditiveMatcher` 实例化错误：缺少 `override_repo` 参数会导致有个性化档案时触发 `TypeError`；已补充 `get_additive_override_repository` 并传入 CSV 风险覆盖表仓库，与测试用例的双仓库用法保持一致。完整 `pytest` 80 项通过、1 项跳过，含 `tests/test_import_gb2760.py` 5 项哨兵验证。
 - **v0.10.5（2026-07-14）**：Task 8 重构识别结果页。普通食品结果页信息顺序调整为「配料参考分 → 个性化警告 → 添加剂匹配 → 一般饮食建议 → 全部配料 → 语音与操作」；健康建议标题从「普通人群」改为「一般饮食建议」；合并免责声明为一处；结果页所有语音面板取消 sticky，改为普通文档流同排按钮；保健食品页语音面板同步取消 sticky。`py_compile` 通过；`pytest tests/test_core.py tests/test_profile.py` 73 项通过、1 项跳过。
 - **v0.10.4（2026-07-14）**：Task 7 重构健康档案页。删除 `page-header` 重复标题卡；页面压缩为「基本信息」「个性化风险」「当前用药」三个分组；疾病与过敏原均改为原生 `st.pills` 多选，自动换行且触控高度不少于 44px；用药继续使用可搜索 `st.multiselect`，「清空」按钮仅在已选药品时出现；补充说明默认折叠；保存按钮保持在内容末尾。保持现有疾病列表、过敏原字典和药品数据结构兼容。`py_compile` 通过；`pytest tests/test_profile.py tests/test_core.py` 73 项通过、1 项跳过。

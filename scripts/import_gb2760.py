@@ -9,18 +9,18 @@
 
 import csv
 import hashlib
-import os
 import re
 import sqlite3
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Tuple, Set
 
 try:
     import pdfplumber
 except ImportError as exc:  # pragma: no cover
-    raise SystemExit("请先安装导入依赖: pip install -r scripts/requirements_import.txt") from exc
+    raise SystemExit(
+        "请先安装导入依赖: pip install -r scripts/requirements_import.txt"
+    ) from exc
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PDF_PATH = PROJECT_ROOT / "data" / "sources" / "GB2760-2024.pdf"
@@ -267,9 +267,17 @@ def _parse_scope_table(
         name = cells[name_idx]
         if not code and not name:
             continue
-        max_usage = cells[max_idx] if max_idx is not None and max_idx < len(cells) else ""
-        residual = cells[residual_idx] if residual_idx is not None and residual_idx < len(cells) else ""
-        exceptions = cells[note_idx] if note_idx is not None and note_idx < len(cells) else ""
+        max_usage = (
+            cells[max_idx] if max_idx is not None and max_idx < len(cells) else ""
+        )
+        residual = (
+            cells[residual_idx]
+            if residual_idx is not None and residual_idx < len(cells)
+            else ""
+        )
+        exceptions = (
+            cells[note_idx] if note_idx is not None and note_idx < len(cells) else ""
+        )
         scopes.append(
             {
                 "additive_id": additive_idx,
@@ -317,7 +325,9 @@ def _detect_additive_headers(page: "pdfplumber.page.Page", page_no: int) -> List
     return headers
 
 
-def parse_appendix_a(pdf_path: Path, start: int, end: int) -> Tuple[List[dict], List[dict]]:
+def parse_appendix_a(
+    pdf_path: Path, start: int, end: int
+) -> Tuple[List[dict], List[dict]]:
     """解析附录 A，返回 (additives, usage_scopes)."""
     additives: List[dict] = []
     scopes: List[dict] = []
@@ -329,7 +339,10 @@ def parse_appendix_a(pdf_path: Path, start: int, end: int) -> Tuple[List[dict], 
             headers = _detect_additive_headers(page, page_no)
 
             # 按页面从上到下排序，并分配 additives 列表索引
-            headers_sorted = sorted(headers, key=lambda h: h["top"] if h["top"] is not None else float("inf"))
+            headers_sorted = sorted(
+                headers,
+                key=lambda h: h["top"] if h["top"] is not None else float("inf"),
+            )
             for h in headers_sorted:
                 h["additive_idx"] = len(additives)
                 additives.append(
@@ -352,10 +365,11 @@ def parse_appendix_a(pdf_path: Path, start: int, end: int) -> Tuple[List[dict], 
                 # 延续页：所有表格都属于当前添加剂
                 for table in tables_sorted:
                     if current_idx is None:
-                        raise ImportError(f"附录 A 第 {page_no} 页存在表格，但未找到添加剂标题")
+                        raise ImportError(
+                            f"附录 A 第 {page_no} 页存在表格，但未找到添加剂标题"
+                        )
                     _parse_scope_table(table, current_idx, page_no, scopes)
             else:
-                header_tops = [h["top"] for h in headers_sorted]
                 for table in tables_sorted:
                     table_top = table.bbox[1]
                     # 找到位于表格上方的最后一个标题
@@ -366,7 +380,9 @@ def parse_appendix_a(pdf_path: Path, start: int, end: int) -> Tuple[List[dict], 
                             break
                     if chosen is None:
                         if current_idx is None:
-                            raise ImportError(f"附录 A 第 {page_no} 页表格上方无对应添加剂标题")
+                            raise ImportError(
+                                f"附录 A 第 {page_no} 页表格上方无对应添加剂标题"
+                            )
                         owner_idx = current_idx
                     else:
                         owner_idx = chosen["additive_idx"]
@@ -389,7 +405,9 @@ def parse_appendix_b(
     return [], [], []
 
 
-def parse_appendix_c(pdf_path: Path, start: int, end: int) -> Tuple[List[dict], List[dict]]:
+def parse_appendix_c(
+    pdf_path: Path, start: int, end: int
+) -> Tuple[List[dict], List[dict]]:
     """解析附录 C：返回（加工助剂、酶制剂）.
 
     当前为最小框架，仅返回空列表占位.
@@ -459,10 +477,13 @@ def _insert_supplement_additives_and_aliases(conn: sqlite3.Connection) -> None:
     ]
     names = [s[0] for s in supplements]
     placeholders = ",".join("?" * len(names))
+    query = (
+        "SELECT canonical_name FROM additives WHERE canonical_name IN (" + placeholders + ")"
+    )
     existing: Set[str] = {
         r[0]
         for r in conn.execute(
-            f"SELECT canonical_name FROM additives WHERE canonical_name IN ({placeholders})",
+            query,
             tuple(names),
         ).fetchall()
     }
@@ -521,7 +542,14 @@ def _insert_standard_source(conn: sqlite3.Connection, pdf_sha: str) -> None:
     """记录标准来源元数据."""
     conn.execute(
         "INSERT INTO standard_source (standard_no, publish_date, effective_date, original_filename, pdf_sha256, generated_at) VALUES (?,?,?,?,?,?)",
-        ("GB 2760—2024", "2024-02-08", "2025-02-08", "GB2760-2024.pdf", pdf_sha, _now_iso()),
+        (
+            "GB 2760—2024",
+            "2024-02-08",
+            "2025-02-08",
+            "GB2760-2024.pdf",
+            pdf_sha,
+            _now_iso(),
+        ),
     )
 
 
@@ -572,12 +600,24 @@ def _insert_appendix_b(
     for item in natural:
         conn.execute(
             "INSERT INTO natural_flavors (name, serial_no, pdf_page, print_page, appendix) VALUES (?,?,?,?,?)",
-            (item["name"], item.get("serial_no"), item["pdf_page"], item.get("print_page", ""), "B"),
+            (
+                item["name"],
+                item.get("serial_no"),
+                item["pdf_page"],
+                item.get("print_page", ""),
+                "B",
+            ),
         )
     for item in synthetic:
         conn.execute(
             "INSERT INTO synthetic_flavors (name, serial_no, pdf_page, print_page, appendix) VALUES (?,?,?,?,?)",
-            (item["name"], item.get("serial_no"), item["pdf_page"], item.get("print_page", ""), "B"),
+            (
+                item["name"],
+                item.get("serial_no"),
+                item["pdf_page"],
+                item.get("print_page", ""),
+                "B",
+            ),
         )
 
 
@@ -602,7 +642,13 @@ def _insert_appendix_c(
     for item in enzymes:
         conn.execute(
             "INSERT INTO enzymes (name, source, pdf_page, print_page, appendix) VALUES (?,?,?,?,?)",
-            (item["name"], item.get("source"), item["pdf_page"], item.get("print_page", ""), "C"),
+            (
+                item["name"],
+                item.get("source"),
+                item["pdf_page"],
+                item.get("print_page", ""),
+                "C",
+            ),
         )
 
 
@@ -648,7 +694,12 @@ def _insert_appendix_f(
     for item in items:
         conn.execute(
             "INSERT INTO additive_index (index_name, additive_id, canonical_name, pdf_page) VALUES (?,?,?,?)",
-            (item["index_name"], item.get("additive_id"), item.get("canonical_name"), item["pdf_page"]),
+            (
+                item["index_name"],
+                item.get("additive_id"),
+                item.get("canonical_name"),
+                item["pdf_page"],
+            ),
         )
 
 
@@ -659,7 +710,14 @@ def main() -> None:
 
     pdf_sha = _sha256(PDF_PATH)
     ranges = detect_appendix_ranges(PDF_PATH)
-    required = ["appendix_a", "appendix_b", "appendix_c", "appendix_d", "appendix_e", "appendix_f"]
+    required = [
+        "appendix_a",
+        "appendix_b",
+        "appendix_c",
+        "appendix_d",
+        "appendix_e",
+        "appendix_f",
+    ]
     missing = [k for k in required if k not in ranges]
     if missing:
         raise SystemExit(f"无法探测以下附录页码范围: {missing}")
@@ -677,7 +735,9 @@ def main() -> None:
         _insert_standard_source(conn, pdf_sha)
 
         a_additives, a_scopes = parse_appendix_a(PDF_PATH, *ranges["appendix_a"])
-        print(f"附录 A 解析完成: {len(a_additives)} 种添加剂, {len(a_scopes)} 条使用范围")
+        print(
+            f"附录 A 解析完成: {len(a_additives)} 种添加剂, {len(a_scopes)} 条使用范围"
+        )
         _insert_additives_and_scopes(conn, a_additives, a_scopes)
 
         _insert_sentinel_additives(conn)
