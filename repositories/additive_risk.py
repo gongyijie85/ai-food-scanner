@@ -129,6 +129,20 @@ class SqliteAdditiveRepository:
             alias: canonical for alias, canonical in cur if alias and canonical
         }
 
+    def close(self) -> None:
+        """显式关闭 SQLite 连接，释放文件句柄."""
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
+
+    def __enter__(self) -> "SqliteAdditiveRepository":
+        """支持 with 语句进入."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """退出 with 时自动关闭连接."""
+        self.close()
+
 
 class CsvAdditiveRiskRepository:
     """基于 CSV 的应用自定义风险覆盖表.
@@ -168,3 +182,7 @@ class CsvAdditiveRiskRepository:
         if not n:
             return None
         return self._data.get(n)
+
+    def to_dict(self) -> Dict[str, AdditiveRisk]:
+        """返回全部风险覆盖数据的浅拷贝，供外部只读使用."""
+        return self._data.copy()

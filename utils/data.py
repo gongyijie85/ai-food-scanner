@@ -77,5 +77,5 @@ def load_gb2760_risk():
             "warnings": risk.warnings,
             "note": risk.note,
         }
-        for name, risk in repo._data.items()
+        for name, risk in repo.to_dict().items()
     }
