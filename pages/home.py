@@ -17,6 +17,25 @@ def _status_style(score: int):
     return "danger", "#E53935"
 
 
+def _history_button_label(
+    item, score, status_text, bar_color, name, additives_count, ts
+):
+    """构造首页历史记录整行按钮的 HTML 标签（分数圆圈 + 产品信息 + 箭头）."""
+    return (
+        f"<div style='display:flex;align-items:center;gap:14px;width:100%;'>"
+        f"<div style='width:50px;height:50px;border-radius:50%;background:{bar_color};"
+        f"color:#fff;display:flex;flex-direction:column;align-items:center;"
+        f"justify-content:center;flex-shrink:0;font-weight:700;'>"
+        f"<div style='font-size:20px;line-height:1;'>{score}</div>"
+        f"<div style='font-size:10px;'>{status_text}</div></div>"
+        f"<div style='flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;text-align:left;'>"
+        f"<div style='font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>"
+        f"{name}</div>"
+        f"<div style='font-size:13px;color:#616161;'>{additives_count}种添加剂 · {ts}</div></div>"
+        f"<div style='color:#9E9E9E;flex-shrink:0;'>➡️</div></div>"
+    )
+
+
 def render_home_page():
     """首页：最近识别记录 + 底部拍照/健康档案双按钮."""
     render_top_nav(
@@ -43,7 +62,7 @@ def render_home_page():
             unsafe_allow_html=True,
         )
     else:
-        st.markdown("<div class='home-history-list'>", unsafe_allow_html=True)
+        # 整行可点击的历史记录按钮列表
         for idx, item in enumerate(history[:3]):
             score = item.get("score", 0)
             status_class, bar_color = _status_style(score)
@@ -54,37 +73,22 @@ def render_home_page():
             name = _safe(item.get("product_name", "未知"))
             additives_count = item.get("additives_count", 0)
 
-            card_html = (
-                f"<div class='home-history-card {status_class}' style='"
-                f"display:flex;align-items:center;gap:14px;padding:14px;"
-                f"background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.08);"
-                f"border-left:5px solid {bar_color};margin-bottom:12px;cursor:pointer;'>"
-                f"<div style='width:50px;height:50px;border-radius:50%;background:{bar_color};"
-                f"color:#fff;display:flex;flex-direction:column;align-items:center;"
-                f"justify-content:center;flex-shrink:0;font-weight:700;'>"
-                f"<div style='font-size:20px;line-height:1;'>{score}</div>"
-                f"<div style='font-size:10px;'>{status_text}</div>"
-                f"</div>"
-                f"<div style='flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;'>"
-                f"<div style='font-size:16px;font-weight:600;white-space:nowrap;"
-                f"overflow:hidden;text-overflow:ellipsis;'>{name}</div>"
-                f"<div style='font-size:13px;color:#616161;'>"
-                f"{additives_count}种添加剂 · {ts}</div>"
-                f"</div>"
-                f"<div style='color:#9E9E9E;flex-shrink:0;'>➡️</div>"
-                f"</div>"
+            label = _history_button_label(
+                item, score, status_text, bar_color, name, additives_count, ts
             )
-            st.markdown(card_html, unsafe_allow_html=True)
+            # marker 供 CSS :has 定位，给相邻按钮加左侧状态色条
+            st.markdown(
+                f"<div class='home-history-row-marker {status_class}'></div>",
+                unsafe_allow_html=True,
+            )
             if st.button(
-                "查看详情",
+                label,
                 key=f"home_hist_{idx}",
-                help="查看详情",
                 use_container_width=True,
             ):
                 st.session_state["selected_history_index"] = idx
                 st.session_state["detail_fallback_record"] = item
                 switch_page("detail")
-        st.markdown("</div>", unsafe_allow_html=True)
 
         if len(history) > 3:
             if st.button(

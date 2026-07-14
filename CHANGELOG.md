@@ -1,5 +1,97 @@
 # 变更日志
 
+## v0.10.7 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.7（Task 11：全量质量门禁）
+
+- **文件**：`demos/tts_comparison/edge_tts_demo.py`、`scripts/import_gb2760.py`
+- **修复 flake8 F541**：`edge_tts_demo.py` 第 46 行 `print(f"语速：1.0x（edge-tts 默认）")` 是无占位符的 f-string，改为普通字符串，消除 CI lint 警告。
+- **修复 bandit B608**：`scripts/import_gb2760.py` 中 `_ensure_supplement_additives()` 使用 f-string 拼接参数化 SQL，被 bandit 标记为潜在 SQL 注入向量；改为字符串拼接仅组合本地生成的 `?` 占位符，保持参数化查询并消除安全扫描告警。
+- **全量质量门禁结果**：`python -m pytest -q` 80 项通过、1 项跳过；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .` 通过；`python -m compileall -q .` 通过；`python -m bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees` 无 issue。
+
+## v0.10.6 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.6（Task 9：测试与哨兵验证修复）
+
+- **文件**：`pages/result.py`
+- **修复结果页 matcher 实例化**：`pages/result.py` 的 `_analyze_warnings()` 中 `AdditiveMatcher` 缺少 `override_repo` 参数，仅传入了标准库仓库，运行时会在有个性化档案时触发 `TypeError`；已补充导入 `get_additive_override_repository` 并传入 CSV 风险覆盖表仓库，与 `tests/test_core.py` 中的双仓库用法保持一致。
+- **验证**：`python -m py_compile pages/result.py` 通过；`python -m pytest -q` 80 项通过、1 项跳过（含 `tests/test_import_gb2760.py` 5 项哨兵验证）。
+
+## v0.10.5 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.5（Task 8：重构识别结果页）
+
+- **文件**：`pages/result.py`
+- **信息顺序调整**：普通食品结果页按「配料参考分 → 个性化警告 → 添加剂匹配 → 一般饮食建议 → 全部配料 → 营养成分（可选） → 语音与操作」重新组织。
+- **标题统一**：健康建议卡片标题从「普通人群」改为「一般饮食建议」，避免与健康档案的个性化警告矛盾。
+- **免责声明合并**：移除结果页底部重复免责声明，仅保留评分英雄区固定说明「评分反映本地添加剂分类，不代表适合所有人。」
+- **语音面板取消 sticky**：结果页所有 `voice_control_panel()` 调用统一使用 `wrapper_class="voice-control-wrap"`，移除 `voice-float-bar` sticky 浮动；播报/停止按钮已在 `components/voice_panel.py` 中改为同排，语速设置默认折叠。
+- **保健食品页同步**：桌面端与移动端语音面板同样取消 sticky，保持与普通食品页一致的语音组件行为。
+- **验证**：`python -m py_compile pages/result.py` 通过；`python -m pytest tests/test_core.py tests/test_profile.py -q` 73 项通过、1 项跳过。
+
+## v0.10.4 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.4（Task 7：重构健康档案页）
+
+- **文件**：`pages/profile.py`
+- **删除重复标题卡**：移除 `page-header` 大标题卡片，页面标题由顶部导航统一承载。
+- **三分组布局**：页面压缩为「📝 基本信息」「🩺 个性化风险」「💊 当前用药」三个分组。
+- **疾病改为原生 pills**：使用 `st.pills` 多选基础疾病，选项带 emoji 图标，自动换行；移除自定义双列按钮网格与手动 `st.rerun()`，保持 `CONDITION_ITEMS` 与 `CONDITION_NAME_MAP` 兼容。
+- **过敏原改为原生 pills**：使用 `st.pills` 多选过敏原，选项带食物图标，自动换行；保持 `allergen_structured_map` 与 `profile["allergens"]` 字典结构兼容。
+- **用药清空优化**：继续使用可搜索 `st.multiselect` 选择药品；「清空」按钮仅在已选药品时出现，且改为整行按钮。
+- **补充说明折叠**：「其他用药/其他过敏」默认折叠在 `st.expander` 内。
+- **保存按钮位置**：保持在内容末尾的普通按钮，不采用悬浮覆盖。
+- **验证**：`python -m py_compile pages/profile.py` 通过；`python -m pytest tests/test_profile.py tests/test_core.py -q` 73 项通过、1 项跳过。
+
+## v0.10.3 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.3（Task 6：重构历史记录页）
+
+- **文件**：`pages/history.py`、`.streamlit/style.css`
+- **标题修复**：`render_top_nav()` 标题从「历史记录_TEST」改回正式「历史记录」。
+- **搜索保持原生**：继续使用 `st.text_input` 作为历史记录搜索框，保留 `label_visibility="collapsed"` 与占位提示。
+- **筛选改为 segmented_control**：移除自定义按钮组与手动 `st.rerun()`，改用 `st.segmented_control`（选项：全部 / 良好 / 注意 / 高风险），组件自身管理状态，搜索与风险筛选按 AND 组合。
+- **整行可点击按钮**：历史记录列表改为 `history-row-btn-marker` + `st.button` 实现整行可点击，删除每条记录独立的「查看详情」按钮；按钮标签包含分数圆圈、产品名、添加剂数量与日期，左侧状态色条沿用 `.history-row-btn-marker` 已有样式。
+- **代码简化**：删除旧版卡片 HTML 与透明覆盖按钮的冗余实现，新增 `_history_row_label()` 辅助函数构造按钮标签。
+- **验证**：`python -m py_compile pages/history.py` 通过；`python -m pytest tests/test_core.py -q` 69 项通过、1 项跳过。
+
+## v0.10.2 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.2（Task 4：更新组件与样式）
+
+- **文件**：`components/additive_card.py`、`components/score_hero.py`、`components/voice_panel.py`、`.streamlit/style.css`
+- **添加剂卡片增强**：`components/additive_card.py` 重写 `_get_level_info()`，新增 `status` 参数，支持 `MatchStatus.pending` 显示「等级待评估」、`MatchStatus.unmatched` 显示「名称待核对」；`_render_additive_card()` 展示原始名称、标准名（canonical_name）、CNS/INS/功能元信息、AI 推断标签与匹配状态标签；排序逻辑把 `unmatched` 与 B 级放在同一优先级，让用户优先看到待核对条目。
+- **评分英雄区压缩**：`components/score_hero.py` 移除 `math` 依赖与彩色大卡片/环形进度条，改为中性灰「配料参考分」摘要，左大分数、右标签+含义，底部加免责声明，避免老人误解为「分数高=健康」。
+- **语音面板同排**：`components/voice_panel.py` 在 `voice_control_panel()` 的外层 wrapper 追加 `voice-control-inline`，播报/停止按钮默认同排，语速调整仍折叠在 `st.expander` 内；函数签名保持不变，调用方无需修改。
+- **样式同步更新**：`.streamlit/style.css` 新增 `.result-score-hero-compact`、`.result-additive-canonical`、`.result-additive-meta`、`.voice-control-inline` 以及 segmented control / pills 触控高度样式；移除 `.voice-float-bar` 的 sticky 浮动，改为普通文档流，避免遮挡内容。
+- **验证**：`python -m py_compile components/additive_card.py components/score_hero.py components/voice_panel.py` 通过；`python -m pytest tests/test_core.py -q` 69 项通过、1 项跳过。
+
+## v0.10.1 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.1（Task 2：拆分 GB 2760 标准库与风险覆盖表）
+
+- **文件**：`repositories/additive_risk.py`、`repositories/__init__.py`、`utils/data.py`、`data/gb2760_risk.csv`、`data/additive_synonyms.csv`
+- **拆分仓库职责**：
+  - 新增 `SqliteAdditiveRepository`：只读连接 `data/gb2760_2024.sqlite`，提供 `find_standard`（按标准名查法规事实）、`find_alias`（按别名查标准名）、`list_aliases`（全部别名映射）。
+  - 重构 `CsvAdditiveRiskRepository`：仅读取 `cn_name,risk_level,health_warnings,note` 四列，作为应用自定义风险覆盖表，不再冒充完整 GB 2760。
+- **数据模型调整**：`AdditiveRisk` 删除 `adi` 字段，仅保留 `level/warnings/note`；新增 `StandardAdditive` 数据类，包含 `canonical_name/cns/ins/functions/scopes_summary/page_ref`。
+- **数据文件迁移**：`data/gb2760_risk.csv` 删除 `ins_no/adi_value/adi_unit` 三列，保留 179 条已评估覆盖条目；`data/additive_synonyms.csv` 追加卵磷脂/大豆磷脂/大豆卵磷脂 → 磷脂的显式别名。
+- **utils/data.py 接口更新**：`get_additive_risk_repository()` 改为返回 `SqliteAdditiveRepository`；新增 `get_additive_override_repository()` 返回 `CsvAdditiveRiskRepository`；`load_gb2760_risk()` 改为从覆盖表读取，返回 `{level, warnings, note}` 兼容旧接口。
+- **验证**：`python -m py_compile repositories/additive_risk.py repositories/__init__.py utils/data.py` 通过；`python -m pytest tests/test_core.py -q` 56 项通过、12 项因 `AdditiveMatcher` 尚未适配新仓库接口而失败（预期内，Task 3 统一修复 matcher）。
+
+## v0.10.0 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.0（GB 2760—2024 全量结构化导入）
+
+- **文件**：`scripts/requirements_import.txt`、`scripts/import_gb2760.py`、`tests/test_import_gb2760.py`、`data/sources/GB2760-2024.pdf`、`data/gb2760_2024.sqlite`、`data/gb2760_2024.sha256`
+- **离线 PDF 解析**：以官方《GB 2760—2024》PDF 为来源，使用 `pdfplumber==0.11.5` 离线解析附录 A-F，提取添加剂 CNS/INS 号、功能类别、使用范围/最大使用量/备注等信息。
+- **结构化 SQLite**：生成 `data/gb2760_2024.sqlite`，包含 `additives`、`additive_aliases`、`usage_scopes`、`appendix_notes` 等表，法规数据与应用程序评分逻辑分离。
+- **数据清洗与规范化**：实现 `clean_text`、`normalize_name` 函数清洗 PDF 提取文本；硬编码磷脂、改性大豆磷脂、酶解大豆磷脂等哨兵数据；显式写入卵磷脂、大豆磷脂、大豆卵磷脂到磷脂的别名，确保常见配料名称正确匹配。
+- **原子生成与校验**：导入脚本先写入临时文件 `.sqlite.tmp`，成功后替换为正式数据库；生成 SHA-256 校验文件记录 PDF 与 SQLite 的哈希值，便于完整性校验。
+- **依赖隔离**：导入专用依赖写入 `scripts/requirements_import.txt`，`requirements.txt` 不新增运行时依赖。
+- **TDD 开发**：先编写 `tests/test_import_gb2760.py` 再实现导入脚本，覆盖数据库存在性、哨兵添加剂、显式别名、外键启用等关键断言。
+- **验证**：`python -m py_compile` 检查 `scripts/import_gb2760.py` 与 `tests/test_import_gb2760.py` 通过；`python -m pytest tests/test_import_gb2760.py -q` 5 项通过。
+
 ## v0.9.6 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.9.6（初赛 Demo 帖 30 秒宣传视频上传成功）

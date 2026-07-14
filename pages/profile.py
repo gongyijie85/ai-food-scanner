@@ -3,7 +3,7 @@
 import streamlit as st
 
 from components import render_top_nav
-from utils.constants import CONDITION_ITEMS, CONDITION_NAME_MAP
+from utils.constants import CONDITION_ITEMS
 from utils.data import load_health_data
 
 # 过敏原到图标的映射
@@ -20,7 +20,7 @@ ALLERGEN_ICONS = {
 
 
 def render_health_profile():
-    """健康档案：基本信息 + 基础疾病 + 过敏原 + 当前用药."""
+    """健康档案：基本信息 + 个性化风险 + 当前用药."""
     if "health_profile" not in st.session_state:
         st.session_state["health_profile"] = {
             "name": "",
@@ -39,15 +39,6 @@ def render_health_profile():
     allergens = health_data.get("allergens", [])
     drug_categories = health_data.get("drugs", [])
 
-    # 页面标题卡片
-    st.markdown(
-        "<div class='page-header'>"
-        "<div class='page-title'>❤️ 我的健康档案</div>"
-        "<p class='page-desc'>填写后，识别结果会根据您的健康情况给出个性化建议</p>"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
     # 基本信息
     with st.container():
         st.markdown(
@@ -64,50 +55,41 @@ def render_health_profile():
                 "年龄", min_value=1, max_value=120, value=profile.get("age", 60), step=1
             )
 
-    # 健康状况
+    # 个性化风险（疾病 + 过敏原）
     st.markdown(
-        "<div class='result-card-title' style='margin:20px 0 6px 0;'>我的健康状况</div>",
+        "<div class='result-card-title' style='margin:20px 0 6px 0;'>🩺 个性化风险</div>",
         unsafe_allow_html=True,
     )
     st.markdown(
         "<p style='color:#616161;font-size:13px;margin-bottom:14px;'>"
-        "可多选，帮助我们提供更准确的建议</p>",
+        "多选后，识别结果会据此给出个性化提醒</p>",
         unsafe_allow_html=True,
     )
-    selected = set(profile.get("diseases", []))
-    cols = st.columns(2)
-    for i, (key, name, emoji) in enumerate(CONDITION_ITEMS):
-        with cols[i % 2]:
-            is_selected = CONDITION_NAME_MAP[key] in selected
-            wrapper_cls = (
-                "condition-card-wrapper selected"
-                if is_selected
-                else "condition-card-wrapper"
-            )
-            st.markdown(f"<div class='{wrapper_cls}'></div>", unsafe_allow_html=True)
-            label = f"{emoji}\n{name}"
-            if st.button(
-                label,
-                key=f"cond_{key}",
-                use_container_width=True,
-                type="primary" if is_selected else "secondary",
-            ):
-                if is_selected:
-                    selected.discard(CONDITION_NAME_MAP[key])
-                else:
-                    selected.add(CONDITION_NAME_MAP[key])
-                profile["diseases"] = list(selected)
-                st.rerun()
 
-    # 过敏原
-    st.markdown(
-        "<div class='result-card-title' style='margin:20px 0 6px 0;'>过敏原</div>",
-        unsafe_allow_html=True,
+    # 疾病：原生 pills，自动换行
+    disease_labels = [f"{emoji} {name}" for key, name, emoji in CONDITION_ITEMS]
+    disease_label_to_name = {
+        f"{emoji} {name}": name for key, name, emoji in CONDITION_ITEMS
+    }
+    selected_disease_names = set(profile.get("diseases", []))
+    default_disease_labels = [
+        lbl
+        for lbl, name in disease_label_to_name.items()
+        if name in selected_disease_names
+    ]
+    selected_disease_labels = st.pills(
+        "基础疾病",
+        options=disease_labels,
+        default=default_disease_labels,
+        selection_mode="multi",
+        key="hp_diseases_pills",
+        label_visibility="collapsed",
     )
-    st.markdown(
-        "<p style='color:#616161;font-size:13px;margin-bottom:14px;'>如有过敏请点击选择</p>",
-        unsafe_allow_html=True,
-    )
+    profile["diseases"] = [
+        disease_label_to_name[lbl] for lbl in selected_disease_labels or []
+    ]
+
+    # 过敏原：原生 pills，自动换行
     allergen_options = [
         "花生",
         "牛奶",
@@ -132,40 +114,29 @@ def render_health_profile():
     current_names = {
         a.get("name", "") for a in profile.get("allergens", []) if isinstance(a, dict)
     }
-    selected_alg = set()
-    for opt in allergen_options:
-        struct = allergen_structured_map[opt]
-        if struct.get("name", "") in current_names:
-            selected_alg.add(opt)
-
-    cols = st.columns(2)
-    for i, name in enumerate(allergen_options):
-        with cols[i % 2]:
-            is_selected = name in selected_alg
-            icon = ALLERGEN_ICONS.get(name, "🏷️")
-            wrapper_cls = (
-                "condition-card-wrapper allergen-card selected"
-                if is_selected
-                else "condition-card-wrapper allergen-card"
-            )
-            st.markdown(f"<div class='{wrapper_cls}'></div>", unsafe_allow_html=True)
-            label = f"{icon}\n{name}"
-            if st.button(
-                label,
-                key=f"alg_{name}",
-                use_container_width=True,
-                type="primary" if is_selected else "secondary",
-            ):
-                if is_selected:
-                    selected_alg.discard(name)
-                else:
-                    selected_alg.add(name)
-                profile["allergens"] = [
-                    allergen_structured_map[n] for n in selected_alg
-                ]
-                st.rerun()
-
-    profile["allergens"] = [allergen_structured_map[name] for name in selected_alg]
+    default_allergen_labels = [
+        f"{ALLERGEN_ICONS.get(opt, '🏷️')} {opt}"
+        for opt in allergen_options
+        if allergen_structured_map.get(opt, {}).get("name", "") in current_names
+    ]
+    allergen_labels = [
+        f"{ALLERGEN_ICONS.get(opt, '🏷️')} {opt}" for opt in allergen_options
+    ]
+    allergen_label_to_name = {
+        f"{ALLERGEN_ICONS.get(opt, '🏷️')} {opt}": opt for opt in allergen_options
+    }
+    selected_allergen_labels = st.pills(
+        "过敏原",
+        options=allergen_labels,
+        default=default_allergen_labels,
+        selection_mode="multi",
+        key="hp_allergens_pills",
+        label_visibility="collapsed",
+    )
+    profile["allergens"] = [
+        allergen_structured_map[allergen_label_to_name[lbl]]
+        for lbl in selected_allergen_labels or []
+    ]
 
     # 当前用药
     st.markdown(
@@ -215,14 +186,13 @@ def render_health_profile():
         )
         profile["drugs"] = [drug_id_map[label] for label in selected_drug_labels]
 
-        # 已选药品 Chip 展示 + 快捷清空
+        # 有选择时才显示清空按钮
         if selected_drug_labels:
-            cols = st.columns([1, 0.3])
-            with cols[1]:
-                if st.button("清空", key="hp_clear_drugs", use_container_width=True):
-                    st.session_state["_hp_clear_trigger"] = True
-                    st.rerun()
+            if st.button("清空用药", key="hp_clear_drugs", use_container_width=True):
+                st.session_state["_hp_clear_trigger"] = True
+                st.rerun()
 
+    # 补充说明默认折叠
     with st.expander("📝 补充说明（可选）"):
         profile["medications_free"] = st.text_area(
             "其他用药",
@@ -236,7 +206,7 @@ def render_health_profile():
             placeholder="如：特定添加剂、特殊食物",
         )
 
-    # 保存按钮
+    # 保存按钮保持在内容末尾
     if st.button(
         "💾 保存档案", type="primary", key="hp_save_btn", use_container_width=True
     ):

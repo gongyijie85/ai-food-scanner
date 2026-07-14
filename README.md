@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**配料风险，帮助看懂包装上的添加剂。
 
-![版本](https://img.shields.io/badge/version-0.9.6-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.10.7-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -17,6 +17,14 @@
 
 ## 最新更新
 
+- **v0.10.7（2026-07-14）**：Task 11 全量质量门禁。修复 `demos/tts_comparison/edge_tts_demo.py` 无占位符 f-string（flake8 F541）与 `scripts/import_gb2760.py` 参数化 SQL 被 bandit 误报的 B608 告警；完整 pytest 80 项通过、1 项跳过，flake8/black/compileall/bandit 全量通过。
+- **v0.10.6（2026-07-14）**：Task 9 测试与哨兵验证修复。修复 `pages/result.py` 中 `_analyze_warnings()` 的 `AdditiveMatcher` 实例化错误：缺少 `override_repo` 参数会导致有个性化档案时触发 `TypeError`；已补充 `get_additive_override_repository` 并传入 CSV 风险覆盖表仓库，与测试用例的双仓库用法保持一致。完整 `pytest` 80 项通过、1 项跳过，含 `tests/test_import_gb2760.py` 5 项哨兵验证。
+- **v0.10.5（2026-07-14）**：Task 8 重构识别结果页。普通食品结果页信息顺序调整为「配料参考分 → 个性化警告 → 添加剂匹配 → 一般饮食建议 → 全部配料 → 语音与操作」；健康建议标题从「普通人群」改为「一般饮食建议」；合并免责声明为一处；结果页所有语音面板取消 sticky，改为普通文档流同排按钮；保健食品页语音面板同步取消 sticky。`py_compile` 通过；`pytest tests/test_core.py tests/test_profile.py` 73 项通过、1 项跳过。
+- **v0.10.4（2026-07-14）**：Task 7 重构健康档案页。删除 `page-header` 重复标题卡；页面压缩为「基本信息」「个性化风险」「当前用药」三个分组；疾病与过敏原均改为原生 `st.pills` 多选，自动换行且触控高度不少于 44px；用药继续使用可搜索 `st.multiselect`，「清空」按钮仅在已选药品时出现；补充说明默认折叠；保存按钮保持在内容末尾。保持现有疾病列表、过敏原字典和药品数据结构兼容。`py_compile` 通过；`pytest tests/test_profile.py tests/test_core.py` 73 项通过、1 项跳过。
+- **v0.10.3（2026-07-14）**：Task 6 重构历史记录页。标题恢复为「历史记录」；搜索保持原生 `st.text_input`；筛选改为 `st.segmented_control`（全部 / 良好 / 注意 / 高风险），移除自定义按钮组与手动 `st.rerun()`；历史记录列表改为整行可点击按钮，删除逐条「查看详情」按钮，分数圆圈、产品名、添加剂数量与日期集成在一行，左侧状态色条沿用 `.history-row-btn-marker` 样式。`py_compile` 通过；`pytest tests/test_core.py` 69 项通过、1 项跳过。
+- **v0.10.2（2026-07-14）**：Task 4 更新组件与样式。`components/additive_card.py` 重写等级信息与排序，展示标准名、CNS/INS/功能、匹配状态（待评估/待核对）并内置图例；`components/score_hero.py` 改为中性灰「配料参考分」摘要，移除彩色大卡片与环形进度；`components/voice_panel.py` 播报/停止按钮默认改为同排，语速调整仍折叠；`.streamlit/style.css` 同步新增压缩评分、元信息、语音同排、pills 触控样式并取消语音面板 sticky 浮动。`py_compile` 通过；`pytest tests/test_core.py` 69 项通过、1 项跳过。
+- **v0.10.1（2026-07-14）**：Task 2 拆分 GB 2760 标准库与风险覆盖表。新增 `SqliteAdditiveRepository` 只读查询 `data/gb2760_2024.sqlite` 法规事实；`CsvAdditiveRiskRepository` 仅保留 `cn_name,risk_level,health_warnings,note` 四列作为应用自定义覆盖表；`AdditiveRisk` 删除 `adi` 字段；`utils/data.py` 中 `get_additive_risk_repository()` 改为返回 SQLite 标准库，新增 `get_additive_override_repository()` 返回 CSV 覆盖表；`load_gb2760_risk()` 兼容旧接口并从覆盖表读取。`py_compile` 通过；`pytest tests/test_core.py` 56 项通过、12 项因 matcher 尚未适配新接口而失败（Task 3 修复）。
+- **v0.10.0（2026-07-14）**：GB 2760—2024 全量结构化导入。以官方 PDF 为来源，使用 `pdfplumber` 离线解析附录 A-F，生成 `data/gb2760_2024.sqlite` 结构化数据库；法规数据与应用程序评分逻辑分离；新增 `scripts/requirements_import.txt` 隔离导入依赖；`requirements.txt` 不新增运行时依赖；TDD 开发并通过 `pytest` 5 项测试。
 - **v0.9.6（2026-07-14）**：初赛 Demo 帖 30 秒宣传视频上传成功。通过 Discourse API 上传 `design/demo_assets/demo_video_30s.mp4`（4.25 MB）到论坛帖（https://forum.trae.cn/t/topic/51391），并修正视频占位符为 `![...|video](upload://...)` 语法，确保论坛渲染为可播放的视频播放器；README 同步更新版本徽章与初赛帖链接。
 - **v0.9.5（2026-07-14）**：初赛 Demo 30 秒宣传视频 HyperFrames 化。使用 HyperFrames 生成 1080×1920 竖屏 30 秒 MP4，素材为 Playwright 截取的设计稿手机壳区域，最终视频保存到 `design/demo_assets/demo_video_30s.mp4`。
 - **v0.9.4（2026-07-13）**：新增 TTS 方案对比 Demo。在 `demos/tts_comparison/` 提供浏览器原生 TTS、edge-tts、Kokoro TTS 三种方案的最小可运行示例，依赖隔离在 `requirements_demo.txt`。

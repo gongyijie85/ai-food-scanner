@@ -5,7 +5,11 @@ from services.additive_matcher import (
     AdditiveMatcher,
     is_supplement_excipient,
 )
-from utils.data import get_additive_risk_repository, load_health_data
+from utils.data import (
+    get_additive_override_repository,
+    get_additive_risk_repository,
+    load_health_data,
+)
 
 # 评分公式常量（A=绿/B=黄/C=红）
 SCORE_PENALTY = {"A": 0, "B": 8, "C": 25}
@@ -14,8 +18,10 @@ SCORE_PENALTY = {"A": 0, "B": 8, "C": 25}
 C_LEVEL_DENSITY_PENALTY = 5
 C_LEVEL_DENSITY_THRESHOLD = 3
 
-# 模块级单一实例，避免每次评分都重复加载 GB 2760 CSV
-_MATCHER = AdditiveMatcher(get_additive_risk_repository())
+# 模块级单一实例，避免每次评分都重复加载 GB 2760 数据
+_MATCHER = AdditiveMatcher(
+    get_additive_risk_repository(), get_additive_override_repository()
+)
 
 
 def normalize_additive(name):
@@ -36,12 +42,12 @@ def compute_score_from_additives(additives, health_groups=None):
         if not isinstance(a, dict):
             continue
         name = a.get("name", "")
-        level, _, _ = _MATCHER.classify(name)
-        score -= SCORE_PENALTY.get(level, 0)
-        if level == "C":
+        match = _MATCHER.match(name)
+        score -= SCORE_PENALTY.get(match.level, 0)
+        if match.level == "C":
             c_level_count += 1
         # 特殊人群敏感性（如糖尿病/高血压 + 命中 warnings）
-        risk = _MATCHER.repository.find(name)
+        risk = _MATCHER.override_repo.find(match.canonical_name)
         if risk and risk.warnings:
             if any(w in health_set for w in risk.warnings.split("/")):
                 score -= 4

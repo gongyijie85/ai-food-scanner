@@ -14,7 +14,11 @@ from components import (
 )
 from services.additive_matcher import AdditiveMatcher
 from services.health_warning_engine import HealthWarningEngine
-from utils.data import get_additive_risk_repository, load_health_data
+from utils.data import (
+    get_additive_override_repository,
+    get_additive_risk_repository,
+    load_health_data,
+)
 from utils.helpers import detect_device_type, switch_page
 from utils.security import _safe
 
@@ -38,7 +42,9 @@ def _analyze_warnings(result):
     profile = _build_health_profile()
     if not profile:
         return []
-    matcher = AdditiveMatcher(get_additive_risk_repository())
+    matcher = AdditiveMatcher(
+        get_additive_risk_repository(), get_additive_override_repository()
+    )
     health_data = load_health_data()
     engine = HealthWarningEngine(
         matcher,
@@ -60,27 +66,32 @@ def render_food_page(result):
 
     speak_content = f"评分{score}分。{advice}本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生/药师/营养师。"
 
+    # 1) 配料参考分摘要
     _render_score_hero(score, product_name)
+
+    # 2) 个性化警告
     warnings = _analyze_warnings(result)
     if warnings:
         render_personal_warnings(warnings)
-    _render_additive_card(additives)
-    render_nutrition_bars(result)
 
+    # 3) 添加剂匹配
+    _render_additive_card(additives)
+
+    # 4) 一般饮食建议
     if advice:
         st.markdown(
             "<div class='result-card'>"
-            "<div class='result-card-title'>💡 健康建议</div>"
+            "<div class='result-card-title'>💡 一般饮食建议</div>"
             "<div class='advice-block advice-block-general'>"
             "<div class='advice-block-icon'>ℹ️</div>"
             "<div class='advice-block-body'>"
-            "<div class='advice-block-title'>普通人群</div>"
             f"<p class='advice-block-text'>{_safe(advice)}</p>"
             "</div></div>"
             "</div>",
             unsafe_allow_html=True,
         )
 
+    # 5) 全部配料
     if ingredients:
         with st.expander("查看全部配料"):
             st.write("、".join(ingredients))
@@ -88,11 +99,15 @@ def render_food_page(result):
             if ocr_text:
                 st.caption(f"识别到的配料表原文：{_safe(ocr_text)}")
 
+    # 营养成分（可选，有数据时显示）
+    render_nutrition_bars(result)
+
+    # 6) 语音与操作
     voice_control_panel(
         speak_content,
         key_prefix="tts_food",
         button_text=f"{_ICON_SPEAKER} 一键播报全部结果",
-        wrapper_class="voice-float-bar voice-control-wrap",
+        wrapper_class="voice-control-wrap",
     )
 
     with st.container():
@@ -106,11 +121,6 @@ def render_food_page(result):
         with col2:
             if st.button("返回首页", key="food_btn_home", use_container_width=True):
                 switch_page("home")
-
-    st.markdown(
-        "<p class='disclaimer-text'>评分仅供参考，AI识别可能存在误差，请以包装原文为准。本工具不构成医疗建议。</p>",
-        unsafe_allow_html=True,
-    )
 
 
 def render_supplement_page(result):
@@ -201,17 +211,18 @@ def render_supplement_page(result):
                 wrapper_class="voice-control-wrap",
             )
 
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button(
-                "再扫一个", use_container_width=True, key="supp_btn_scan_desktop"
-            ):
-                switch_page("scan")
-        with col2:
-            if st.button(
-                "返回首页", use_container_width=True, key="supp_btn_home_desktop"
-            ):
-                switch_page("home")
+            # 桌面端底部操作
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button(
+                    "再扫一个", use_container_width=True, key="supp_btn_scan_desktop"
+                ):
+                    switch_page("scan")
+            with col2:
+                if st.button(
+                    "返回首页", use_container_width=True, key="supp_btn_home_desktop"
+                ):
+                    switch_page("home")
     else:
         if summary:
             st.markdown(
@@ -267,7 +278,7 @@ def render_supplement_page(result):
             speak_content,
             key_prefix="tts_supp",
             button_text=f"{_ICON_SPEAKER} 一键播报全部结果",
-            wrapper_class="voice-float-bar voice-control-wrap",
+            wrapper_class="voice-control-wrap",
         )
 
         with st.container():
