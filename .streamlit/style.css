@@ -3108,9 +3108,55 @@ header[data-testid="stHeader"] {
 }
 
 .result-score-hero-compact .result-score-hero-disclaimer {
-  font-size: 13px;
-  color: #616161;
-  margin-top: 8px;
+    font-size: 13px;
+    color: #424242;
+    margin-top: 8px;
+}
+
+/* 评分卡状态色：浅色背景 + 深色文字，适老化高对比度 */
+.result-score-hero-compact.score-safe {
+    background: #E8F5E9;
+    border-color: #43A047;
+}
+
+.result-score-hero-compact.score-safe .result-score-hero-number,
+.result-score-hero-compact.score-safe .result-score-hero-label {
+    color: #1B5E20;
+}
+
+.result-score-hero-compact.score-safe .result-score-meaning,
+.result-score-hero-compact.score-safe .result-score-hero-disclaimer {
+    color: #2E7D32;
+}
+
+.result-score-hero-compact.score-caution {
+    background: #FFF8E1;
+    border-color: #F57F17;
+}
+
+.result-score-hero-compact.score-caution .result-score-hero-number,
+.result-score-hero-compact.score-caution .result-score-hero-label {
+    color: #E65100;
+}
+
+.result-score-hero-compact.score-caution .result-score-meaning,
+.result-score-hero-compact.score-caution .result-score-hero-disclaimer {
+    color: #F57F17;
+}
+
+.result-score-hero-compact.score-danger {
+    background: #FFEBEE;
+    border-color: #E53935;
+}
+
+.result-score-hero-compact.score-danger .result-score-hero-number,
+.result-score-hero-compact.score-danger .result-score-hero-label {
+    color: #C62828;
+}
+
+.result-score-hero-compact.score-danger .result-score-meaning,
+.result-score-hero-compact.score-danger .result-score-hero-disclaimer {
+    color: #E53935;
 }
 
 /* 添加剂卡片元信息 */

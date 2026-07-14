@@ -478,7 +478,9 @@ def _insert_supplement_additives_and_aliases(conn: sqlite3.Connection) -> None:
     names = [s[0] for s in supplements]
     placeholders = ",".join("?" * len(names))
     query = (
-        "SELECT canonical_name FROM additives WHERE canonical_name IN (" + placeholders + ")"
+        "SELECT canonical_name FROM additives WHERE canonical_name IN ("
+        + placeholders
+        + ")"
     )
     existing: Set[str] = {
         r[0]

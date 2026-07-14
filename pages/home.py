@@ -20,19 +20,17 @@ def _status_style(score: int):
 def _history_button_label(
     item, score, status_text, bar_color, name, additives_count, ts
 ):
-    """构造首页历史记录整行按钮的 HTML 标签（分数圆圈 + 产品信息 + 箭头）."""
+    """构造首页历史记录整行按钮的纯文本标签.
+
+    注意：st.button 会对 label 进行 HTML 转义，因此不能再传入 HTML。
+    使用 emoji 状态圆 + 两行纯文本，保留产品名、分数、状态、添加剂数量和日期。
+    产品名在函数内部做 HTML 转义，避免外部忘记转义时把源码暴露给用户。
+    """
+    status_emoji = "🟢" if score >= 80 else ("🟠" if score >= 60 else "🔴")
+    safe_name = _safe(name)
     return (
-        f"<div style='display:flex;align-items:center;gap:14px;width:100%;'>"
-        f"<div style='width:50px;height:50px;border-radius:50%;background:{bar_color};"
-        f"color:#fff;display:flex;flex-direction:column;align-items:center;"
-        f"justify-content:center;flex-shrink:0;font-weight:700;'>"
-        f"<div style='font-size:20px;line-height:1;'>{score}</div>"
-        f"<div style='font-size:10px;'>{status_text}</div></div>"
-        f"<div style='flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;text-align:left;'>"
-        f"<div style='font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'>"
-        f"{name}</div>"
-        f"<div style='font-size:13px;color:#616161;'>{additives_count}种添加剂 · {ts}</div></div>"
-        f"<div style='color:#9E9E9E;flex-shrink:0;'>➡️</div></div>"
+        f"{status_emoji} {safe_name}\n"
+        f"{score} 分 · {status_text} · {additives_count}种添加剂 · {ts}"
     )
 
 
@@ -70,7 +68,7 @@ def render_home_page():
                 "良好" if score >= 80 else ("注意" if score >= 60 else "高风险")
             )
             ts = item.get("timestamp", "")[:10]
-            name = _safe(item.get("product_name", "未知"))
+            name = item.get("product_name", "未知")
             additives_count = item.get("additives_count", 0)
 
             label = _history_button_label(

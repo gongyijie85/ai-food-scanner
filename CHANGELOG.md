@@ -1,5 +1,16 @@
 # 变更日志
 
+## v0.10.8 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.8（修复首页乱码与结果页状态色）
+
+- **文件**：`pages/home.py`、`pages/history.py`、`components/score_hero.py`、`.streamlit/style.css`、`tests/test_ui_regression.py`
+- **修复首页/历史页按钮 HTML 源码外露**：Streamlit 新版对 `st.button` 的 `label` 做 HTML 转义，原先传入的 HTML 标签会直接显示为源码。将 `pages/home.py` 的 `_history_button_label()` 与 `pages/history.py` 的 `_history_row_label()` 改为返回纯文本 + emoji 状态圆（🟢/🟠/🔴），并在函数内部对产品名做 `_safe()` HTML 转义；调用方不再预转义产品名，避免双重转义。按钮仍保留产品名、分数、状态、添加剂数量、日期以及左侧状态色条。
+- **恢复结果页评分卡状态色**：`components/score_hero.py` 的 `_render_score_hero()` 按分数区间动态添加 `score-safe`（≥80 分）、`score-caution`（60–79 分）、`score-danger`（<60 分）CSS 类；`.streamlit/style.css` 补充浅色背景、同色边框、深色文字的三色样式，保障适老化高对比度。
+- **新增 UI 回归测试**：`tests/test_ui_regression.py` 覆盖首页/历史页按钮标签不含 HTML 且包含关键信息、三个分数区间评分卡输出正确状态类。
+- **清理临时文件**：删除 `_tmp_playwright_forum_test.py`，消除 flake8 F541 告警。
+- **全量质量门禁结果**：`python -m pytest -q` 92 项通过；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .` 通过；`python -m compileall -q .` 通过；`python -m bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees` 无 issue。
+
 ## v0.10.7 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.7（Task 11：全量质量门禁）
