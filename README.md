@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**配料风险，帮助看懂包装上的添加剂。
 
-![版本](https://img.shields.io/badge/version-0.10.8-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.10.9-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -17,6 +17,7 @@
 
 ## 最新更新
 
+- **v0.10.9（2026-07-14）**：修复 Streamlit Cloud 点击“开始识别”后 `sqlite3.ProgrammingError`。根因是 `SqliteAdditiveRepository` 默认 `check_same_thread=True`，而 `@st.cache_resource` 全局缓存与模块级 matcher 使 SQLite 连接被多线程复用；在只读连接创建时显式设置 `check_same_thread=False`，并新增 `tests/test_core.py` 跨线程回归测试。
 - **v0.10.8（2026-07-14）**：修复首页/历史页整行按钮 HTML 源码外露与结果页评分卡状态色丢失。`pages/home.py` 与 `pages/history.py` 的按钮标签改为纯文本 + emoji 状态圆，函数内部对产品名做 `_safe()` 转义；`components/score_hero.py` 按分数区间添加 `score-safe/caution/danger` 类，`.streamlit/style.css` 补充浅色高对比三色样式；新增 `tests/test_ui_regression.py` 回归测试；删除临时文件 `_tmp_playwright_forum_test.py`。完整 pytest 92 项通过，flake8/black/compileall/bandit 全量通过。
 - **v0.10.7（2026-07-14）**：Task 11 全量质量门禁。修复 `demos/tts_comparison/edge_tts_demo.py` 无占位符 f-string（flake8 F541）与 `scripts/import_gb2760.py` 参数化 SQL 被 bandit 误报的 B608 告警；完整 pytest 80 项通过、1 项跳过，flake8/black/compileall/bandit 全量通过。
 - **v0.10.6（2026-07-14）**：Task 9 测试与哨兵验证修复。修复 `pages/result.py` 中 `_analyze_warnings()` 的 `AdditiveMatcher` 实例化错误：缺少 `override_repo` 参数会导致有个性化档案时触发 `TypeError`；已补充 `get_additive_override_repository` 并传入 CSV 风险覆盖表仓库，与测试用例的双仓库用法保持一致。完整 `pytest` 80 项通过、1 项跳过，含 `tests/test_import_gb2760.py` 5 项哨兵验证。

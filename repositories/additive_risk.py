@@ -58,7 +58,9 @@ class SqliteAdditiveRepository:
         """
         self.db_path = db_path
         # URI 模式开启只读，避免误写标准库
-        self._conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        self._conn = sqlite3.connect(
+            f"file:{db_path}?mode=ro", uri=True, check_same_thread=False
+        )
 
     def _scopes_summary(self, additive_id: int) -> str:
         """取该添加剂前 5 条使用范围，格式化为 'code name max_usage'。"""

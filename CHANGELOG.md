@@ -1,5 +1,14 @@
 # 变更日志
 
+## v0.10.9 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.9（修复 Cloud 识别 sqlite3.ProgrammingError）
+
+- **文件**：`repositories/additive_risk.py`、`tests/test_core.py`
+- **修复 Cloud 点击识别报 sqlite3.ProgrammingError**：`SqliteAdditiveRepository` 以 `mode=ro` 只读模式打开 `data/gb2760_2024.sqlite` 时，未显式设置 `check_same_thread`，默认值为 `True`；`get_additive_risk_repository()` 被 `@st.cache_resource` 缓存为全局单例，且 `utils/score.py` 的模块级 `_MATCHER` 在导入时创建，Streamlit Cloud 的用户会话可能在不同线程执行，导致 SQLite 连接被跨线程使用而触发 `sqlite3.ProgrammingError`。在连接创建时显式设置 `check_same_thread=False`，允许只读连接在多线程环境安全复用。
+- **新增跨线程回归测试**：`tests/test_core.py` 新增 `TestSqliteThreadSafety`，在子线程调用 `normalize_additive("山梨酸钾")`，复现 Cloud 多线程场景，确保不再触发 `sqlite3.ProgrammingError`。
+- **全量质量门禁结果**：`python -m pytest -q` 93 项通过；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .` 通过；`python -m compileall -q .` 通过；`python -m bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees` 无 issue。
+
 ## v0.10.8 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.8（修复首页乱码与结果页状态色）
