@@ -14,7 +14,7 @@ import streamlit as st
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from repositories.additive_risk import CsvAdditiveRiskRepository
-from services.additive_matcher import AdditiveMatcher
+from services.additive_matcher import AdditiveMatcher, MatchStatus
 from services.health_warning_engine import HealthWarningEngine
 from utils.api import (
     _generate_advice,
@@ -22,7 +22,11 @@ from utils.api import (
     normalize_model_output,
     parse_result,
 )
-from utils.data import load_gb2760_risk
+from utils.data import (
+    get_additive_override_repository,
+    get_additive_risk_repository,
+    load_gb2760_risk,
+)
 from utils.helpers import detect_device_type
 from utils.score import (
     C_LEVEL_DENSITY_PENALTY,
@@ -123,7 +127,7 @@ class TestComputeScoreFromAdditives:
 
     def test_c_level_density_penalty(self):
         """C 级添加剂超过阈值应额外扣分"""
-        # 构造 3 个 C 级添加剂（利用已知的 TBHQ/特丁基对苯二酚）
+        # 构造 3 个 C 级添加剂（利用覆盖表中的 TBHQ/特丁基对苯二酚/亚硝酸钠）
         additives = [
             {"name": "TBHQ"},
             {"name": "特丁基对苯二酚"},
@@ -583,7 +587,7 @@ class TestCallApiWithFallback:
 
 
 class TestAdditiveRiskRepository:
-    """测试 GB 2760 CSV 仓库适配器"""
+    """测试应用自定义风险覆盖表（CSV）仓库"""
 
     def _repo(self):
         from utils.data import _GB2760_RISK_PATH
@@ -595,20 +599,7 @@ class TestAdditiveRiskRepository:
         repo = self._repo()
         risk = repo.find("山梨酸钾")
         assert risk is not None
-        assert risk.level in {"A", "B", "C"}
-
-    def test_cleaned_match_with_parentheses(self):
-        """带括号残留的名称清洗后应命中"""
-        repo = self._repo()
-        risk = repo.find("山梨酸钾（E202）")
-        assert risk is not None
-
-    def test_fuzzy_match_short_alias(self):
-        """TBHQ 等短别名应模糊命中"""
-        repo = self._repo()
-        risk = repo.find("TBHQ")
-        assert risk is not None
-        assert risk.level == "C"
+        assert risk.level == "B"
 
     def test_missing_additive_returns_none(self):
         """不存在的添加剂应返回 None"""
@@ -620,9 +611,9 @@ class TestAdditiveMatcher:
     """测试添加剂分类器"""
 
     def _matcher(self):
-        from utils.data import get_additive_risk_repository
-
-        return AdditiveMatcher(get_additive_risk_repository())
+        return AdditiveMatcher(
+            get_additive_risk_repository(), get_additive_override_repository()
+        )
 
     def test_blocklisted_basic_ingredient(self):
         """黑名单基础配料应返回 A 级"""
@@ -646,14 +637,43 @@ class TestAdditiveMatcher:
         level, _, _ = self._matcher().classify("某种未知合成物")
         assert level == "B"
 
+    def test_cleaned_parentheses_match(self):
+        """带括号残留的名称清洗后应命中覆盖表"""
+        result = self._matcher().match("山梨酸钾（E202）")
+        assert result.status == MatchStatus.RATED
+        assert result.level == "B"
+        assert result.canonical_name == "山梨酸钾"
+
+    def test_explicit_alias_to_phospholipid(self):
+        """大豆磷脂/大豆卵磷脂应通过显式别名命中磷脂；卵磷脂因保健品辅料优先返回 A."""
+        matcher = self._matcher()
+        # 卵磷脂先命中保健品辅料白名单，不走别名逻辑
+        lecithin = matcher.match("卵磷脂")
+        assert lecithin.level == "A"
+        assert "辅料" in lecithin.note
+        # 大豆磷脂、大豆卵磷脂通过显式别名命中磷脂标准名
+        for alias in ["大豆磷脂", "大豆卵磷脂"]:
+            result = matcher.match(alias)
+            assert result.canonical_name == "磷脂", f"{alias} 未命中磷脂"
+            assert result.status == MatchStatus.PENDING_RATING
+
+    def test_override_only_c_level(self):
+        """TBHQ 等仅在覆盖表中的条目应返回 C 级"""
+        matcher = self._matcher()
+        result = matcher.match("TBHQ")
+        assert result.status == MatchStatus.RATED
+        assert result.level == "C"
+
 
 class TestHealthWarningEngine:
     """测试健康风险提示引擎"""
 
     def _engine(self):
-        from utils.data import get_additive_risk_repository, load_health_data
+        from utils.data import load_health_data
 
-        matcher = AdditiveMatcher(get_additive_risk_repository())
+        matcher = AdditiveMatcher(
+            get_additive_risk_repository(), get_additive_override_repository()
+        )
         health_data = load_health_data()
         return HealthWarningEngine(
             matcher,

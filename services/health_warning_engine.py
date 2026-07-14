@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence
 
-from services.additive_matcher import AdditiveMatcher
+from services.additive_matcher import AdditiveMatcher, MatchStatus
 
 
 @dataclass(frozen=True)
@@ -183,19 +183,23 @@ class HealthWarningEngine:
             if not name or name in seen:
                 continue
             seen.add(name)
-            level, _, _ = self.additive_matcher.classify(name)
-            # 通过 matcher 拿不到 warnings，需要再查一次 repository
-            # 这里复用 repository 的 find 获取 warnings
-            risk = self.additive_matcher.repository.find(name)
+
+            match = self.additive_matcher.match(name)
+            # 只对已评级且等级为 B/C 的添加剂检查人群敏感
+            if match.status != MatchStatus.RATED or match.level not in ("B", "C"):
+                continue
+
+            risk = self.additive_matcher.override_repo.find(match.canonical_name)
             if risk and risk.warnings:
                 hit_groups = [w for w in risk.warnings.split("/") if w in groups]
                 if hit_groups:
+                    severity = "high" if match.level == "C" else "medium"
                     warnings.append(
                         HealthWarning(
                             category="disease",
-                            severity="medium",
+                            severity=severity,
                             title="特定人群注意",
-                            description=f"{name}（{risk.note or '食品添加剂'}）对 "
+                            description=f"{match.canonical_name}（{risk.note or '食品添加剂'}）对 "
                             f"{'、'.join(hit_groups)} 人群需额外注意，建议咨询医生或营养师。",
                         )
                     )
