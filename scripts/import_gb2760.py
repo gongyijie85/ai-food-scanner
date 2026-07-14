@@ -15,17 +15,23 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Set
 
-try:
-    import pdfplumber
-except ImportError as exc:  # pragma: no cover
-    raise SystemExit(
-        "请先安装导入依赖: pip install -r scripts/requirements_import.txt"
-    ) from exc
-
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PDF_PATH = PROJECT_ROOT / "data" / "sources" / "GB2760-2024.pdf"
 DB_PATH = PROJECT_ROOT / "data" / "gb2760_2024.sqlite"
 SHA256_PATH = PROJECT_ROOT / "data" / "gb2760_2024.sha256"
+
+
+def _require_pdfplumber():
+    """延迟导入 pdfplumber；缺失时给出友好提示并退出."""
+    try:
+        import pdfplumber
+
+        return pdfplumber
+    except ImportError as exc:  # pragma: no cover
+        raise SystemExit(
+            "请先安装导入依赖: pip install -r scripts/requirements_import.txt"
+        ) from exc
+
 
 # 附录标题（以 PDF 实际文本为准）
 _APPENDIX_TITLES = [
@@ -214,6 +220,7 @@ def detect_appendix_ranges(pdf_path: Path) -> Dict[str, Tuple[int, int]]:
     """
     ranges: Dict[str, Tuple[int, int]] = {}
     starts: Dict[str, int] = {}
+    pdfplumber = _require_pdfplumber()
     with pdfplumber.open(pdf_path) as pdf:
         total = len(pdf.pages)
         for idx, page in enumerate(pdf.pages, start=1):
@@ -238,7 +245,7 @@ def _norm_header(header: str) -> str:
 
 
 def _parse_scope_table(
-    table: "pdfplumber.table.Table",  # type: ignore[name-defined]
+    table: "pdfplumber.table.Table",  # noqa: F821  # type: ignore[name-defined]
     additive_idx: int,
     page_no: int,
     scopes: List[dict],
@@ -291,7 +298,10 @@ def _parse_scope_table(
         )
 
 
-def _detect_additive_headers(page: "pdfplumber.page.Page", page_no: int) -> List[dict]:  # type: ignore[name-defined]
+def _detect_additive_headers(
+    page: "pdfplumber.page.Page",  # noqa: F821
+    page_no: int,
+) -> List[dict]:  # noqa: F821  # type: ignore[name-defined]
     """从单页文本中识别所有添加剂标题块."""
     text = page.extract_text() or ""
     headers: List[dict] = []
@@ -333,6 +343,7 @@ def parse_appendix_a(
     scopes: List[dict] = []
     current_idx: Optional[int] = None
 
+    pdfplumber = _require_pdfplumber()
     with pdfplumber.open(pdf_path) as pdf:
         for page_no in range(start, end + 1):
             page = pdf.pages[page_no - 1]
