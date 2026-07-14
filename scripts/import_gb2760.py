@@ -7,6 +7,7 @@
     pip install -r scripts/requirements_import.txt
 """
 
+import csv
 import hashlib
 import os
 import re
@@ -14,7 +15,7 @@ import sqlite3
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple, Set
 
 try:
     import pdfplumber
@@ -444,6 +445,64 @@ def _insert_sentinel_additives(conn: sqlite3.Connection) -> None:
         )
 
 
+def _insert_supplement_additives_and_aliases(conn: sqlite3.Connection) -> None:
+    """补充 GB 2760 常见缺失添加剂，并写入同义词表别名.
+
+    当前 PDF 解析会遗漏部分常见添加剂（如 TBHQ、抗坏血酸），这里按标准手工补充，
+    使 matcher 能严格走标准库匹配，不再依赖 CSV 覆盖表兜底。
+    """
+    supplements = [
+        ("特丁基对苯二酚", "04.007", "319", "抗氧化剂", "A"),
+        ("亚硝酸钠", "09.002", "250", "护色剂", "A"),
+        ("抗坏血酸", "04.014", "300", "抗氧化剂", "A"),
+        ("L-抗坏血酸", "04.014", "300", "抗氧化剂", "A"),
+    ]
+    names = [s[0] for s in supplements]
+    placeholders = ",".join("?" * len(names))
+    existing: Set[str] = {
+        r[0]
+        for r in conn.execute(
+            f"SELECT canonical_name FROM additives WHERE canonical_name IN ({placeholders})",
+            tuple(names),
+        ).fetchall()
+    }
+    for name, cns, ins, func, appendix in supplements:
+        if name in existing:
+            continue
+        conn.execute(
+            "INSERT INTO additives (canonical_name, cns, ins, functions, note, pdf_page, print_page, appendix) VALUES (?,?,?,?,?,?,?,?)",
+            (name, cns, ins, func, "", 0, "", appendix),
+        )
+
+    # 从同义词表补充别名：目标标准名必须已存在于 additives 表
+    csv_path = PROJECT_ROOT / "data" / "additive_synonyms.csv"
+    if csv_path.exists():
+        # CSV 中部分俗称的目标不是标准名，需要重定向到真正的标准名
+        canonical_redirects = {"TBHQ": "特丁基对苯二酚"}
+        valid_canonicals: Set[str] = {
+            r[0]
+            for r in conn.execute("SELECT canonical_name FROM additives").fetchall()
+        }
+        with open(csv_path, encoding="utf-8", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                alias = (row.get("synonym") or "").strip()
+                canonical = (row.get("canonical_name") or "").strip()
+                if not alias or not canonical:
+                    continue
+                # 先把 CSV 中的俗称目标重定向到真正的标准名，再判断是否自指
+                canonical = canonical_redirects.get(canonical, canonical)
+                if alias == canonical:
+                    continue
+                if canonical not in valid_canonicals:
+                    continue
+                reason = (row.get("note") or "").strip()
+                conn.execute(
+                    "INSERT OR IGNORE INTO additive_aliases (alias, canonical_name, reason) VALUES (?,?,?)",
+                    (alias, canonical, reason),
+                )
+
+
 def _insert_explicit_aliases(conn: sqlite3.Connection) -> None:
     """写入显式别名：卵磷脂/大豆磷脂/大豆卵磷脂 -> 磷脂."""
     aliases = [
@@ -622,6 +681,7 @@ def main() -> None:
         _insert_additives_and_scopes(conn, a_additives, a_scopes)
 
         _insert_sentinel_additives(conn)
+        _insert_supplement_additives_and_aliases(conn)
 
         _insert_appendix_b(conn, ranges)
         _insert_appendix_c(conn, ranges)

@@ -127,7 +127,7 @@ class TestComputeScoreFromAdditives:
 
     def test_c_level_density_penalty(self):
         """C 级添加剂超过阈值应额外扣分"""
-        # 构造 3 个 C 级添加剂（利用覆盖表中的 TBHQ/特丁基对苯二酚/亚硝酸钠）
+        # 构造 3 个 C 级添加剂（TBHQ 通过别名映射到标准库中的 特丁基对苯二酚）
         additives = [
             {"name": "TBHQ"},
             {"name": "特丁基对苯二酚"},
@@ -638,11 +638,11 @@ class TestAdditiveMatcher:
         assert level == "B"
 
     def test_cleaned_parentheses_match(self):
-        """带括号残留的名称清洗后应命中覆盖表"""
-        result = self._matcher().match("山梨酸钾（E202）")
+        """带括号残留的名称清洗后应命中标准库"""
+        result = self._matcher().match("柠檬酸（E330）")
         assert result.status == MatchStatus.RATED
-        assert result.level == "B"
-        assert result.canonical_name == "山梨酸钾"
+        assert result.level == "A"
+        assert result.canonical_name == "柠檬酸"
 
     def test_explicit_alias_to_phospholipid(self):
         """大豆磷脂/大豆卵磷脂应通过显式别名命中磷脂；卵磷脂因保健品辅料优先返回 A."""
@@ -657,11 +657,12 @@ class TestAdditiveMatcher:
             assert result.canonical_name == "磷脂", f"{alias} 未命中磷脂"
             assert result.status == MatchStatus.PENDING_RATING
 
-    def test_override_only_c_level(self):
-        """TBHQ 等仅在覆盖表中的条目应返回 C 级"""
+    def test_alias_tbhq_resolves_to_standard(self):
+        """TBHQ 应通过别名命中标准库中的 特丁基对苯二酚，并返回 C 级"""
         matcher = self._matcher()
         result = matcher.match("TBHQ")
         assert result.status == MatchStatus.RATED
+        assert result.canonical_name == "特丁基对苯二酚"
         assert result.level == "C"
 
 

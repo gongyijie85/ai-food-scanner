@@ -1,11 +1,9 @@
 """添加剂分类服务：把模型识别的添加剂名称映射为风险等级."""
 
-import csv
-import os
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 
 from repositories.additive_risk import (
     AdditiveRisk,
@@ -77,11 +75,6 @@ SUPPLEMENT_EXCIPIENTS = {
 # 去除括号及其内部内容（如 E202、INS 编号等补充说明）
 _PARENTHESES_RE = re.compile(r"[（(].*?[）)]")
 
-# 默认同义词表路径（用于补充 SQLite 别名表）
-_DEFAULT_SYNONYMS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)), "data", "additive_synonyms.csv"
-)
-
 
 class MatchStatus(Enum):
     """添加剂匹配状态."""
@@ -133,24 +126,6 @@ def is_supplement_excipient(name: str) -> bool:
     return n in SUPPLEMENT_EXCIPIENTS or any(k in n for k in ["胶囊壳", "软胶囊"])
 
 
-def _load_synonyms(path: str) -> Dict[str, str]:
-    """加载 additive_synonyms.csv，返回 alias -> canonical 映射."""
-    synonyms: Dict[str, str] = {}
-    if not os.path.exists(path):
-        return synonyms
-    try:
-        with open(path, encoding="utf-8") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                alias = row.get("synonym", "").strip()
-                canonical = row.get("canonical_name", "").strip()
-                if alias and canonical:
-                    synonyms[alias] = canonical
-    except FileNotFoundError:
-        pass
-    return synonyms
-
-
 class AdditiveMatcher:
     """添加剂分类器：结合 GB 2760 标准库、应用覆盖表和业务规则判定等级."""
 
@@ -158,18 +133,13 @@ class AdditiveMatcher:
         self,
         standard_repo: SqliteAdditiveRepository,
         override_repo: CsvAdditiveRiskRepository,
-        synonyms_path: Optional[str] = None,
     ):
         self.standard_repo = standard_repo
         self.override_repo = override_repo
-        self._synonyms = _load_synonyms(synonyms_path or _DEFAULT_SYNONYMS_PATH)
 
     def _resolve_alias(self, name: str) -> Optional[str]:
-        """先查 SQLite 别名表，再查本地同义词表."""
-        canonical = self.standard_repo.find_alias(name)
-        if canonical:
-            return canonical
-        return self._synonyms.get(name)
+        """查询 SQLite 别名表."""
+        return self.standard_repo.find_alias(name)
 
     def _find_standard(self, name: str) -> Optional[StandardAdditive]:
         """按名称精确查询标准库."""
@@ -289,23 +259,7 @@ class AdditiveMatcher:
                 page_ref=standard.page_ref,
             )
 
-        # 标准库未命中：尝试覆盖表兜底（兼容 TBHQ 等 CSV 中已评级条目）
-        override = self.override_repo.find(clean) or self.override_repo.find(canonical)
-        if override is not None:
-            return AdditiveMatchResult(
-                raw_name=raw_name,
-                canonical_name=canonical if canonical != clean else clean,
-                status=MatchStatus.RATED,
-                cns="",
-                ins="",
-                function="",
-                scopes_summary="",
-                level=override.level,
-                note=override.note,
-                page_ref="",
-            )
-
-        # 6. 完全未命中 -> B 级
+        # 6. 标准库未命中 -> B 级
         return AdditiveMatchResult(
             raw_name=raw_name,
             canonical_name=raw_name,
