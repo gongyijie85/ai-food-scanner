@@ -1,5 +1,18 @@
 # 变更日志
 
+## v0.10.11 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.11（识别结果页按 HTML 设计稿重构布局）
+
+- **文件**：`components/score_hero.py`、`components/additive_card.py`、`pages/result.py`、`.streamlit/style.css`
+- **按设计稿重构识别结果页布局**：以 `d:\Users\Administrator\Downloads\识别结果页（文字排布优化版）.html` 为视觉参考，对普通食品结果页进行文字排布与信息层级优化。
+  - `components/score_hero.py`：评分英雄区改为横向布局，左侧产品名（最多 2 行截断）+ 识别时间元信息，右侧圆形分数卡片显示分数与「安全分」标签；下方依次展示绿/橙/红状态标签、状态含义、底部免责声明与慢速重听按钮；按分数区间保留 `score-safe` / `score-caution` / `score-danger` 高对比状态色。
+  - `components/additive_card.py`：空状态改为 `.content-card` 卡片 + `.card-success-row` 成功行 + SVG 对勾图标，提示「未识别到需要关注的食品添加剂」；非空状态保持风险排序、AI 推断提示与色盲图例。
+  - `pages/result.py`：一般饮食建议改为 `.content-card` + `.advice-box` 图标+正文卡片；「查看全部配料」仍使用 `st.expander` 并通过 `.expand-section-marker` CSS 覆盖为圆角卡片样式；语音控制面板使用 `voice-controls` 布局，主按钮与停止按钮上下全宽堆叠；底部「再扫一个」/「返回首页」通过 `.bottom-action-bar-marker` CSS 覆盖为 outlined/ghost 样式。
+  - `.streamlit/style.css`：新增/覆盖评分卡、内容卡片、建议盒、配料展开区、语音控制按钮、底部操作栏等全部样式，保持适老化字号（不小于 15px）与 56px 触控按钮高度。
+- **保健食品页同步**：`render_supplement_page` 共用新版 `_render_score_hero`，其余双列/单列信息结构保持不变。
+- **全量质量门禁结果**：`python -m pytest -q` 93 项通过；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .` 通过；`python -m compileall -q .` 通过；`python -m bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees` 无 issue。
+
 ## v0.10.10 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.10（修复 CI 因缺少 pdfplumber 无法收集测试）

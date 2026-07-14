@@ -80,24 +80,31 @@ def render_food_page(result):
     # 4) 一般饮食建议
     if advice:
         st.markdown(
-            "<div class='result-card'>"
-            "<div class='result-card-title'>💡 一般饮食建议</div>"
-            "<div class='advice-block advice-block-general'>"
-            "<div class='advice-block-icon'>ℹ️</div>"
-            "<div class='advice-block-body'>"
-            f"<p class='advice-block-text'>{_safe(advice)}</p>"
-            "</div></div>"
-            "</div>",
+            "<div class='content-card'>"
+            "<h2 class='card-title'>"
+            "<svg viewBox='0 0 24 24' fill='none' stroke='var(--state-warning)' "
+            "stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>"
+            "<circle cx='12' cy='12' r='10'/><path d='M12 16v-4'/><path d='M12 8h.01'/>"
+            "</svg>一般饮食建议</h2>"
+            "<div class='card-body'>"
+            "<div class='advice-box'>"
+            "<span class='advice-icon'>&#x2139;&#xFE0F;</span>"
+            f"<p class='advice-text'>{_safe(advice)}</p>"
+            "</div></div></div>",
             unsafe_allow_html=True,
         )
 
     # 5) 全部配料
     if ingredients:
-        with st.expander("查看全部配料"):
-            st.write("、".join(ingredients))
-            ocr_text = result.get("ocr_text", "")
-            if ocr_text:
-                st.caption(f"识别到的配料表原文：{_safe(ocr_text)}")
+        with st.container():
+            st.markdown(
+                "<div class='expand-section-marker'></div>", unsafe_allow_html=True
+            )
+            with st.expander("查看全部配料"):
+                st.write("、".join(ingredients))
+                ocr_text = result.get("ocr_text", "")
+                if ocr_text:
+                    st.caption(f"识别到的配料表原文：{_safe(ocr_text)}")
 
     # 营养成分（可选，有数据时显示）
     render_nutrition_bars(result)
@@ -107,7 +114,7 @@ def render_food_page(result):
         speak_content,
         key_prefix="tts_food",
         button_text=f"{_ICON_SPEAKER} 一键播报全部结果",
-        wrapper_class="voice-control-wrap",
+        wrapper_class="voice-controls",
     )
 
     with st.container():

@@ -1,4 +1,4 @@
-"""添加剂清单卡片组件."""
+"""添加剂清单卡片组件（设计稿风格）."""
 
 import streamlit as st
 
@@ -7,11 +7,7 @@ from utils.security import _safe
 
 
 def _get_level_info(level: str, status) -> tuple[str, str, str]:
-    """统一返回添加剂等级信息：标签、颜色、形状图标.
-
-    根据 level 给出基础视觉（A=绿圆，B=黄三角，C=红方块），
-    再用 status 覆盖标签：pending=等级待评估，unmatched=名称待核对。
-    """
+    """统一返回添加剂等级信息：标签、颜色、形状图标."""
     if level == "A":
         label, color, shape = "较友好", "#43A047", "●"
     elif level == "C":
@@ -27,20 +23,36 @@ def _get_level_info(level: str, status) -> tuple[str, str, str]:
 
 
 def _render_additive_card(additives, key="additive_card"):
-    """渲染添加剂清单卡片（画布设计稿：图标 + 名称/类别 + 标签 + 色盲图例）.
+    """渲染添加剂清单卡片.
 
-    展示标准名、INS/CNS、功能、匹配状态、应用等级；图例内置。
-    超过 5 项时默认折叠，按风险等级排序（高风险与待核对优先），并提供展开/收起按钮。
+    - 空状态：成功提示行
+    - 非空：按风险排序的列表项 + 色盲图例
     """
+    # 添加剂卡片标题图标（实验瓶/清单）
+    title_icon = (
+        "<svg viewBox='0 0 24 24' fill='none' stroke='var(--color-primary)' "
+        "stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>"
+        "<path d='M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2'/>"
+        "<rect x='9' y='3' width='6' height='4' rx='1'/>"
+        "<path d='M9 14l2 2 4-4'/></svg>"
+    )
+
     if not additives:
         st.markdown(
-            "<div class='result-card'><div class='result-card-title'>🧪 添加剂清单</div>"
-            "<p style='color:#666;'>未识别到需要关注的食品添加剂</p></div>",
+            f"<div class='content-card'>"
+            f"<h2 class='card-title'>{title_icon}添加剂清单</h2>"
+            f"<div class='card-body'>"
+            f"<div class='card-success-row'>"
+            f"<svg viewBox='0 0 24 24' fill='none' stroke='var(--state-success)' "
+            f"stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'>"
+            f"<circle cx='12' cy='12' r='10'/><polyline points='16 9 10.5 15 8 12.5'/></svg>"
+            f"<span>未识别到需要关注的食品添加剂</span>"
+            f"</div></div></div>",
             unsafe_allow_html=True,
         )
         return
 
-    # 按风险等级排序：C/红=0，unmatched/B/黄=1，A/绿=2，让高风险与待核对项优先可见
+    # 按风险等级排序：C/红=0，unmatched/B/黄=1，A/绿=2
     level_order = {
         "C": 0,
         "red": 0,
@@ -52,7 +64,6 @@ def _render_additive_card(additives, key="additive_card"):
     }
 
     def _sort_key(x):
-        # 优先用匹配状态决定排序；没有状态时回退到 level
         status = x.get("status")
         if hasattr(status, "value"):
             return level_order.get(status.value, 1)
@@ -69,9 +80,10 @@ def _render_additive_card(additives, key="additive_card"):
     display = sorted_additives if expanded or total <= 5 else sorted_additives[:5]
 
     html = (
-        "<div class='result-card'>"
-        "<div class='result-card-title'>🧪 添加剂清单</div>"
-        "<div class='result-additive-list'>"
+        f"<div class='content-card'>"
+        f"<h2 class='card-title'>{title_icon}添加剂清单</h2>"
+        f"<div class='card-body'>"
+        f"<div class='result-additive-list'>"
     )
     for item in display:
         raw_name = _safe(item.get("name", "未知"))
@@ -85,7 +97,6 @@ def _render_additive_card(additives, key="additive_card"):
         ai_inferred = item.get("ai_inferred", False)
         label, color, shape = _get_level_info(level, status)
 
-        # 元信息：CNS / INS / 功能，用 · 连接
         meta_parts = [
             p
             for p in [
@@ -97,7 +108,6 @@ def _render_additive_card(additives, key="additive_card"):
         ]
         meta = " · ".join(meta_parts)
 
-        # 形状：三角=注意，方块=高风险，圆=较友好
         clip = (
             "polygon(50% 0%, 0% 100%, 100% 100%)"
             if shape == "▲"
@@ -123,7 +133,7 @@ def _render_additive_card(additives, key="additive_card"):
             f"<span class='result-additive-level' style='color:{color};border-color:{color};background:{color}11;'>{label}</span>"
             f"</div>"
         )
-    html += "</div>"
+    html += "</div></div></div>"
     st.markdown(html, unsafe_allow_html=True)
 
     if total > 5:
@@ -137,7 +147,6 @@ def _render_additive_card(additives, key="additive_card"):
         "<div class='legend-item'><span class='legend-shape' style='background:#43A047;clip-path:circle(50%);'></span><span>圆=较友好</span></div>"
         "<div class='legend-item'><span class='legend-shape' style='background:#FF9800;clip-path:polygon(50% 0%,0% 100%,100% 100%);'></span><span>三角=注意</span></div>"
         "<div class='legend-item'><span class='legend-shape' style='background:#E53935;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);'></span><span>方块=高风险</span></div>"
-        "</div>"
         "</div>"
     )
     st.markdown(legend_html, unsafe_allow_html=True)

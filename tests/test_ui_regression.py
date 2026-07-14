@@ -140,4 +140,4 @@ class TestScoreHeroColorClass:
             mock_markdown.assert_called_once()
             rendered_html = mock_markdown.call_args[0][0]
             assert expected_class in rendered_html
-            assert "result-score-hero-compact" in rendered_html
+            assert "score-card" in rendered_html

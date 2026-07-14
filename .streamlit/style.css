@@ -3235,3 +3235,414 @@ div[data-testid="stElementContainer"]:has(.home-history-row-marker.danger) + div
 div[data-testid="stElementContainer"]:has(.home-history-row-marker) + div[data-testid="stElementContainer"] .stButton > button:active {
   transform: scale(0.98);
 }
+
+/* ========== Task 6: 识别结果页布局优化（按 result-optimized.html） ========== */
+
+/* ---------- 通用内容卡片 ---------- */
+.content-card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--card-padding);
+  margin: var(--card-gap) 0;
+  box-shadow: var(--shadow-card);
+}
+
+.content-card + .content-card {
+  margin-top: 0;
+}
+
+.card-title {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-base);
+}
+
+.card-title svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.card-body {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+/* ---------- 评分英雄区 ---------- */
+.score-card {
+  margin: var(--card-gap) 0;
+  padding: var(--spacing-xl) var(--spacing-lg);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  color: var(--color-text-primary);
+}
+
+.score-card.score-caution {
+  background: var(--color-secondary-light);
+}
+
+.score-card.score-danger {
+  background: #FFEBEE;
+}
+
+.score-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.product-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.product-name {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  line-height: var(--line-height-tight);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+.score-card.score-caution .product-name,
+.score-card.score-danger .product-name {
+  color: var(--color-text-primary);
+}
+
+.product-meta {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-tertiary);
+  margin-top: var(--spacing-xs);
+  margin-bottom: 0;
+}
+
+.score-circle {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-full);
+  background: var(--color-bg-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-subtle);
+}
+
+.score-number {
+  font-family: var(--font-family-num);
+  font-size: 30px;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary-dark);
+  line-height: 1;
+}
+
+.score-card.score-caution .score-number {
+  color: var(--color-secondary-dark);
+}
+
+.score-card.score-danger .score-number {
+  color: #C62828;
+}
+
+.score-label {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: var(--spacing-md);
+  padding: 6px 12px 6px 10px;
+  background: var(--color-bg-card);
+  border-left: 4px solid var(--state-success);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: var(--font-size-body-sm);
+  color: var(--state-success);
+  font-weight: var(--font-weight-medium);
+  box-shadow: var(--shadow-subtle);
+}
+
+.score-card.score-caution .status-pill {
+  color: var(--color-secondary-dark);
+  border-left-color: var(--state-warning);
+}
+
+.score-card.score-danger .status-pill {
+  color: #C62828;
+  border-left-color: var(--state-error);
+}
+
+.status-pill svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.score-card-subtitle {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-sm);
+  margin-bottom: 0;
+  line-height: var(--line-height-relaxed);
+}
+
+.score-card.score-caution .score-card-subtitle {
+  color: var(--color-secondary-dark);
+}
+
+.score-card.score-danger .score-card-subtitle {
+  color: #C62828;
+}
+
+.score-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-divider);
+}
+
+.disclaimer {
+  flex: 1;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-tertiary);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+.btn-replay {
+  flex-shrink: 0;
+  margin-left: var(--spacing-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-primary);
+  font-size: var(--font-size-caption);
+  font-family: var(--font-family-cn);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.score-card.score-caution .btn-replay {
+  border-color: var(--color-secondary-dark);
+  color: var(--color-secondary-dark);
+}
+
+.score-card.score-danger .btn-replay {
+  border-color: #C62828;
+  color: #C62828;
+}
+
+.btn-replay:active {
+  background: rgba(46, 125, 50, 0.08);
+}
+
+.btn-replay svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- 添加剂清单成功状态 ---------- */
+.card-success-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-primary-light);
+  border-radius: var(--radius-md);
+}
+
+.card-success-row svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.card-success-row span {
+  font-size: var(--font-size-body);
+  color: var(--state-success);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ---------- 一般建议 ---------- */
+.advice-box {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: #FFF8E1;
+  border-radius: var(--radius-md);
+  border: 1px solid #FFE082;
+}
+
+.advice-icon {
+  font-size: 22px;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.advice-text {
+  font-size: var(--font-size-body);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+/* ---------- 查看全部配料（自定义 st.expander 外观） ---------- */
+.expand-section-marker {
+  display: none;
+}
+
+/* 包含 marker 的容器 */
+div[data-testid="stVerticalBlock"]:has(.expand-section-marker) {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 0;
+  margin: var(--card-gap) 0;
+  overflow: hidden;
+}
+
+/* expander 标题头 */
+div[data-testid="stVerticalBlock"]:has(.expand-section-marker) [data-testid="stExpander"] {
+  border: none !important;
+  margin: 0 !important;
+}
+
+div[data-testid="stVerticalBlock"]:has(.expand-section-marker) [data-testid="stExpander"] details {
+  border: none !important;
+  background: transparent !important;
+}
+
+div[data-testid="stVerticalBlock"]:has(.expand-section-marker) [data-testid="stExpander"] summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--card-padding) !important;
+  font-size: var(--font-size-body) !important;
+  font-weight: var(--font-weight-medium) !important;
+  color: var(--color-text-primary) !important;
+  cursor: pointer;
+}
+
+div[data-testid="stVerticalBlock"]:has(.expand-section-marker) [data-testid="stExpander"] summary:hover {
+  background: var(--color-bg);
+}
+
+div[data-testid="stVerticalBlock"]:has(.expand-section-marker) [data-testid="stExpander"] summary p {
+  font-weight: var(--font-weight-medium) !important;
+}
+
+/* expander 展开内容区 */
+div[data-testid="stVerticalBlock"]:has(.expand-section-marker) [data-testid="stExpander"] .streamlit-expanderContent {
+  padding: 0 var(--card-padding) var(--card-padding) !important;
+  font-size: var(--font-size-body) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+/* ---------- 语音控制按钮（设计稿：上下堆叠） ---------- */
+.voice-controls.voice-control-inline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-xl) 0 var(--spacing-lg);
+}
+
+.voice-controls.voice-control-inline .voice-float-btn,
+.voice-controls.voice-control-inline .voice-stop-btn {
+  width: 100%;
+  min-height: 56px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body-lg);
+  font-weight: var(--font-weight-bold);
+  justify-content: center;
+}
+
+.voice-controls.voice-control-inline .voice-float-btn {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  box-shadow: var(--shadow-card);
+}
+
+.voice-controls.voice-control-inline .voice-stop-btn {
+  background: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+/* ---------- 底部操作按钮（设计稿：outline + ghost） ---------- */
+div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker) {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-base) 0 calc(var(--spacing-base) + var(--safe-area-bottom));
+  margin-top: var(--spacing-lg);
+}
+
+div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker) > div[data-testid="stHorizontalBlock"] {
+  width: 100%;
+  gap: var(--spacing-md) !important;
+}
+
+div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker) > div[data-testid="stHorizontalBlock"] > div {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+}
+
+div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker) .stButton > button {
+  width: 100%;
+  min-height: 56px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 左侧“再扫一个”：主色描边 */
+div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker) > div[data-testid="stHorizontalBlock"] > div:first-child .stButton > button {
+  background: var(--color-bg-card) !important;
+  color: var(--color-primary) !important;
+  border: 2px solid var(--color-primary) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* 右侧“返回首页”：浅灰描边 */
+div[data-testid="stVerticalBlock"]:has(.bottom-action-bar-marker) > div[data-testid="stHorizontalBlock"] > div:last-child .stButton > button {
+  background: transparent !important;
+  color: var(--color-text-secondary) !important;
+  border: 1px solid var(--color-border) !important;
+  box-shadow: none !important;
+}
+
+/* ---------- 覆盖旧版评分卡冲突样式 ---------- */
+.result-score-hero-compact {
+  display: none;
+}
+
+/* 保留状态色变量使用 */
+.score-safe, .score-caution, .score-danger {
+  /* 仅作为状态标记类，具体样式由 .score-card.* 控制 */
+}
