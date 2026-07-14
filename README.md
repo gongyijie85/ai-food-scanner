@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**配料风险，帮助看懂包装上的添加剂。
 
-![版本](https://img.shields.io/badge/version-0.9.6-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.10.0-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -17,6 +17,7 @@
 
 ## 最新更新
 
+- **v0.10.0（2026-07-14）**：GB 2760—2024 全量结构化导入。以官方 PDF 为来源，使用 `pdfplumber` 离线解析附录 A-F，生成 `data/gb2760_2024.sqlite` 结构化数据库；法规数据与应用程序评分逻辑分离；新增 `scripts/requirements_import.txt` 隔离导入依赖；`requirements.txt` 不新增运行时依赖；TDD 开发并通过 `pytest` 5 项测试。
 - **v0.9.6（2026-07-14）**：初赛 Demo 帖 30 秒宣传视频上传成功。通过 Discourse API 上传 `design/demo_assets/demo_video_30s.mp4`（4.25 MB）到论坛帖（https://forum.trae.cn/t/topic/51391），并修正视频占位符为 `![...|video](upload://...)` 语法，确保论坛渲染为可播放的视频播放器；README 同步更新版本徽章与初赛帖链接。
 - **v0.9.5（2026-07-14）**：初赛 Demo 30 秒宣传视频 HyperFrames 化。使用 HyperFrames 生成 1080×1920 竖屏 30 秒 MP4，素材为 Playwright 截取的设计稿手机壳区域，最终视频保存到 `design/demo_assets/demo_video_30s.mp4`。
 - **v0.9.4（2026-07-13）**：新增 TTS 方案对比 Demo。在 `demos/tts_comparison/` 提供浏览器原生 TTS、edge-tts、Kokoro TTS 三种方案的最小可运行示例，依赖隔离在 `requirements_demo.txt`。

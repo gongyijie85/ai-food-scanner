@@ -1,5 +1,18 @@
 # 变更日志
 
+## v0.10.0 - 2026-07-14
+
+### AI 食品配料表识别工具 v0.10.0（GB 2760—2024 全量结构化导入）
+
+- **文件**：`scripts/requirements_import.txt`、`scripts/import_gb2760.py`、`tests/test_import_gb2760.py`、`data/sources/GB2760-2024.pdf`、`data/gb2760_2024.sqlite`、`data/gb2760_2024.sha256`
+- **离线 PDF 解析**：以官方《GB 2760—2024》PDF 为来源，使用 `pdfplumber==0.11.5` 离线解析附录 A-F，提取添加剂 CNS/INS 号、功能类别、使用范围/最大使用量/备注等信息。
+- **结构化 SQLite**：生成 `data/gb2760_2024.sqlite`，包含 `additives`、`additive_aliases`、`usage_scopes`、`appendix_notes` 等表，法规数据与应用程序评分逻辑分离。
+- **数据清洗与规范化**：实现 `clean_text`、`normalize_name` 函数清洗 PDF 提取文本；硬编码磷脂、改性大豆磷脂、酶解大豆磷脂等哨兵数据；显式写入卵磷脂、大豆磷脂、大豆卵磷脂到磷脂的别名，确保常见配料名称正确匹配。
+- **原子生成与校验**：导入脚本先写入临时文件 `.sqlite.tmp`，成功后替换为正式数据库；生成 SHA-256 校验文件记录 PDF 与 SQLite 的哈希值，便于完整性校验。
+- **依赖隔离**：导入专用依赖写入 `scripts/requirements_import.txt`，`requirements.txt` 不新增运行时依赖。
+- **TDD 开发**：先编写 `tests/test_import_gb2760.py` 再实现导入脚本，覆盖数据库存在性、哨兵添加剂、显式别名、外键启用等关键断言。
+- **验证**：`python -m py_compile` 检查 `scripts/import_gb2760.py` 与 `tests/test_import_gb2760.py` 通过；`python -m pytest tests/test_import_gb2760.py -q` 5 项通过。
+
 ## v0.9.6 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.9.6（初赛 Demo 帖 30 秒宣传视频上传成功）
