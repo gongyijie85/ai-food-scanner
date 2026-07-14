@@ -1,6 +1,6 @@
 /* AI食品配料表识别工具 - 适老化设计系统样式 */
-/* 版本: v0.10.2 | 更新时间: 2026-07-14 */
-/* Task 4：压缩评分摘要、添加剂元信息、语音同排、pills 触控高度 */
+/* 版本: v0.10.3 | 更新时间: 2026-07-14 */
+/* Task 5：首页历史记录整行可点击按钮 */
 
 /* ========== 设计系统变量 ========== */
 :root {
@@ -3146,4 +3146,46 @@ header[data-testid="stHeader"] {
 div[data-testid="stSegmentedControl"] button,
 div[data-testid="stPills"] button {
   min-height: 44px;
+}
+
+/* ========== Task 5: 首页历史记录整行可点击按钮 ========== */
+
+/* marker 仅用于 CSS :has 定位，不占据布局空间 */
+.home-history-row-marker {
+  display: none;
+}
+
+/* 通过相邻的 stElementContainer 命中整行历史按钮 */
+div[data-testid="stElementContainer"]:has(.home-history-row-marker) + div[data-testid="stElementContainer"] .stButton > button {
+  min-height: 80px;
+  height: auto;
+  border-radius: 16px;
+  background: #fff;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 14px;
+  border-left: 5px solid #9E9E9E;
+  justify-content: flex-start;
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+/* 安全：绿色左边条 */
+div[data-testid="stElementContainer"]:has(.home-history-row-marker.safe) + div[data-testid="stElementContainer"] .stButton > button {
+  border-left-color: #43A047;
+}
+
+/* 注意：橙色左边条 */
+div[data-testid="stElementContainer"]:has(.home-history-row-marker.caution) + div[data-testid="stElementContainer"] .stButton > button {
+  border-left-color: #F57F17;
+}
+
+/* 高风险：红色左边条 */
+div[data-testid="stElementContainer"]:has(.home-history-row-marker.danger) + div[data-testid="stElementContainer"] .stButton > button {
+  border-left-color: #E53935;
+}
+
+/* 点击反馈 */
+div[data-testid="stElementContainer"]:has(.home-history-row-marker) + div[data-testid="stElementContainer"] .stButton > button:active {
+  transform: scale(0.98);
 }
