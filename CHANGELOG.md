@@ -1,5 +1,16 @@
 # 变更日志
 
+## v0.10.16 - 2026-07-15
+
+### AI 食品配料表识别工具 v0.10.16（初赛提交前最终适老化微调）
+
+- **文件**：`components/score_hero.py`、`pages/scan.py`、`.streamlit/style.css`
+- **标签去绝对化**：`components/score_hero.py` 将分数圆圈内「安全分」改为「配料参考分」，避免用户将分数误解为官方食品安全判定。
+- **扫描页提示字号放大**：`pages/scan.py` 将顶部提示文字的内联样式改为 `class='scan-page-tip'`；`.streamlit/style.css` 新增 `.scan-page-tip` 样式，默认使用 `--font-size-body-lg`（20px），移动端进一步放大到 22px，提升老年用户可读性。
+- **范围说明**：本次为初赛 Demo 提交前最后一轮低风险 P1 整改，不涉及模型、数据库、架构改动，确保核心流程稳定。
+- **全量质量门禁结果**：`python -m pytest -q` 97 项通过；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .` 通过；`python -m compileall -q .` 通过；`python -m bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees` 无 issue。
+- **遗留说明**：`smoke_test.py` 因历史页 UI 已改为整行可点击按钮、不再存在「查看详情」按钮而失败，属历史遗留问题，计划初赛提交后修复。
+
 ## v0.10.15 - 2026-07-15
 
 ### AI 食品配料表识别工具 v0.10.15（评分模型与未命中项显示统一）

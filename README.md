@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**配料风险，帮助看懂包装上的添加剂。
 
-![版本](https://img.shields.io/badge/version-0.10.15-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.10.16-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -17,6 +17,7 @@
 
 ## 最新更新
 
+- **v0.10.16（2026-07-15）**：初赛提交前最终适老化微调。`components/score_hero.py` 将「安全分」改为「配料参考分」，避免绝对化暗示；`pages/scan.py` 顶部提示改为 CSS 类，`.streamlit/style.css` 新增 `.scan-page-tip` 并将移动端字号放大到 22px。完整 pytest 97 项通过，flake8/black/compileall/bandit 全绿。
 - **v0.10.15（2026-07-15）**：评分模型与未命中项显示统一。`utils/score.py` 显式跳过 `MatchStatus.UNMATCHED`/`level=""` 项的扣分；`components/additive_card.py` 将未识别项标签改为「未识别，请核对包装」并移除等级图标；`tests/test_core.py` 新增 `match()` UNMATCHED 状态与混合评分一致性测试。完整 pytest 97 项通过。
 - **v0.10.14（2026-07-15）**：GB 2760 数据质量补强第一阶段。`scripts/import_gb2760.py` 与 `data/additive_synonyms.csv` 补充三氯蔗糖、维生素E、天然胡萝卜素等常见添加剂及别名；`data/gb2760_risk.csv` 校准甜菊糖苷、三氯蔗糖为 A 级；重新生成 `data/gb2760_2024.sqlite` 并更新 sha256；将 9 个散落在 `pages/` 的 HTML 设计稿归档到 `design/`。
 - **v0.10.13（2026-07-15）**：识别结果页专家审查综合计划落地。动画无障碍：删除持续旋转、呼吸动画限 2 次、支持系统「减少动态效果」降级；文案适老化：消除「GB 2760」「命中」「专业人士」等技术术语，疾病/过敏原/药物冲突提示更具体、更亲切；健康提示科学性修正：反式脂肪酸 severity 降至 medium 并引导查看营养成分表，高钠关键词覆盖酱油/味精/磷酸盐，新增慢性肾病磷酸盐/钾盐提示。涉及 `.streamlit/style.css`、`components/score_hero.py`、`components/additive_card.py`、`components/personal_warnings.py`、`services/health_warning_engine.py`、`pages/home.py`、`app.py`。

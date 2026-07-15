@@ -73,7 +73,7 @@ def _render_score_hero(
         f"<div class='score-circle'>"
         f"<div class='score-ring'></div>"
         f"<span class='score-number'>{score}</span>"
-        f"<span class='score-label'>安全分</span>"
+        f"<span class='score-label'>配料参考分</span>"
         f"</div></div>"
         f"<div class='status-pill'>{pill_icon}<span>{_safe(label)}</span></div>"
         f"<p class='score-card-subtitle'>{_safe(meaning)}</p>"

@@ -17,7 +17,6 @@ if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
 import streamlit as st
-import streamlit.components.v1 as components
 from dotenv import load_dotenv
 
 from components import _preload_tts_voices, _render_tts_namespace
@@ -231,19 +230,19 @@ def main():
     # 检测设备类型并注入 CSS class，供 .device-mobile / .device-desktop 样式规则使用
     device_type = detect_device_type()
     st.session_state["device_type"] = device_type
-    components.html(
+    st.html(
         f"""
         <script>
         (function() {{
             try {{
-                var d = window.parent.document;
-                d.body.classList.remove('device-mobile', 'device-desktop');
-                d.body.classList.add('device-{device_type}');
+                var d = document.body;
+                d.classList.remove('device-mobile', 'device-desktop');
+                d.classList.add('device-{device_type}');
             }} catch(e) {{}}
         }})();
         </script>
         """,
-        height=0,
+        unsafe_allow_javascript=True,
     )
 
     # 默认模型选择

@@ -118,7 +118,7 @@ def _render_recent_scans():
             if st.button(
                 f"{emoji}\n{short_name}\n{score}分",
                 key=f"scan_recent_{idx}",
-                use_container_width=True,
+                width="stretch",
             ):
                 st.session_state["selected_history_index"] = idx
                 st.session_state["detail_fallback_record"] = item
@@ -133,8 +133,7 @@ def render_scan_page():
     groups, api_key, uploader_key = _scan_common_setup()
 
     st.markdown(
-        "<p class='scan-tip' style='text-align:center;color:#616161;font-size:15px;"
-        "font-weight:500;margin:0 0 16px 0;'>对准配料表拍照或从相册选择</p>",
+        "<p class='scan-page-tip'>对准配料表拍照或从相册选择</p>",
         unsafe_allow_html=True,
     )
 
@@ -162,16 +161,16 @@ def render_scan_page():
             f"{uploaded_file.size / 1024:.0f}KB</div>",
             unsafe_allow_html=True,
         )
-        st.image(uploaded_file, use_container_width=True)
+        st.image(uploaded_file, width="stretch")
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("重新选择", key="scan_retake", use_container_width=True):
+            if st.button("重新选择", key="scan_retake", width="stretch"):
                 st.session_state["scan_upload_key"] += 1
                 st.rerun()
         with col2:
             if st.button(
-                "开始识别", type="primary", key="scan_confirm", use_container_width=True
+                "开始识别", type="primary", key="scan_confirm", width="stretch"
             ):
                 _scan_validate_and_recognize(uploaded_file, api_key, groups)
 

@@ -82,7 +82,7 @@ def render_home_page():
             if st.button(
                 label,
                 key=f"home_hist_{idx}",
-                use_container_width=True,
+                width="stretch",
             ):
                 st.session_state["selected_history_index"] = idx
                 st.session_state["detail_fallback_record"] = item
@@ -92,7 +92,7 @@ def render_home_page():
             if st.button(
                 "查看全部历史记录",
                 key="home_view_all_history",
-                use_container_width=True,
+                width="stretch",
             ):
                 switch_page("history")
 
@@ -107,14 +107,14 @@ def render_home_page():
                 "📷 拍照识别",
                 type="primary",
                 key="home_btn_scan",
-                use_container_width=True,
+                width="stretch",
             ):
                 switch_page("scan")
         with col2:
             if st.button(
                 "❤️ 健康档案",
                 key="home_btn_profile",
-                use_container_width=True,
+                width="stretch",
             ):
                 switch_page("profile")
 
