@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**配料风险，帮助看懂包装上的添加剂。
 
-![版本](https://img.shields.io/badge/version-0.10.17-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.10.18-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -17,6 +17,7 @@
 
 ## 最新更新
 
+- **v0.10.18（2026-07-15）**：初赛 Demo 帖内容更新。按官方要求将报名帖链接移到第 5 项并标注「已通过审核」；版本号由 v0.9.3 更新为 v0.10.18；补充 v0.10.13–v0.10.17 更新说明；修复重复的 Session ID。公开体验链接 HTTP 200，帖子关键信息已逐项核对。
 - **v0.10.17（2026-07-15）**：热修复扫描后结果页报错。修复 `components/score_hero.py` 中 `st.markdown()` 被误传 `key` 参数导致的 `TypeError`，移除该参数后结果页可正常渲染。`pytest` 97 项全量通过，`py_compile` 通过。
 - **v0.10.16（2026-07-15）**：初赛提交前最终适老化微调。`components/score_hero.py` 将「安全分」改为「配料参考分」，避免绝对化暗示；`pages/scan.py` 顶部提示改为 CSS 类，`.streamlit/style.css` 新增 `.scan-page-tip` 并将移动端字号放大到 22px。完整 pytest 97 项通过，flake8/black/compileall/bandit 全绿。
 - **v0.10.15（2026-07-15）**：评分模型与未命中项显示统一。`utils/score.py` 显式跳过 `MatchStatus.UNMATCHED`/`level=""` 项的扣分；`components/additive_card.py` 将未识别项标签改为「未识别，请核对包装」并移除等级图标；`tests/test_core.py` 新增 `match()` UNMATCHED 状态与混合评分一致性测试。完整 pytest 97 项通过。
