@@ -119,6 +119,6 @@ def render_home_page():
                 switch_page("profile")
 
     st.markdown(
-        "<p class='disclaimer-text'>AI识别仅供参考，请以包装原文为准</p>",
+        "<p class='disclaimer-text'>识别结果仅供参考，请以包装上的配料表为准</p>",
         unsafe_allow_html=True,
     )

@@ -55,19 +55,19 @@ class TestNormalizeAdditive:
         """保健品辅料应返回 level='A'"""
         level, ins, note = normalize_additive("鱼油")
         assert level == "A"
-        assert "不扣分" in note
+        assert "不纳入添加剂评分" in note
 
     def test_unknown_additive(self):
         """未匹配的添加剂应返回 level='B'（默认）"""
         level, ins, note = normalize_additive("某种未知物质")
         assert level == "B"
-        assert "未在 GB 2760" in note
+        assert "未识别" in note
 
     def test_blocklisted_basic_ingredient(self):
         """黑名单基础配料应返回 level='A'，避免误扣分"""
         level, ins, note = normalize_additive("白砂糖")
         assert level == "A"
-        assert "基础配料" in note
+        assert "普通食品配料" in note
 
     def test_blocklisted_water(self):
         """水应返回 level='A'"""
@@ -113,7 +113,7 @@ class TestComputeScoreFromAdditives:
 
     def test_b_level_penalty(self):
         """B 等级应扣 8 分"""
-        additives = [{"name": "某种未知物质"}]  # 未匹配默认 B
+        additives = [{"name": "丙二醇"}]  # 标准库与 CSV 均为 B 级
         score = compute_score_from_additives(additives)
         assert score == 92  # 100 - 8
 
@@ -121,7 +121,7 @@ class TestComputeScoreFromAdditives:
         """混合等级应累加扣分"""
         additives = [
             {"name": "鱼油"},  # A，不扣分
-            {"name": "某种未知物质"},  # B，扣 8 分
+            {"name": "丙二醇"},  # B，扣 8 分
         ]
         score = compute_score_from_additives(additives)
         assert score == 92  # 100 - 8
@@ -144,6 +144,15 @@ class TestComputeScoreFromAdditives:
             {"name": "水"},
             {"name": "食用盐"},
             {"name": "白砂糖"},
+        ]
+        score = compute_score_from_additives(additives)
+        assert score == 100
+
+    def test_unmatched_not_penalized(self):
+        """未在 GB 2760 命中的名称不应扣分"""
+        additives = [
+            {"name": "某种未知物质"},
+            {"name": "另一个未收录名称"},
         ]
         score = compute_score_from_additives(additives)
         assert score == 100
@@ -620,7 +629,7 @@ class TestAdditiveMatcher:
         """黑名单基础配料应返回 A 级"""
         level, _, note = self._matcher().classify("白砂糖")
         assert level == "A"
-        assert "基础配料" in note
+        assert "普通食品配料" in note
 
     def test_supplement_excipient(self):
         """保健品辅料应返回 A 级"""
@@ -710,7 +719,7 @@ class TestHealthWarningEngine:
         assert any(w.category == "allergen" for w in warnings)
 
     def test_ingredient_risk_hydrogenated_oil(self):
-        """氢化植物油应产生原料风险警告"""
+        """氢化植物油应产生原料风险警告（已降级为 medium）"""
         engine = self._engine()
         result = {
             "ingredients": ["氢化植物油", "白砂糖"],
@@ -718,7 +727,26 @@ class TestHealthWarningEngine:
         }
         warnings = engine.analyze(result, {})
         assert any(
-            w.category == "ingredient_risk" and w.severity == "high" for w in warnings
+            w.category == "ingredient_risk"
+            and w.severity == "medium"
+            and "反式脂肪" in w.description
+            for w in warnings
+        )
+
+    def test_ingredient_risk_chronic_kidney(self):
+        """磷酸盐/钾盐应对肾病人群给出提示"""
+        engine = self._engine()
+        result = {
+            "ingredients": ["水", "焦磷酸钠", "三聚磷酸钠"],
+            "additives": [],
+        }
+        profile = {"groups": ["肾病"]}
+        warnings = engine.analyze(result, profile)
+        assert any(
+            w.category == "ingredient_risk"
+            and "肾病" in w.description
+            and "磷酸盐" in w.description
+            for w in warnings
         )
 
     def test_no_profile_no_warnings(self):

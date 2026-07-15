@@ -30,9 +30,9 @@ INGREDIENT_RISK_RULES: List[Dict] = [
         "id": "hydrogenated_oil",
         "keywords": ["氢化植物油", "氢化棕榈油", "氢化大豆油", "人造奶油", "植脂末"],
         "position_limit": None,  # 任意位置命中即触发
-        "severity": "high",
-        "title": "反式脂肪酸风险",
-        "description": "含有氢化植物油/植脂末等成分，可能含反式脂肪酸，建议心血管/脑梗人群尽量避免。",
+        "severity": "medium",
+        "title": "可能含反式脂肪酸",
+        "description": "配料表出现氢化植物油/植脂末，可能含反式脂肪酸。建议查看营养成分表中的反式脂肪含量，心血管/脑梗人群应限制摄入。",
         "groups": ["脑梗/心血管"],
     },
     {
@@ -49,17 +49,50 @@ INGREDIENT_RISK_RULES: List[Dict] = [
         "position_limit": 3,  # 排在前 3 位才触发
         "severity": "medium",
         "title": "糖分较高",
-        "description": "配料表中糖排名靠前，糖分较高，糖尿病患者请注意控制摄入量。",
+        "description": "配料表中糖排名靠前，通常糖分较高；具体含量请查看营养成分表。糖尿病患者请注意控制摄入量。",
         "groups": ["糖尿病"],
     },
     {
         "id": "high_sodium",
-        "keywords": ["食用盐", "食盐", "海盐", "精盐", "岩盐", "氯化钠"],
+        "keywords": [
+            "食用盐",
+            "食盐",
+            "海盐",
+            "精盐",
+            "岩盐",
+            "氯化钠",
+            "酱油",
+            "生抽",
+            "老抽",
+            "味精",
+            "谷氨酸钠",
+            "呈味核苷酸二钠",
+            "焦磷酸钠",
+            "三聚磷酸钠",
+        ],
         "position_limit": 3,
         "severity": "medium",
         "title": "钠含量可能较高",
-        "description": "配料表中盐排名靠前，钠含量可能较高，高血压患者建议关注。",
+        "description": "配料表中出现盐/酱油/味精等钠来源，钠含量可能较高，高血压朋友建议关注。",
         "groups": ["高血压"],
+    },
+    {
+        "id": "chronic_kidney",
+        "keywords": [
+            "磷酸",
+            "焦磷酸钠",
+            "三聚磷酸钠",
+            "六偏磷酸钠",
+            "多聚磷酸钠",
+            "磷酸氢二钠",
+            "磷酸二氢钠",
+            "氯化钾",
+        ],
+        "position_limit": None,
+        "severity": "medium",
+        "title": "磷酸盐/钾盐提示",
+        "description": "配料表中出现磷酸盐/钾盐，肾病患者建议咨询医生或营养师。",
+        "groups": ["肾病"],
     },
 ]
 
@@ -119,14 +152,16 @@ class HealthWarningEngine:
                 ing_str = str(ing)
                 for fk in c.get("food_keywords", []):
                     if fk in ing_str:
+                        recommendation = c.get("recommendation", "请咨询医生或药师")
                         warnings.append(
                             HealthWarning(
                                 category="drug_conflict",
                                 severity=c.get("severity", "medium"),
-                                title="药物-食物相互作用",
+                                title="您吃的药可能与这种食物有冲突",
                                 description=f"{c.get('drug_name', '')} 与 {fk} "
                                 f"可能存在相互作用：{c.get('description', '')} "
-                                f"建议：{c.get('recommendation', '请咨询医生或药师')}",
+                                f"建议：{recommendation}。"
+                                f"请勿自行停药或改变饮食，请先咨询医生或药师。",
                             )
                         )
                         break  # 每个冲突只算一次
@@ -162,7 +197,7 @@ class HealthWarningEngine:
                 category="allergen",
                 severity="high",
                 title="过敏原提示",
-                description=f"检测到可能的过敏原：{'、'.join(sorted(set(matched)))}，请谨慎食用。",
+                description=f"可能含有您过敏的配料：{'、'.join(sorted(set(matched)))}，建议确认后再食用。",
             )
         ]
 
@@ -194,13 +229,15 @@ class HealthWarningEngine:
                 hit_groups = [w for w in risk.warnings.split("/") if w in groups]
                 if hit_groups:
                     severity = "high" if match.level == "C" else "medium"
+                    groups_str = "、".join(hit_groups)
+                    title = f"{groups_str}朋友注意"
                     warnings.append(
                         HealthWarning(
                             category="disease",
                             severity=severity,
-                            title="特定人群注意",
-                            description=f"{match.canonical_name}（{risk.note or '食品添加剂'}）对 "
-                            f"{'、'.join(hit_groups)} 人群需额外注意，建议咨询医生或营养师。",
+                            title=title,
+                            description=f"{match.canonical_name}（{risk.note or '食品添加剂'}）："
+                            f"{groups_str}朋友建议少吃或先问医生。",
                         )
                     )
         return warnings

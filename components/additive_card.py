@@ -8,6 +8,9 @@ from utils.security import _safe
 
 def _get_level_info(level: str, status) -> tuple[str, str, str]:
     """统一返回添加剂等级信息：标签、颜色、形状图标."""
+    # 未匹配项：中性灰色，不参与评分
+    if getattr(status, "value", "") == "unmatched" or level == "":
+        return "未识别", "#9E9E9E", "?"
     if level == "A":
         label, color, shape = "较友好", "#43A047", "●"
     elif level == "C":
@@ -16,9 +19,7 @@ def _get_level_info(level: str, status) -> tuple[str, str, str]:
         label, color, shape = "注意", "#FF9800", "▲"
     # status 是 MatchStatus 枚举或带有 value 属性的对象
     if getattr(status, "value", "") == "pending":
-        label = "等级待评估"
-    elif getattr(status, "value", "") == "unmatched":
-        label = "名称待核对"
+        label = "待确认"
     return label, color, shape
 
 
@@ -46,7 +47,7 @@ def _render_additive_card(additives, key="additive_card"):
             f"<svg viewBox='0 0 24 24' fill='none' stroke='var(--state-success)' "
             f"stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'>"
             f"<circle cx='12' cy='12' r='10'/><polyline points='16 9 10.5 15 8 12.5'/></svg>"
-            f"<span>未识别到需要关注的食品添加剂</span>"
+            f"<span>未识别到食品添加剂</span>"
             f"</div></div></div>",
             unsafe_allow_html=True,
         )
@@ -108,25 +109,30 @@ def _render_additive_card(additives, key="additive_card"):
         ]
         meta = " · ".join(meta_parts)
 
-        clip = (
-            "polygon(50% 0%, 0% 100%, 100% 100%)"
-            if shape == "▲"
-            else (
-                "polygon(0 0, 100% 0, 100% 100%, 0 100%)"
-                if shape == "■"
-                else "circle(50%)"
-            )
-        )
+        if shape == "?":
+            clip = "none"
+        elif shape == "▲":
+            clip = "polygon(50% 0%, 0% 100%, 100% 100%)"
+        elif shape == "■":
+            clip = "polygon(0 0, 100% 0, 100% 100%, 0 100%)"
+        else:
+            clip = "circle(50%)"
         note_html = f"<div class='result-additive-note'>{note}</div>" if note else ""
         if ai_inferred:
-            note_html += "<div class='ai-inferred-tag'>AI 推断，请以包装原文为准</div>"
+            note_html += "<div class='ai-inferred-tag'>自动识别，请以包装为准</div>"
         meta_html = f"<div class='result-additive-meta'>{meta}</div>" if meta else ""
+        # 名称相同时只显示一次，避免重复；不同时显示识别对应关系
+        canonical_html = (
+            ""
+            if canonical == raw_name
+            else f"<div class='result-additive-canonical'>识别为：{canonical}</div>"
+        )
         html += (
             f"<div class='result-additive-item' style='border-left-color:{color};'>"
             f"<span class='result-additive-shape' style='background:{color};clip-path:{clip};'></span>"
             f"<div class='result-additive-body'>"
             f"<div class='result-additive-name'>{raw_name}</div>"
-            f"<div class='result-additive-canonical'>{canonical}</div>"
+            f"{canonical_html}"
             f"{meta_html}"
             f"{note_html}"
             f"</div>"
@@ -144,9 +150,9 @@ def _render_additive_card(additives, key="additive_card"):
 
     legend_html = (
         "<div class='result-additive-legend'>"
-        "<div class='legend-item'><span class='legend-shape' style='background:#43A047;clip-path:circle(50%);'></span><span>圆=较友好</span></div>"
-        "<div class='legend-item'><span class='legend-shape' style='background:#FF9800;clip-path:polygon(50% 0%,0% 100%,100% 100%);'></span><span>三角=注意</span></div>"
-        "<div class='legend-item'><span class='legend-shape' style='background:#E53935;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);'></span><span>方块=高风险</span></div>"
+        "<div class='legend-item'><span class='legend-shape' style='background:#43A047;clip-path:circle(50%);'></span><span>绿色圆：较友好</span></div>"
+        "<div class='legend-item'><span class='legend-shape' style='background:#FF9800;clip-path:polygon(50% 0%,0% 100%,100% 100%);'></span><span>黄色三角：适量注意</span></div>"
+        "<div class='legend-item'><span class='legend-shape' style='background:#E53935;clip-path:polygon(0 0,100% 0,100% 100%,0 100%);'></span><span>红色方块：建议少吃</span></div>"
         "</div>"
     )
     st.markdown(legend_html, unsafe_allow_html=True)

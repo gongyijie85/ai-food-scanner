@@ -277,7 +277,7 @@ def main():
     _dispatch_page(page)
 
     st.markdown(
-        "<div class='disclaimer-text' style='text-align:center;margin-top:24px;'>AI识别仅供参考，请以包装原文为准</div>",
+        "<div class='disclaimer-text' style='text-align:center;margin-top:24px;'>识别结果仅供参考，请以包装上的配料表为准</div>",
         unsafe_allow_html=True,
     )
 

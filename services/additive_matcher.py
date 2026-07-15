@@ -181,7 +181,7 @@ class AdditiveMatcher:
         raw_name = name if isinstance(name, str) else str(name)
         clean = _clean_name(raw_name)
 
-        # 空名称保持与旧 classify 一致，返回 B 兜底
+        # 空名称：未匹配，不参与评分
         if not clean:
             return AdditiveMatchResult(
                 raw_name=raw_name,
@@ -191,8 +191,8 @@ class AdditiveMatcher:
                 ins="",
                 function="",
                 scopes_summary="",
-                level="B",
-                note="名称待核对（未在 GB 2760 标准库中命中）",
+                level="",
+                note="未识别，不参与评分",
                 page_ref="",
             )
 
@@ -207,7 +207,7 @@ class AdditiveMatcher:
                 function="",
                 scopes_summary="",
                 level="A",
-                note="基础配料，不扣分",
+                note="普通食品配料，不纳入添加剂评分",
                 page_ref="",
             )
 
@@ -222,7 +222,7 @@ class AdditiveMatcher:
                 function="",
                 scopes_summary="",
                 level="A",
-                note="保健品辅料，不扣分",
+                note="保健品辅料，不纳入添加剂评分",
                 page_ref="",
             )
 
@@ -254,11 +254,11 @@ class AdditiveMatcher:
                 function=standard.functions,
                 scopes_summary=standard.scopes_summary,
                 level="B",  # 兼容旧接口：待评级按保守 B 返回
-                note="标准已收录，应用待评级",
+                note="已收录，但暂无风险评级",
                 page_ref=standard.page_ref,
             )
 
-        # 6. 标准库未命中 -> B 级
+        # 6. 标准库未命中 -> 不参与评分
         return AdditiveMatchResult(
             raw_name=raw_name,
             canonical_name=raw_name,
@@ -267,16 +267,16 @@ class AdditiveMatcher:
             ins="",
             function="",
             scopes_summary="",
-            level="B",
-            note="名称待核对（未在 GB 2760 标准库中命中）",
+            level="",
+            note="未识别到，请核对包装上的配料表",
             page_ref="",
         )
 
     def classify(self, name) -> Tuple[str, str, str]:
         """返回 (level, ins_no, note)，保留以兼容旧调用方.
 
-        内部调用 match()，level 为空时按保守策略返回 B.
+        内部调用 match()，未匹配时按保守策略返回 B，避免旧调用方因空 level 崩溃.
         """
         result = self.match(name)
-        level = result.level
+        level = result.level if result.level else "B"
         return level, result.ins, result.note

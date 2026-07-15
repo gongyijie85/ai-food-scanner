@@ -1,5 +1,28 @@
 # 变更日志
 
+## v0.10.13 - 2026-07-15
+
+### AI 食品配料表识别工具 v0.10.13（识别结果页专家审查：动画无障碍 + 文案适老化 + 健康提示科学性修正）
+
+- **文件**：`.streamlit/style.css`、`components/score_hero.py`、`components/additive_card.py`、`components/personal_warnings.py`、`services/additive_matcher.py`、`services/health_warning_engine.py`、`pages/result.py`、`pages/home.py`、`app.py`、`tests/test_core.py`
+- **Work Item 1：分数圈动画无障碍修正**：`.streamlit/style.css` 删除 `.score-ring` 持续旋转动画；`scorePulseRing` 从无限循环改为播放 2 次；`scorePopIn` 减弱回弹为 0.85→1 柔和缩放；新增 `@media (prefers-reduced-motion: reduce)` 媒体查询，系统开启「减少动态效果」时入场动画降级为 0.2s 淡入；`components/score_hero.py` 给 `st.markdown` 增加稳定 key，避免 rerun 时重播入场动画。
+- **Work Item 2：结果页文案适老化改造**：
+  - `services/additive_matcher.py`：未匹配项 note 改为「未识别到，请核对包装上的配料表」；黑名单基础配料 note 改为「普通食品配料，不纳入添加剂评分」；保健品辅料 note 改为「保健品辅料，不纳入添加剂评分」；待评级 note 改为「已收录，但暂无风险评级」。
+  - `components/additive_card.py`：AI 推断标签改为「自动识别，请以包装为准」；图例改为「绿色圆：较友好 / 黄色三角：适量注意 / 红色方块：建议少吃」；等级待评估标签改为「待确认」；名称相同时不再重复显示识别名。
+  - `components/score_hero.py`：≥80 分状态标签改为「暂未发现明显问题」；副标题改为「根据您的健康情况，暂未发现需要特别注意的配料」；免责声明改为「结果仅供参考，不能代替医生诊断。身体不适或患有疾病，请先咨询医生。」；慢速重听按钮改为「慢速再读一遍」。
+  - `components/personal_warnings.py`：卡片标题改为「根据您的健康情况」；底部脚注改为「本工具不能代替医生，有疑问请咨询医生或药师」。
+  - `pages/home.py`、`app.py`：底部免责声明统一改为「识别结果仅供参考，请以包装上的配料表为准」。
+- **Work Item 3：健康风险提示科学性修正**：
+  - `services/health_warning_engine.py`：氢化植物油/植脂末原料风险 severity 从 high 降至 medium；标题改为「可能含反式脂肪酸」；描述引导查看营养成分表中的反式脂肪含量并限制摄入，避免绝对化表述。
+  - 高糖规则描述增加「配料表中糖排名靠前，通常糖分较高；具体含量请查看营养成分表」。
+  - 高钠规则扩展关键词：新增酱油、生抽、老抽、味精、谷氨酸钠、呈味核苷酸二钠、焦磷酸钠、三聚磷酸钠；描述改为「配料表中出现盐/酱油/味精等钠来源，钠含量可能较高，高血压朋友建议关注」。
+  - 新增慢性肾病规则：匹配磷酸盐/钾盐（磷酸、焦磷酸钠、三聚磷酸钠、六偏磷酸钠、多聚磷酸钠、磷酸氢二钠、磷酸二氢钠、氯化钾），面向「肾病」人群给出 medium 级别提示。
+  - 疾病警告标题从统一「特定人群注意」改为「{人群}朋友注意」；描述改为「{配料}：{人群}朋友建议少吃或先问医生」。
+  - 过敏原描述改为「可能含有您过敏的配料：X，建议确认后再食用」。
+  - 药物冲突标题改为「您吃的药可能与这种食物有冲突」；描述追加「请勿自行停药或改变饮食，请先咨询医生或药师」。
+- **测试同步更新**：`tests/test_core.py` 更新 `TestNormalizeAdditive` 与 `TestAdditiveMatcher` 文案断言；`test_ingredient_risk_hydrogenated_oil` 改为断言 medium severity 与反式脂肪描述；新增 `test_ingredient_risk_chronic_kidney` 覆盖肾病规则。
+- **全量质量门禁结果**：`python -m pytest -q` 95 项通过；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .` 通过；`python -m compileall -q .` 通过；`python -m bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees` 无 issue。
+
 ## v0.10.12 - 2026-07-14
 
 ### AI 食品配料表识别工具 v0.10.12（结果页分数圈放大 + 动态效果 + 配料标签云）

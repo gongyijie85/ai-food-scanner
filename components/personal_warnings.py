@@ -25,9 +25,9 @@ def render_personal_warnings(warnings):
 
     st.markdown(
         "<div class='result-card'>"
-        "<div class='result-card-title'>💗 针对您的健康档案</div>"
+        "<div class='result-card-title'>💗 根据您的健康情况</div>"
         + warning_items
-        + "<p class='result-card-footnote'>本工具不提供医疗建议，如有疑问请咨询专业人士</p>"
+        + "<p class='result-card-footnote'>本工具不能代替医生，有疑问请咨询医生或药师</p>"
         "</div>",
         unsafe_allow_html=True,
     )

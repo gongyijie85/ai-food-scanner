@@ -18,8 +18,8 @@ def _render_score_hero(
     根据分数使用绿/橙/红三色状态，保持适老化高对比度。
     """
     if score >= 80:
-        label = "暂未发现已知高风险提示"
-        meaning = "按当前档案暂未发现高风险配料"
+        label = "暂未发现明显问题"
+        meaning = "根据您的健康情况，暂未发现需要特别注意的配料"
         score_class = "score-safe"
         pill_icon = (
             "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' "
@@ -56,11 +56,11 @@ def _render_score_hero(
         replay_id = f"slow-replay-{score}"
         replay_btn = (
             f"<button id='{replay_id}' class='btn-replay food-scanner-tts-replay-btn' "
-            f"data-action='replay' aria-label='慢速重听'>"
+            f"data-action='replay' aria-label='慢速再读一遍'>"
             f"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' "
             f"stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>"
             f"<path d='M1 4v6h6'/><path d='M3.51 15a9 9 0 1 0 2.13-9.36L1 10'/></svg>"
-            f"<span>慢速重听</span></button>"
+            f"<span>慢速再读一遍</span></button>"
         )
 
     st.markdown(
@@ -78,9 +78,10 @@ def _render_score_hero(
         f"<div class='status-pill'>{pill_icon}<span>{_safe(label)}</span></div>"
         f"<p class='score-card-subtitle'>{_safe(meaning)}</p>"
         f"<div class='score-card-footer'>"
-        f"<p class='disclaimer'>结果仅供参考，不构成医疗或饮食建议。"
-        f"如有过敏史或特殊疾病，请咨询专业医师。</p>"
+        f"<p class='disclaimer'>结果仅供参考，不能代替医生诊断。"
+        f"身体不适或患有疾病，请先咨询医生。</p>"
         f"{replay_btn}"
         f"</div></div>",
         unsafe_allow_html=True,
+        key=f"score-hero-{_safe(product_name)}-{score}",
     )

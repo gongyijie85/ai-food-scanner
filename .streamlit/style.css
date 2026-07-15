@@ -3365,10 +3365,11 @@ div[data-testid="stElementContainer"]:has(.home-history-row-marker) + div[data-t
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow-subtle);
-  animation: scorePopIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  /* 柔和入场：无回弹，避免老年用户视觉上被干扰 */
+  animation: scorePopIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* 外圈呼吸光环 */
+/* 外圈呼吸光环：仅播放 2 次，避免用户误以为状态持续变化 */
 .score-circle::after {
   content: "";
   position: absolute;
@@ -3376,17 +3377,16 @@ div[data-testid="stElementContainer"]:has(.home-history-row-marker) + div[data-t
   border-radius: 50%;
   border: 3px solid currentColor;
   opacity: 0.25;
-  animation: scorePulseRing 2.2s ease-out infinite;
+  animation: scorePulseRing 2.2s ease-out 2;
 }
 
-/* 旋转刻度装饰 */
+/* 静态刻度装饰环：不旋转，避免分散注意力和前庭不适 */
 .score-ring {
   position: absolute;
   inset: -3px;
   border-radius: 50%;
   border: 2px dashed currentColor;
   opacity: 0.18;
-  animation: scoreRotateRing 14s linear infinite;
 }
 
 .score-card .score-circle {
@@ -3533,9 +3533,8 @@ div[data-testid="stElementContainer"]:has(.home-history-row-marker) + div[data-t
 
 /* 分数圈动画 */
 @keyframes scorePopIn {
-  0% { transform: scale(0.3); opacity: 0; }
-  60% { transform: scale(1.12); opacity: 1; }
-  100% { transform: scale(1); }
+  0% { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 @keyframes scorePulseRing {
@@ -3544,9 +3543,21 @@ div[data-testid="stElementContainer"]:has(.home-history-row-marker) + div[data-t
   100% { transform: scale(1.14); opacity: 0; }
 }
 
-@keyframes scoreRotateRing {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+/* 系统开启“减少动态效果”时的降级方案 */
+@media (prefers-reduced-motion: reduce) {
+  .score-circle {
+    animation: scoreFadeIn 0.2s ease-out both;
+  }
+
+  .score-circle::after {
+    animation: none;
+    opacity: 0.12;
+  }
+}
+
+@keyframes scoreFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ---------- 添加剂清单成功状态 ---------- */
