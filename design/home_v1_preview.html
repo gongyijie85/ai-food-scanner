@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食品配料表识别 - 首页优化预览</title>
+    <style id="theme-vars">
+/* Brand CSS — AI Food Scanner v2 */
+/* Inspired by glassmorphism + gradient hero + ring animation style */
+:root {
+  /* ── Green scale (full) ── */
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-200: #bbf7d0;
+  --green-300: #86efac;
+  --green-400: #4ade80;
+  --green-500: #22c55e;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --green-800: #166534;
+  --green-900: #14532d;
+
+  /* Semantic */
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+
+  --sky-50: #f0f9ff;
+  --sky-100: #e0f2fe;
+  --sky-500: #0ea5e9;
+  --sky-600: #0284c7;
+  --sky-700: #0369a1;
+
+  --red-50: #fef2f2;
+  --red-500: #ef4444;
+
+  /* Neutrals */
+  --gray-25: #fcfcfd;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* Surface */
+  --color-bg: #f8faf8;
+  --color-bg-card: #ffffff;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #9ca3af;
+  --color-text-inverse: #ffffff;
+  --color-border: #e5e7eb;
+  --color-divider: #f3f4f6;
+
+  /* On-dark text (inside score hero) */
+  --text-on-dark: #ffffff;
+  --text-on-dark-60: rgba(255,255,255,0.6);
+  --text-on-dark-55: rgba(255,255,255,0.55);
+  --text-on-dark-45: rgba(255,255,255,0.45);
+  --text-on-dark-70: rgba(255,255,255,0.7);
+  --text-on-dark-15: rgba(255,255,255,0.15);
+  --overlay-dark-16: rgba(255,255,255,0.16);
+  --overlay-dark-20: rgba(255,255,255,0.2);
+  --overlay-dark-10: rgba(255,255,255,0.1);
+  --overlay-dark-08: rgba(255,255,255,0.08);
+  --border-dark-12: rgba(255,255,255,0.12);
+  --border-dark-04: rgba(0,0,0,0.04);
+  --border-dark-03: rgba(0,0,0,0.03);
+  --surface-glass: rgba(255,255,255,0.88);
+
+  /* Typography */
+  --font-family: 'DM Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-num: 'DM Sans', 'DIN Alternate', 'Helvetica Neue', sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 15px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-score: 52px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.7;
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.02em;
+
+  /* Shape — larger radius matching reference */
+  --radius-full: 9999px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Depth — layered shadows */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.06), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --shadow-elevated: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-score: 0 8px 32px rgba(22,163,74,0.12), 0 2px 8px rgba(22,163,74,0.08);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+    <!-- 手机外壳容器 -->
+    <div class="phone-shell">
+        <!-- 顶部导航栏 -->
+        <header class="top-nav">
+            <div class="top-nav-left">
+                <h1 class="top-nav-title">食品配料表识别</h1>
+                <p class="top-nav-subtitle">拍照即懂，吃得更安心</p>
+            </div>
+            <button class="top-nav-btn">
+                <!-- 心形图标 -->
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                </svg>
+                健康档案
+            </button>
+        </header>
+
+        <!-- 主内容 -->
+        <main class="main-content">
+            <!-- 扫描聚合卡片 -->
+            <section class="home-scan-card">
+                <!-- 健康标签行 -->
+                <div class="health-tags-row">
+                    <button class="health-tag">
+                        <!-- 心脏图标 -->
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                        脑梗/心血管
+                    </button>
+                    <button class="health-tag">
+                        <!-- 血糖仪图标 -->
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        糖尿病
+                    </button>
+                    <button class="health-tag">
+                        <!-- 血压图标 -->
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                        </svg>
+                        高血压
+                    </button>
+                </div>
+
+                <!-- 扫描入口 -->
+                <div class="home-scan-area">
+                    <!-- 提示气泡：放在按钮上方 -->
+                    <div class="hint-bubble">点击大按钮开始</div>
+
+                    <!-- 大扫描按钮 -->
+                    <div class="scan-button-wrap">
+                        <!-- 脉冲光环装饰 -->
+                        <div class="scan-button-pulse"></div>
+                        <button class="scan-button" onclick="alert('这里会跳转到扫描页')">
+                            <!-- 相机图标 -->
+                            <svg class="scan-button-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                <circle cx="12" cy="13" r="4"></circle>
+                            </svg>
+                            <span class="scan-button-text">扫描<br>配料表</span>
+                        </button>
+                    </div>
+
+                    <!-- 按钮下方辅助说明 -->
+                    <p class="scan-button-hint">对准包装上的配料表拍照<br>光线充足识别更准确</p>
+                </div>
+            </section>
+
+            <!-- 底部免责声明 -->
+            <p class="disclaimer-text">AI识别仅供参考，请以包装原文为准</p>
+        </main>
+    </div>
+
+    <style>
+        /* ========== 页面基础重置 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 手机外壳：在桌面端模拟手机显示 */
+        .phone-shell {
+            width: 100%;
+            max-width: 414px;
+            min-height: 100vh;
+            background: var(--color-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ========== 顶部导航栏 — Glass Effect ========== */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3) var(--space-4);
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-dark-04);
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            animation: fadeSlideDown 0.5s ease both;
+        }
+
+        /* 顶部左侧：放主标题和副标题 */
+        .top-nav-left {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        .top-nav-title {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-bold);
+            color: var(--color-text-primary);
+            line-height: var(--line-height-tight);
+            letter-spacing: var(--tracking-tight);
+        }
+
+        .top-nav-subtitle {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            line-height: var(--line-height-tight);
+        }
+
+        /* 健康档案按钮 */
+        .top-nav-btn {
+            height: 40px;
+            padding: 0 var(--space-4);
+            border-radius: var(--radius-full);
+            background: var(--green-50);
+            color: var(--green-700);
+            border: 1px solid var(--green-200);
+            font-family: var(--font-family);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            transition: all 0.2s ease;
+        }
+
+        .top-nav-btn:hover {
+            background: var(--green-100);
+            border-color: var(--green-300);
+        }
+
+        .top-nav-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* ========== 主内容区 ========== */
+        .main-content {
+            flex: 1;
+            padding: var(--space-4);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 首页扫描聚合卡片 */
+        .home-scan-card {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-dark-03);
+            padding: var(--space-5) var(--space-4);
+            margin-top: var(--space-2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeSlideUp 0.5s 0.1s ease both;
+        }
+
+        /* 健康标签行 */
+        .health-tags-row {
+            display: flex;
+            gap: var(--space-3);
+            width: 100%;
+            margin-bottom: var(--space-6);
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: var(--space-1);
+        }
+
+        .health-tags-row::-webkit-scrollbar {
+            display: none;
+        }
+
+        .health-tag {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-full);
+            font-family: var(--font-family);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            background: var(--amber-50);
+            color: var(--amber-700);
+            border: 1px solid var(--amber-100);
+            cursor: pointer;
+            transition: transform 0.1s ease, box-shadow 0.2s ease;
+        }
+
+        .health-tag:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .health-tag:active {
+            transform: scale(0.96);
+        }
+
+        .health-tag svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 扫描入口区域 */
+        .home-scan-area {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: var(--space-4) 0 var(--space-2);
+            position: relative;
+        }
+
+        /* 提示气泡：放在按钮上方 */
+        .hint-bubble {
+            position: relative;
+            margin-bottom: var(--space-4);
+            background: linear-gradient(135deg, var(--green-500), var(--green-600));
+            color: var(--color-text-inverse);
+            padding: var(--space-2) var(--space-5);
+            border-radius: var(--radius-full);
+            font-family: var(--font-family);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            box-shadow: 0 4px 16px rgba(22,163,74,0.25);
+            animation: hint-bounce 2s ease-in-out infinite, fadeSlideUp 0.5s 0.3s ease both;
+        }
+
+        /* 气泡下方小三角 */
+        .hint-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid var(--green-600);
+        }
+
+        @keyframes hint-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        /* 大扫描按钮容器 */
+        .scan-button-wrap {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeScaleIn 0.6s 0.4s ease both;
+        }
+
+        /* 脉冲光环 */
+        .scan-button-pulse {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid rgba(34, 197, 94, 0.3);
+            animation: pulse-ring 2.5s ease-out infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.4); opacity: 0; }
+        }
+
+        /* 真正可点击的大按钮 — Green Gradient with Glow */
+        .scan-button {
+            position: relative;
+            width: 170px;
+            height: 170px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-400) 0%, var(--green-600) 100%);
+            color: var(--color-text-inverse);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            box-shadow: 0 6px 24px rgba(22,163,74,0.35), 0 0 0 6px rgba(34,197,94,0.1);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .scan-button:hover {
+            transform: scale(1.03);
+            box-shadow: 0 8px 32px rgba(22,163,74,0.4), 0 0 0 8px rgba(34,197,94,0.12);
+        }
+
+        .scan-button:active {
+            transform: scale(0.95);
+            box-shadow: var(--shadow-card), 0 0 0 3px rgba(34,197,94,0.15);
+        }
+
+        /* 按钮内相机图标 */
+        .scan-button-icon {
+            width: 52px;
+            height: 52px;
+        }
+
+        /* 按钮内文字 */
+        .scan-button-text {
+            font-family: var(--font-family);
+            font-size: 18px;
+            font-weight: var(--font-weight-bold);
+            letter-spacing: 2px;
+            line-height: var(--line-height-tight);
+        }
+
+        /* 按钮下方辅助说明 */
+        .scan-button-hint {
+            margin-top: var(--space-5);
+            text-align: center;
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-sm);
+            line-height: var(--line-height-normal);
+            animation: fadeSlideUp 0.5s 0.6s ease both;
+        }
+
+        /* 底部免责声明 */
+        .disclaimer-text {
+            margin-top: auto;
+            padding: var(--space-4) var(--space-2) var(--space-6);
+            text-align: center;
+            font-size: var(--font-size-sm);
+            color: var(--color-text-tertiary);
+            line-height: var(--line-height-relaxed);
+            animation: fadeIn 0.5s 0.8s ease both;
+        }
+
+        /* ========== 入场动画 ========== */
+        @keyframes fadeSlideDown {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeScaleIn {
+            from { opacity: 0; transform: scale(0.85); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ========== 桌面端适配 ========== */
+        @media (min-width: 768px) {
+            body {
+                background: var(--gray-100);
+                padding: var(--space-10) var(--space-5);
+            }
+
+            .phone-shell {
+                min-height: 800px;
+                border-radius: var(--radius-2xl);
+                box-shadow: var(--shadow-elevated);
+                overflow: hidden;
+            }
+
+            .home-scan-card {
+                padding: var(--space-8) var(--space-6);
+            }
+
+            .scan-button-wrap {
+                width: 220px;
+                height: 220px;
+            }
+
+            .scan-button {
+                width: 210px;
+                height: 210px;
+            }
+
+            .scan-button-icon {
+                width: 60px;
+                height: 60px;
+            }
+
+            .scan-button-text {
+                font-size: 22px;
+            }
+        }
+    </style>
+</body>
+</html>

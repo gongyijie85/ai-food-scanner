@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健康档案页 V2 预览 - 当前用药优化</title>
+    <style id="theme-vars">
+/* Brand CSS — AI Food Scanner v2 */
+/* Inspired by glassmorphism + gradient hero + ring animation style */
+:root {
+  /* ── Green scale (full) ── */
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-200: #bbf7d0;
+  --green-300: #86efac;
+  --green-400: #4ade80;
+  --green-500: #22c55e;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --green-800: #166534;
+  --green-900: #14532d;
+
+  /* Semantic */
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+
+  --sky-50: #f0f9ff;
+  --sky-100: #e0f2fe;
+  --sky-500: #0ea5e9;
+  --sky-600: #0284c7;
+  --sky-700: #0369a1;
+
+  --red-50: #fef2f2;
+  --red-500: #ef4444;
+
+  /* Neutrals */
+  --gray-25: #fcfcfd;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* Surface */
+  --color-bg: #f8faf8;
+  --color-bg-card: #ffffff;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #9ca3af;
+  --color-text-inverse: #ffffff;
+  --color-border: #e5e7eb;
+  --color-divider: #f3f4f6;
+
+  /* On-dark text (inside score hero) */
+  --text-on-dark: #ffffff;
+  --text-on-dark-60: rgba(255,255,255,0.6);
+  --text-on-dark-55: rgba(255,255,255,0.55);
+  --text-on-dark-45: rgba(255,255,255,0.45);
+  --text-on-dark-70: rgba(255,255,255,0.7);
+  --text-on-dark-15: rgba(255,255,255,0.15);
+  --overlay-dark-16: rgba(255,255,255,0.16);
+  --overlay-dark-20: rgba(255,255,255,0.2);
+  --overlay-dark-10: rgba(255,255,255,0.1);
+  --overlay-dark-08: rgba(255,255,255,0.08);
+  --border-dark-12: rgba(255,255,255,0.12);
+  --border-dark-04: rgba(0,0,0,0.04);
+  --border-dark-03: rgba(0,0,0,0.03);
+  --surface-glass: rgba(255,255,255,0.88);
+
+  /* Typography */
+  --font-family: 'DM Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-num: 'DM Sans', 'DIN Alternate', 'Helvetica Neue', sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 15px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-score: 52px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.7;
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.02em;
+
+  /* Shape — larger radius matching reference */
+  --radius-full: 9999px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Depth — layered shadows */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.06), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --shadow-elevated: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-score: 0 8px 32px rgba(22,163,74,0.12), 0 2px 8px rgba(22,163,74,0.08);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+    <div class="phone-shell">
+        <header class="top-nav">
+            <button class="top-nav-back">&#x2B05;</button>
+            <span class="top-nav-title">健康档案</span>
+            <div class="top-nav-spacer"></div>
+        </header>
+
+        <div class="page-header">
+            <div class="page-title">我的健康档案</div>
+            <p class="page-desc">填写后，识别结果会根据您的健康情况给出个性化建议</p>
+        </div>
+
+        <div class="section-title">基本信息</div>
+        <div class="basic-info">
+            <div class="input-group">
+                <label class="input-label">称呼（可选）</label>
+                <input class="input-field" placeholder="如：张奶奶" />
+            </div>
+            <div class="input-group">
+                <label class="input-label">年龄</label>
+                <input class="input-field" value="60" />
+            </div>
+        </div>
+
+        <div class="section-title">我的健康状况</div>
+        <p class="section-desc">可多选，帮助我们提供更准确的建议</p>
+        <div class="card-grid animate-disease">
+            <div class="card selected">&#10084;&#65039; 脑梗/心血管</div>
+            <div class="card">&#129656; 糖尿病</div>
+            <div class="card selected">&#129137; 高血压</div>
+            <div class="card">&#129456; 痛风</div>
+            <div class="card">&#129704; 乳糖不耐</div>
+            <div class="card">&#127806; 肾病</div>
+        </div>
+
+        <div class="section-title">过敏原</div>
+        <p class="section-desc">如有过敏请点击选择</p>
+        <div class="card-grid animate-allergen">
+            <div class="card">&#129373; 花生</div>
+            <div class="card">&#129371; 牛奶</div>
+            <div class="card">&#129370; 鸡蛋</div>
+            <div class="card">&#128031; 鱼类</div>
+            <div class="card">&#129424; 甲壳类</div>
+            <div class="card">&#129372; 坚果</div>
+            <div class="card">&#127806; 小麦</div>
+            <div class="card">&#129382; 大豆</div>
+        </div>
+
+        <div class="section-title">当前用药</div>
+        <p class="section-desc">选填，用于配料交互提醒</p>
+        <div class="drug-section">
+            <input class="drug-search" placeholder="搜索药品..." />
+            <div class="selected-drugs">
+                <span class="drug-chip">氨氯地平 <span class="remove">&times;</span></span>
+                <span class="drug-chip">二甲双胍 <span class="remove">&times;</span></span>
+            </div>
+            <div class="drug-options">
+                <div class="drug-option selected">
+                    <span>氨氯地平（降压药）</span>
+                    <span class="check">&#10003;</span>
+                </div>
+                <div class="drug-option selected">
+                    <span>二甲双胍（降糖药）</span>
+                    <span class="check">&#10003;</span>
+                </div>
+                <div class="drug-option">
+                    <span>阿司匹林（抗血小板）</span>
+                    <span class="check">&#10003;</span>
+                </div>
+                <div class="drug-option">
+                    <span>阿托伐他汀（降脂药）</span>
+                    <span class="check">&#10003;</span>
+                </div>
+                <div class="drug-option">
+                    <span>胰岛素（降糖药）</span>
+                    <span class="check">&#10003;</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="save-btn">
+            <button>&#128190; 保存档案</button>
+        </div>
+    </div>
+
+    <style>
+        :root {
+            --green-50: #f0fdf4; --green-100: #dcfce7; --green-200: #bbf7d0; --green-300: #86efac;
+            --green-400: #4ade80; --green-500: #22c55e; --green-600: #16a34a; --green-700: #15803d;
+            --green-800: #166534; --green-900: #14532d;
+            --amber-50: #fffbeb; --amber-100: #fef3c7; --amber-500: #f59e0b; --amber-600: #d97706; --amber-700: #b45309;
+            --sky-50: #f0f9ff; --sky-100: #e0f2fe; --sky-500: #0ea5e9; --sky-600: #0284c7; --sky-700: #0369a1;
+            --red-50: #fef2f2; --red-500: #ef4444;
+            --gray-25: #fcfcfd; --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+            --gray-300: #d1d5db; --gray-400: #9ca3af; --gray-500: #6b7280; --gray-600: #4b5563;
+            --gray-700: #374151; --gray-800: #1f2937; --gray-900: #111827;
+            --color-bg: #f8faf8; --color-bg-card: #ffffff;
+            --color-text-primary: #111827; --color-text-secondary: #4b5563;
+            --color-text-tertiary: #9ca3af; --color-text-inverse: #ffffff;
+            --color-border: #e5e7eb; --color-divider: #f3f4f6;
+            --surface-glass: rgba(255,255,255,0.88);
+            --border-dark-04: rgba(0,0,0,0.04); --border-dark-03: rgba(0,0,0,0.03);
+            --font-family: 'DM Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', -apple-system, sans-serif;
+            --font-family-num: 'DM Sans', sans-serif;
+            --font-size-xs: 11px; --font-size-sm: 13px; --font-size-base: 15px;
+            --font-size-lg: 17px; --font-size-xl: 20px; --font-size-2xl: 24px;
+            --font-weight-normal: 400; --font-weight-medium: 500; --font-weight-semibold: 600; --font-weight-bold: 700;
+            --line-height-tight: 1.2; --line-height-normal: 1.5; --line-height-relaxed: 1.7;
+            --tracking-tight: -0.02em;
+            --radius-full: 9999px; --radius-sm: 8px; --radius-md: 12px;
+            --radius-lg: 16px; --radius-xl: 20px; --radius-2xl: 24px;
+            --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+            --space-5: 20px; --space-6: 24px; --space-8: 32px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+            --shadow-elevated: 0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .phone-shell {
+            width: 100%;
+            max-width: 414px;
+            min-height: 100vh;
+            background: var(--color-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding: var(--space-4);
+            padding-bottom: 100px;
+        }
+
+        /* 顶部导航 - Glass effect */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3) 0;
+            margin-bottom: var(--space-2);
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border-dark-04);
+            border-radius: var(--radius-lg);
+            padding: var(--space-3) var(--space-4);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .top-nav-back {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--green-50); color: var(--green-700);
+            border: 1px solid var(--green-100); cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: var(--font-size-base);
+            transition: all 0.2s ease;
+        }
+        .top-nav-back:hover {
+            background: var(--green-100);
+        }
+        .top-nav-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            letter-spacing: var(--tracking-tight);
+        }
+        .top-nav-spacer { width: 40px; }
+
+        /* 页面标题卡片 */
+        .page-header {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-xl);
+            padding: var(--space-5);
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-dark-03);
+            margin-bottom: var(--space-4);
+            animation: fadeSlideUp 0.5s ease-out both;
+        }
+        .page-title {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--space-2);
+            letter-spacing: var(--tracking-tight);
+        }
+        .page-desc {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            line-height: var(--line-height-relaxed);
+        }
+
+        /* 分组标题 */
+        .section-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            margin: var(--space-5) 0 var(--space-2) 0;
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+        .section-desc {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            margin-bottom: var(--space-3);
+            line-height: var(--line-height-normal);
+        }
+
+        /* 基本信息 */
+        .basic-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-3);
+            animation: fadeSlideUp 0.5s ease-out 0.1s both;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+        }
+        .input-label {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            font-weight: var(--font-weight-medium);
+        }
+        .input-field {
+            height: 48px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            padding: 0 var(--space-3);
+            font-size: var(--font-size-base);
+            font-family: var(--font-family);
+            background: var(--color-bg-card);
+            color: var(--color-text-primary);
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        .input-field::placeholder {
+            color: var(--color-text-tertiary);
+        }
+        .input-field:focus {
+            border-color: var(--green-500);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+        }
+
+        /* 卡片网格 - 健康状况 */
+        .card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-3);
+        }
+        .card-grid.animate-disease { animation: fadeSlideUp 0.5s ease-out 0.2s both; }
+        .card-grid.animate-allergen { animation: fadeSlideUp 0.5s ease-out 0.3s both; }
+
+        .card {
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--gray-200);
+            background: var(--color-bg-card);
+            text-align: center;
+            font-size: var(--font-size-base);
+            font-family: var(--font-family);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text-primary);
+        }
+        .card:hover {
+            border-color: var(--green-300);
+            background: var(--green-50);
+        }
+        .card.selected {
+            background: var(--green-600);
+            color: var(--color-text-inverse);
+            border-color: var(--green-600);
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25);
+        }
+
+        /* 过敏原卡片 - 未选中时用 amber 色调区分 */
+        .card-grid.animate-allergen .card:hover {
+            border-color: var(--amber-500);
+            background: var(--amber-50);
+        }
+        .card-grid.animate-allergen .card.selected {
+            background: var(--amber-600);
+            border-color: var(--amber-600);
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+        }
+
+        /* 用药区域 */
+        .drug-section {
+            background: var(--color-bg-card);
+            border-radius: var(--radius-xl);
+            padding: var(--space-5);
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-dark-03);
+            animation: fadeSlideUp 0.5s ease-out 0.4s both;
+        }
+        .drug-search {
+            width: 100%;
+            height: 48px;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-full);
+            padding: 0 var(--space-4);
+            font-size: var(--font-size-base);
+            font-family: var(--font-family);
+            margin-bottom: var(--space-3);
+            background: var(--gray-50);
+            color: var(--color-text-primary);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .drug-search::placeholder { color: var(--color-text-tertiary); }
+        .drug-search:focus {
+            border-color: var(--green-500);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+            background: var(--color-bg-card);
+        }
+        .selected-drugs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2);
+            margin-bottom: var(--space-3);
+            min-height: 32px;
+        }
+        .drug-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            background: var(--green-50);
+            color: var(--green-700);
+            border: 1px solid var(--green-100);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            font-family: var(--font-family);
+            transition: all 0.15s ease;
+        }
+        .drug-chip:hover {
+            background: var(--green-100);
+        }
+        .drug-chip .remove {
+            cursor: pointer;
+            font-weight: var(--font-weight-bold);
+            opacity: 0.6;
+            transition: opacity 0.15s;
+        }
+        .drug-chip .remove:hover { opacity: 1; }
+        .drug-options {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2);
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .drug-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3) var(--space-4);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            background: var(--color-bg-card);
+            cursor: pointer;
+            font-size: var(--font-size-base);
+            font-family: var(--font-family);
+            color: var(--color-text-primary);
+            transition: all 0.2s ease;
+        }
+        .drug-option:hover {
+            border-color: var(--sky-500);
+            background: var(--sky-50);
+        }
+        .drug-option .check {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--gray-300);
+            display: flex; align-items: center; justify-content: center;
+            color: transparent;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .drug-option.selected {
+            border-color: var(--green-300);
+            background: var(--green-50);
+        }
+        .drug-option.selected .check {
+            background: var(--green-600);
+            border-color: var(--green-600);
+            color: var(--color-text-inverse);
+        }
+
+        /* 保存按钮 */
+        .save-btn {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 414px;
+            padding: var(--space-4);
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-top: 1px solid var(--border-dark-04);
+        }
+        .save-btn button {
+            width: 100%;
+            height: 54px;
+            border-radius: var(--radius-full);
+            border: none;
+            background: linear-gradient(135deg, var(--green-600), var(--green-500));
+            color: white;
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            font-family: var(--font-family);
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(22, 163, 74, 0.35);
+            transition: all 0.2s ease;
+            animation: fadeSlideUp 0.5s ease-out 0.5s both;
+        }
+        .save-btn button:hover {
+            box-shadow: 0 6px 24px rgba(22, 163, 74, 0.45);
+            transform: translateY(-1px);
+        }
+        .save-btn button:active {
+            transform: translateY(0);
+        }
+
+        /* Staggered entrance animations */
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive desktop shell */
+        @media (min-width: 768px) {
+            body { background: #E8E8E0; padding: 40px 20px; }
+            .phone-shell {
+                min-height: 800px;
+                border-radius: var(--radius-2xl);
+                box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+                overflow: hidden;
+            }
+        }
+    </style>
+</body>
+</html>

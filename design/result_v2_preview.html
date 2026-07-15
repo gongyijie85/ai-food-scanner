@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>识别结果 — AI 食品扫描</title>
+    <style id="theme-vars">
+/* Brand CSS — AI Food Scanner v2 */
+/* Inspired by glassmorphism + gradient hero + ring animation style */
+:root {
+  /* ── Green scale (full) ── */
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-200: #bbf7d0;
+  --green-300: #86efac;
+  --green-400: #4ade80;
+  --green-500: #22c55e;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --green-800: #166534;
+  --green-900: #14532d;
+
+  /* Semantic */
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+
+  --sky-50: #f0f9ff;
+  --sky-100: #e0f2fe;
+  --sky-500: #0ea5e9;
+  --sky-600: #0284c7;
+  --sky-700: #0369a1;
+
+  --red-50: #fef2f2;
+  --red-500: #ef4444;
+
+  /* Neutrals */
+  --gray-25: #fcfcfd;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* Surface */
+  --color-bg: #f8faf8;
+  --color-bg-card: #ffffff;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #9ca3af;
+  --color-text-inverse: #ffffff;
+  --color-border: #e5e7eb;
+  --color-divider: #f3f4f6;
+
+  /* On-dark text (inside score hero) */
+  --text-on-dark: #ffffff;
+  --text-on-dark-60: rgba(255,255,255,0.6);
+  --text-on-dark-55: rgba(255,255,255,0.55);
+  --text-on-dark-45: rgba(255,255,255,0.45);
+  --text-on-dark-70: rgba(255,255,255,0.7);
+  --text-on-dark-15: rgba(255,255,255,0.15);
+  --overlay-dark-16: rgba(255,255,255,0.16);
+  --overlay-dark-20: rgba(255,255,255,0.2);
+  --overlay-dark-10: rgba(255,255,255,0.1);
+  --overlay-dark-08: rgba(255,255,255,0.08);
+  --border-dark-12: rgba(255,255,255,0.12);
+  --border-dark-04: rgba(0,0,0,0.04);
+  --border-dark-03: rgba(0,0,0,0.03);
+  --surface-glass: rgba(255,255,255,0.88);
+
+  /* Typography */
+  --font-family: 'DM Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-num: 'DM Sans', 'DIN Alternate', 'Helvetica Neue', sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 15px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-score: 52px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.7;
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.02em;
+
+  /* Shape — larger radius matching reference */
+  --radius-full: 9999px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Depth — layered shadows */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.06), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --shadow-elevated: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-score: 0 8px 32px rgba(22,163,74,0.12), 0 2px 8px rgba(22,163,74,0.08);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <div class="page-wrap">
+
+    <!-- ── 顶部毛玻璃导航 ── -->
+    <nav class="glass-top-bar" data-component="top-bar">
+      <button class="back-btn" aria-label="返回">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span class="bar-title">识别结果</span>
+      <div class="bar-spacer"></div>
+    </nav>
+
+    <!-- ── 评分英雄卡片 ── -->
+    <section class="score-hero anim-enter-1" data-component="score-hero">
+
+      <div class="score-ring-wrap anim-fade">
+        <div style="position:relative; display:flex; align-items:center; justify-content:center;">
+          <svg class="score-ring-svg" viewBox="0 0 140 140">
+            <defs>
+              <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:var(--green-300)"/>
+                <stop offset="100%" style="stop-color:var(--green-50)"/>
+              </linearGradient>
+            </defs>
+            <circle class="score-ring-bg" cx="70" cy="70" r="60"/>
+            <circle id="scoreRing" class="score-ring-fg" cx="70" cy="70" r="60"/>
+          </svg>
+          <span id="scoreNum" class="score-number">0</span>
+        </div>
+        <span class="score-label anim-fade-d1">安全分</span>
+      </div>
+
+      <div style="text-align:center; margin-bottom: var(--space-3);">
+        <h1 style="font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); letter-spacing: var(--tracking-tight); margin-bottom: var(--space-2);" class="anim-fade-d1">
+          蒙牛纯甄原味酸奶 200g
+        </h1>
+        <p class="text-on-dark-60 anim-fade-d2" style="font-size: var(--font-size-xs);">配料表识别于 2026-07-14</p>
+      </div>
+
+      <div class="anim-fade-d2" style="display:flex; justify-content:center; margin-bottom: var(--space-4);">
+        <div class="status-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <span>暂未发现已知高风险提示</span>
+        </div>
+      </div>
+
+      <div class="anim-fade-d3" style="text-align:center; margin-bottom: var(--space-5);">
+        <p class="text-on-dark-70" style="font-size: var(--font-size-sm); line-height: var(--line-height-relaxed);">
+          按当前档案暂未发现高风险配料
+        </p>
+      </div>
+
+      <div class="anim-fade-d3" style="text-align:center; margin-bottom: var(--space-3);">
+        <button class="hero-btn-outline">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+          慢速重听
+        </button>
+      </div>
+
+      <p class="anim-fade-d3 text-on-dark-45" style="text-align:center; font-size: var(--font-size-xs);">
+        * 结果仅供参考，不构成医疗或专业建议
+      </p>
+    </section>
+
+    <!-- ── 添加剂清单卡片 ── -->
+    <section class="content-card anim-enter-2" data-component="additives-card">
+      <h2 class="card-title">添加剂清单</h2>
+      <div class="success-row">
+        <div class="success-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green-600)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <span class="success-text">未识别到需要关注的食品添加剂</span>
+      </div>
+    </section>
+
+    <!-- ── 饮食建议卡片 ── -->
+    <section class="content-card anim-enter-3" data-component="advice-card">
+      <h2 class="card-title">一般饮食建议</h2>
+      <div class="info-box">
+        <div class="info-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amber-600)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <span class="info-text">普通人群可适量食用，建议保持均衡饮食。</span>
+      </div>
+    </section>
+
+    <!-- ── 配料展开区 ── -->
+    <section class="content-card anim-enter-4" data-component="ingredients-card">
+      <div class="expand-trigger" id="expandTrigger" onclick="toggleIngredients()">
+        <h2 class="card-title" style="margin-bottom:0;">查看全部配料</h2>
+        <svg class="chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="expand-body" id="expandBody">
+        <div style="padding-top: var(--space-3);">
+          <div class="ingredient-item">
+            <span class="ingredient-name">生牛乳</span>
+            <span class="ingredient-tag tag-safe">原料</span>
+          </div>
+          <div class="ingredient-item">
+            <span class="ingredient-name">白砂糖</span>
+            <span class="ingredient-tag tag-safe">适量</span>
+          </div>
+          <div class="ingredient-item">
+            <span class="ingredient-name">保加利亚乳杆菌</span>
+            <span class="ingredient-tag tag-ferment">发酵剂</span>
+          </div>
+          <div class="ingredient-item">
+            <span class="ingredient-name">嗜热链球菌</span>
+            <span class="ingredient-tag tag-ferment">发酵剂</span>
+          </div>
+          <div class="ingredient-item">
+            <span class="ingredient-name">食品添加剂：增稠剂（果胶）</span>
+            <span class="ingredient-tag tag-safe">安全</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 语音播报控制 ── -->
+    <section class="voice-section anim-enter-5" data-component="voice-controls">
+      <button class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        一键播报全部结果
+      </button>
+      <button class="btn-outline">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+        停止
+      </button>
+    </section>
+
+  </div>
+
+  <!-- ── 底部毛玻璃操作栏 ── -->
+  <div class="glass-bottom-bar" data-component="bottom-bar">
+    <button class="btn-primary" style="flex:1;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      再扫一个
+    </button>
+    <button class="btn-outline" style="flex:1;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      返回首页
+    </button>
+  </div>
+
+  <script>
+    /* ── 分数计数动画 ── */
+    (function() {
+      var scoreEl = document.getElementById('scoreNum');
+      var ringEl = document.getElementById('scoreRing');
+      var target = 100;
+      var duration = 1200;
+      var delay = 600;
+      /* 圆环周长 = 2 * PI * 60 */
+      var circumference = 2 * Math.PI * 60;
+
+      setTimeout(function() {
+        /* 启动圆环动画 */
+        ringEl.style.strokeDashoffset = circumference * (1 - target / 100);
+
+        /* 数字计数 */
+        var startTime = performance.now();
+        function step(now) {
+          var elapsed = now - startTime;
+          var progress = Math.min(elapsed / duration, 1);
+          /* easeOutCubic */
+          var ease = 1 - Math.pow(1 - progress, 3);
+          scoreEl.textContent = Math.round(ease * target);
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          }
+        }
+        requestAnimationFrame(step);
+      }, delay);
+    })();
+
+    /* ── 配料展开/收起 ── */
+    function toggleIngredients() {
+      var trigger = document.getElementById('expandTrigger');
+      var body = document.getElementById('expandBody');
+      var isOpen = body.classList.contains('open');
+      if (isOpen) {
+        body.classList.remove('open');
+        trigger.classList.remove('active');
+      } else {
+        body.classList.add('open');
+        trigger.classList.add('active');
+      }
+    }
+  </script>
+
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { font-size: 16px; -webkit-tap-highlight-color: transparent; }
+      body {
+        font-family: var(--font-family);
+        background: var(--color-bg);
+        color: var(--color-text-primary);
+        line-height: var(--line-height-normal);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+      }
+
+      /* ── 页面容器 ── */
+      .page-wrap {
+        max-width: 414px;
+        margin: 0 auto;
+        min-height: 100vh;
+        position: relative;
+        padding-bottom: 100px;
+      }
+
+      /* ── 顶部毛玻璃导航 ── */
+      .glass-top-bar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--surface-glass);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        display: flex;
+        align-items: center;
+        padding: var(--space-3) var(--space-4);
+        border-bottom: 1px solid var(--border-dark-04);
+      }
+      .glass-top-bar .bar-title {
+        flex: 1;
+        text-align: center;
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+      }
+      .glass-top-bar .bar-spacer { width: 32px; }
+
+      /* ── 评分英雄卡片 ── */
+      .score-hero {
+        position: relative;
+        margin: var(--space-4) var(--space-4) 0;
+        padding: var(--space-8) var(--space-6) var(--space-6);
+        border-radius: var(--radius-2xl);
+        background: linear-gradient(145deg, var(--green-800) 0%, var(--green-700) 30%, var(--green-600) 70%, var(--green-500) 100%);
+        box-shadow: var(--shadow-score);
+        overflow: hidden;
+        color: var(--text-on-dark);
+      }
+      .score-hero::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at 20% 80%, rgba(255,255,255,0.12) 0%, transparent 60%);
+        pointer-events: none;
+      }
+      .score-hero::after {
+        content: '';
+        position: absolute;
+        top: -30px;
+        right: -30px;
+        width: 120px;
+        height: 120px;
+        border: 2px solid var(--overlay-dark-16);
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      /* ── 分数环 ── */
+      .score-ring-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: var(--space-5);
+      }
+      .score-ring-svg { width: 140px; height: 140px; }
+      .score-ring-bg { fill: none; stroke: var(--text-on-dark-15); stroke-width: 8; }
+      .score-ring-fg {
+        fill: none;
+        stroke: url(#scoreGradient);
+        stroke-width: 8;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: center;
+        stroke-dasharray: 376.99;
+        stroke-dashoffset: 376.99;
+        transition: stroke-dashoffset 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .score-number {
+        position: absolute;
+        font-family: var(--font-family-num);
+        font-size: var(--font-size-score);
+        font-weight: var(--font-weight-bold);
+        letter-spacing: -0.04em;
+        line-height: 1;
+        color: var(--text-on-dark);
+      }
+      .score-label {
+        font-size: var(--font-size-sm);
+        color: var(--text-on-dark-70);
+        margin-top: var(--space-1);
+      }
+
+      /* ── 状态徽章 ── */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-4);
+        background: var(--overlay-dark-16);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid var(--overlay-dark-20);
+        border-radius: var(--radius-full);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--text-on-dark);
+      }
+
+      /* ── 内容卡片 ── */
+      .content-card {
+        margin: var(--space-3) var(--space-4) 0;
+        padding: var(--space-5);
+        background: var(--color-bg-card);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-sm);
+        border: 1px solid var(--border-dark-03);
+      }
+      .card-title {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+        margin-bottom: var(--space-4);
+      }
+
+      /* ── 成功行 ── */
+      .success-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-4);
+        background: var(--green-50);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--green-200);
+      }
+      .success-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--green-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .success-text {
+        font-size: var(--font-size-sm);
+        color: var(--green-800);
+        font-weight: var(--font-weight-medium);
+        line-height: var(--line-height-relaxed);
+      }
+
+      /* ── 信息框 ── */
+      .info-box {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-3);
+        padding: var(--space-4);
+        background: var(--amber-50);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--amber-100);
+      }
+      .info-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--amber-100);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .info-text {
+        font-size: var(--font-size-sm);
+        color: var(--amber-700);
+        font-weight: var(--font-weight-medium);
+        line-height: var(--line-height-relaxed);
+      }
+
+      /* ── 可展开配料区 ── */
+      .expand-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .expand-trigger .chevron {
+        transition: transform 0.3s ease;
+      }
+      .expand-trigger.active .chevron {
+        transform: rotate(180deg);
+      }
+      .expand-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .expand-body.open {
+        max-height: 400px;
+      }
+      .ingredient-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-3) 0;
+        border-bottom: 1px solid var(--color-divider);
+      }
+      .ingredient-item:last-child { border-bottom: none; }
+      .ingredient-name {
+        font-size: var(--font-size-base);
+        color: var(--color-text-primary);
+        font-weight: var(--font-weight-medium);
+      }
+      .ingredient-tag {
+        font-size: var(--font-size-xs);
+        padding: 2px var(--space-2);
+        border-radius: var(--radius-sm);
+        font-weight: var(--font-weight-medium);
+      }
+      .tag-safe {
+        background: var(--green-50);
+        color: var(--green-700);
+        border: 1px solid var(--green-200);
+      }
+      .tag-ferment {
+        background: var(--sky-50);
+        color: var(--sky-700);
+        border: 1px solid var(--sky-100);
+      }
+
+      /* ── 语音控制 ── */
+      .voice-section {
+        margin: var(--space-3) var(--space-4) 0;
+        display: flex;
+        gap: var(--space-3);
+      }
+      .btn-primary {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        padding: var(--space-4) var(--space-5);
+        border: none;
+        border-radius: var(--radius-lg);
+        background: linear-gradient(135deg, var(--green-600), var(--green-700));
+        color: var(--color-text-inverse);
+        font-family: var(--font-family);
+        font-size: var(--font-size-base);
+        font-weight: var(--font-weight-semibold);
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(22,163,74,0.25);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .btn-primary:active { transform: scale(0.97); }
+      .btn-outline {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        padding: var(--space-4) var(--space-5);
+        border: 1.5px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-bg-card);
+        color: var(--color-text-secondary);
+        font-family: var(--font-family);
+        font-size: var(--font-size-base);
+        font-weight: var(--font-weight-medium);
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+      .btn-outline:active { background: var(--gray-50); }
+
+      /* ── 底部毛玻璃栏 ── */
+      .glass-bottom-bar {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 414px;
+        z-index: 100;
+        background: var(--surface-glass);
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        display: flex;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        padding-bottom: max(var(--space-3), env(safe-area-inset-bottom));
+        border-top: 1px solid var(--border-dark-04);
+      }
+
+      /* ── 动画 ── */
+      @keyframes cardEnter {
+        from { opacity: 0; transform: translateY(24px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(12px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .anim-enter-1 { animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0s both; }
+      .anim-enter-2 { animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both; }
+      .anim-enter-3 { animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both; }
+      .anim-enter-4 { animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both; }
+      .anim-enter-5 { animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both; }
+      .anim-fade { animation: fadeUp 0.5s ease both; }
+      .anim-fade-d1 { animation: fadeUp 0.5s ease 0.1s both; }
+      .anim-fade-d2 { animation: fadeUp 0.5s ease 0.2s both; }
+      .anim-fade-d3 { animation: fadeUp 0.5s ease 0.3s both; }
+
+      /* ── 慢速重听按钮（英雄卡片内） ── */
+      .hero-btn-outline {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-4);
+        border: 1px solid var(--overlay-dark-20);
+        border-radius: var(--radius-full);
+        background: var(--overlay-dark-08);
+        color: var(--text-on-dark);
+        font-family: var(--font-family);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        cursor: pointer;
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        transition: background 0.15s ease;
+      }
+      .hero-btn-outline:active { background: var(--overlay-dark-16); }
+
+      /* ── 辅助 ── */
+      .text-on-dark { color: var(--text-on-dark); }
+      .text-on-dark-60 { color: var(--text-on-dark-60); }
+      .text-on-dark-70 { color: var(--text-on-dark-70); }
+      .text-on-dark-45 { color: var(--text-on-dark-45); }
+      .text-secondary { color: var(--color-text-secondary); }
+      .text-tertiary { color: var(--color-text-tertiary); }
+      .back-btn {
+        width: 32px; height: 32px;
+        display: flex; align-items: center; justify-content: center;
+        border: none; background: transparent;
+        cursor: pointer; border-radius: var(--radius-sm);
+        color: var(--color-text-primary);
+      }
+      .back-btn:active { background: var(--gray-100); }
+    </style>
+</body>
+</html>

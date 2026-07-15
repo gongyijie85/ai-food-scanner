@@ -1,5 +1,17 @@
 # 变更日志
 
+## v0.10.14 - 2026-07-15
+
+### AI 食品配料表识别工具 v0.10.14（GB 2760 数据质量补强 + 设计稿归档）
+
+- **文件**：`scripts/import_gb2760.py`、`data/additive_synonyms.csv`、`data/gb2760_risk.csv`、`data/gb2760_2024.sqlite`、`data/gb2760_2024.sha256`、`design/`
+- **补充常见添加剂与别名**：`scripts/import_gb2760.py` 在 `_insert_supplement_additives_and_aliases()` 中新增三氯蔗糖、聚甘油蓖麻醇酯、维生素E（及 dl-α-/D-α-生育酚变体）、天然胡萝卜素、碳酸钙等常见添加剂的标准记录；`data/additive_synonyms.csv` 同步补充蔗糖素、VE、维他命E、β-胡萝卜素、b-胡萝卜素、L-抗坏血酸钠等商品名/别名，并修复别名文件末尾缺换行符的问题。
+- **风险等级校准**：`data/gb2760_risk.csv` 将甜菊糖苷/甜菊糖苷(960) 由 B 调整为 A，三氯蔗糖由 B 调整为 A；新增天然胡萝卜素、抗坏血酸钠、聚甘油蓖麻醇酯的 A 级记录，与标准库和别名表保持一致。
+- **重新生成标准库**：基于更新后的导入脚本和数据重新生成 `data/gb2760_2024.sqlite`，并更新 `data/gb2760_2024.sha256` 校验值。
+- **设计稿归档**：将散落在 `pages/` 下的 9 个未跟踪 HTML 设计稿（history / home-v1 / home-v2 / onboarding / profile-v2 / result-optimized / result-v2 / result-v2-original / scan-v2）统一移动到 `design/` 目录，避免污染页面模块。
+- **范围说明**：本次为 Work Item 5「GB 2760 数据质量与匹配能力补强」的第一阶段，重点补充数据覆盖与校准风险等级；编号提取匹配（E/INS/CNS）、解析正则加固、附录 B/C 导入等高级能力留待后续迭代。
+- **全量质量门禁结果**：`python -m pytest -q` 95 项通过；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .` 通过；`python -m compileall -q .` 通过；`python -m bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees` 无 issue。
+
 ## v0.10.13 - 2026-07-15
 
 ### AI 食品配料表识别工具 v0.10.13（识别结果页专家审查：动画无障碍 + 文案适老化 + 健康提示科学性修正）

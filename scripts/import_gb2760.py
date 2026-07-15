@@ -485,6 +485,14 @@ def _insert_supplement_additives_and_aliases(conn: sqlite3.Connection) -> None:
         ("亚硝酸钠", "09.002", "250", "护色剂", "A"),
         ("抗坏血酸", "04.014", "300", "抗氧化剂", "A"),
         ("L-抗坏血酸", "04.014", "300", "抗氧化剂", "A"),
+        # 补充 PDF 解析遗漏的常见添加剂
+        ("三氯蔗糖", "19.016", "955", "甜味剂", "A"),
+        ("聚甘油蓖麻醇酯", "10.029", "476", "乳化剂", "A"),
+        ("维生素E", "04.016", "307", "抗氧化剂", "A"),
+        ("dl-α-生育酚", "04.016", "307", "抗氧化剂", "A"),
+        ("D-α-生育酚", "04.016", "307", "抗氧化剂", "A"),
+        ("天然胡萝卜素", "08.147", "160a(ii)", "着色剂", "A"),
+        ("碳酸钙", "13.006", "170(i)", "膨松剂/面粉处理剂/营养强化剂", "A"),
     ]
     names = [s[0] for s in supplements]
     placeholders = ",".join("?" * len(names))
@@ -512,7 +520,22 @@ def _insert_supplement_additives_and_aliases(conn: sqlite3.Connection) -> None:
     csv_path = PROJECT_ROOT / "data" / "additive_synonyms.csv"
     if csv_path.exists():
         # CSV 中部分俗称的目标不是标准名，需要重定向到真正的标准名
-        canonical_redirects = {"TBHQ": "特丁基对苯二酚"}
+        canonical_redirects = {
+            "TBHQ": "特丁基对苯二酚",
+            "蔗糖素": "三氯蔗糖",
+            "维生素 E": "维生素E",
+            "VE": "维生素E",
+            "维他命E": "维生素E",
+            "生育酚（维生素E）": "维生素E",
+            "维生素E（生育酚）": "维生素E",
+            "dl-α-生育酚": "维生素E",
+            "D-α-生育酚": "维生素E",
+            "胡萝卜素": "天然胡萝卜素",
+            "β-胡萝卜素": "天然胡萝卜素",
+            "b-胡萝卜素": "天然胡萝卜素",
+            "L-抗坏血酸钠": "抗坏血酸钠",
+            "抗坏血酸钠（维生素C钠盐）": "抗坏血酸钠",
+        }
         valid_canonicals: Set[str] = {
             r[0]
             for r in conn.execute("SELECT canonical_name FROM additives").fetchall()

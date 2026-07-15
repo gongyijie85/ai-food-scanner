@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史记录 - 页面优化预览</title>
+    <style id="theme-vars">
+/* Brand CSS — AI Food Scanner v2 */
+/* Inspired by glassmorphism + gradient hero + ring animation style */
+:root {
+  /* ── Green scale (full) ── */
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-200: #bbf7d0;
+  --green-300: #86efac;
+  --green-400: #4ade80;
+  --green-500: #22c55e;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --green-800: #166534;
+  --green-900: #14532d;
+
+  /* Semantic */
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+
+  --sky-50: #f0f9ff;
+  --sky-100: #e0f2fe;
+  --sky-500: #0ea5e9;
+  --sky-600: #0284c7;
+  --sky-700: #0369a1;
+
+  --red-50: #fef2f2;
+  --red-500: #ef4444;
+
+  /* Neutrals */
+  --gray-25: #fcfcfd;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* Surface */
+  --color-bg: #f8faf8;
+  --color-bg-card: #ffffff;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #9ca3af;
+  --color-text-inverse: #ffffff;
+  --color-border: #e5e7eb;
+  --color-divider: #f3f4f6;
+
+  /* On-dark text (inside score hero) */
+  --text-on-dark: #ffffff;
+  --text-on-dark-60: rgba(255,255,255,0.6);
+  --text-on-dark-55: rgba(255,255,255,0.55);
+  --text-on-dark-45: rgba(255,255,255,0.45);
+  --text-on-dark-70: rgba(255,255,255,0.7);
+  --text-on-dark-15: rgba(255,255,255,0.15);
+  --overlay-dark-16: rgba(255,255,255,0.16);
+  --overlay-dark-20: rgba(255,255,255,0.2);
+  --overlay-dark-10: rgba(255,255,255,0.1);
+  --overlay-dark-08: rgba(255,255,255,0.08);
+  --border-dark-12: rgba(255,255,255,0.12);
+  --border-dark-04: rgba(0,0,0,0.04);
+  --border-dark-03: rgba(0,0,0,0.03);
+  --surface-glass: rgba(255,255,255,0.88);
+
+  /* Typography */
+  --font-family: 'DM Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-num: 'DM Sans', 'DIN Alternate', 'Helvetica Neue', sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 15px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-score: 52px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.7;
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.02em;
+
+  /* Shape — larger radius matching reference */
+  --radius-full: 9999px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Depth — layered shadows */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.06), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --shadow-elevated: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-score: 0 8px 32px rgba(22,163,74,0.12), 0 2px 8px rgba(22,163,74,0.08);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+    <div class="phone-shell">
+        <header class="top-nav">
+            <button class="top-nav-back">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <span class="top-nav-title">历史记录</span>
+            <div class="top-nav-spacer"></div>
+        </header>
+
+        <main class="main-content">
+            <!-- 搜索框 -->
+            <div class="search-box">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" placeholder="搜索产品名称...">
+            </div>
+
+            <!-- 筛选标签 -->
+            <div class="filter-row">
+                <button class="filter-chip active">全部</button>
+                <button class="filter-chip">安全</button>
+                <button class="filter-chip">注意</button>
+                <button class="filter-chip">高风险</button>
+            </div>
+
+            <!-- 历史列表 -->
+            <div class="history-list">
+                <div class="history-card caution">
+                    <div class="score-badge caution">
+                        <div class="score-badge-value">70</div>
+                        <div class="score-badge-label">注意</div>
+                    </div>
+                    <div class="history-info">
+                        <div class="history-name">某品牌无糖苏打饼干</div>
+                        <div class="history-meta">3种添加剂 · 2026-07-08</div>
+                    </div>
+                    <div class="history-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+
+                <div class="history-card safe">
+                    <div class="score-badge safe">
+                        <div class="score-badge-value">92</div>
+                        <div class="score-badge-label">安全</div>
+                    </div>
+                    <div class="history-info">
+                        <div class="history-name">鲜牛奶 250ml</div>
+                        <div class="history-meta">1种添加剂 · 2026-07-06</div>
+                    </div>
+                    <div class="history-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+
+                <div class="history-card danger">
+                    <div class="score-badge danger">
+                        <div class="score-badge-value">45</div>
+                        <div class="score-badge-label">高风险</div>
+                    </div>
+                    <div class="history-info">
+                        <div class="history-name">某品牌辣条</div>
+                        <div class="history-meta">7种添加剂 · 2026-07-03</div>
+                    </div>
+                    <div class="history-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+
+                <div class="history-card safe">
+                    <div class="score-badge safe">
+                        <div class="score-badge-value">88</div>
+                        <div class="score-badge-label">安全</div>
+                    </div>
+                    <div class="history-info">
+                        <div class="history-name">原味坚果混合装</div>
+                        <div class="history-meta">0种添加剂 · 2026-07-01</div>
+                    </div>
+                    <div class="history-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .phone-shell {
+            width: 100%;
+            max-width: 414px;
+            min-height: 100vh;
+            background: var(--color-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部导航 - 玻璃效果 */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-3) var(--space-4);
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border-dark-04);
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+
+        .top-nav-back {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--green-50);
+            color: var(--green-700);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease;
+        }
+
+        .top-nav-back:hover { background: var(--green-100); }
+
+        .top-nav-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            letter-spacing: var(--tracking-tight);
+        }
+
+        .top-nav-spacer { width: 40px; }
+
+        /* 主内容 */
+        .main-content {
+            flex: 1;
+            padding: var(--space-4);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        /* 搜索框 - 微妙玻璃效果 */
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            height: 48px;
+            padding: 0 var(--space-4);
+            background: var(--surface-glass);
+            backdrop-filter: blur(12px) saturate(160%);
+            -webkit-backdrop-filter: blur(12px) saturate(160%);
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border-dark-03);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: var(--font-size-base);
+            font-family: var(--font-family);
+            color: var(--color-text-primary);
+        }
+
+        .search-box input::placeholder { color: var(--color-text-tertiary); }
+
+        .search-box svg { color: var(--color-text-tertiary); flex-shrink: 0; }
+
+        /* 筛选标签 */
+        .filter-row {
+            display: flex;
+            gap: var(--space-3);
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: var(--space-1);
+        }
+
+        .filter-row::-webkit-scrollbar { display: none; }
+
+        .filter-chip {
+            flex-shrink: 0;
+            padding: var(--space-2) 18px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-card);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-semibold);
+            font-family: var(--font-family);
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .filter-chip.active {
+            background: linear-gradient(135deg, var(--green-500), var(--green-600));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 2px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        /* 历史列表 */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .history-card {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            padding: var(--space-4);
+            background: var(--color-bg-card);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-dark-03);
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            border-left: 4px solid var(--color-border);
+            opacity: 0;
+            transform: translateY(12px);
+            animation: cardSlideIn 0.4s ease forwards;
+        }
+
+        .history-card:nth-child(1) { animation-delay: 0.05s; }
+        .history-card:nth-child(2) { animation-delay: 0.12s; }
+        .history-card:nth-child(3) { animation-delay: 0.19s; }
+        .history-card:nth-child(4) { animation-delay: 0.26s; }
+        .history-card:nth-child(5) { animation-delay: 0.33s; }
+
+        @keyframes cardSlideIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .history-card:active {
+            transform: scale(0.98);
+            box-shadow: var(--shadow-card);
+        }
+
+        .history-card.safe { border-left-color: var(--green-500); }
+        .history-card.caution { border-left-color: var(--amber-500); }
+        .history-card.danger { border-left-color: var(--red-500); }
+
+        /* 左侧评分徽章 */
+        .score-badge {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-family: var(--font-family-num);
+        }
+
+        .score-badge.safe {
+            background: var(--green-50);
+            color: var(--green-700);
+            border: 2px solid var(--green-100);
+        }
+
+        .score-badge.caution {
+            background: var(--amber-50);
+            color: var(--amber-700);
+            border: 2px solid var(--amber-100);
+        }
+
+        .score-badge.danger {
+            background: var(--red-50);
+            color: var(--red-500);
+            border: 2px solid transparent;
+        }
+
+        .score-badge-value {
+            font-size: 22px;
+            font-weight: var(--font-weight-bold);
+            line-height: var(--line-height-tight);
+        }
+
+        .score-badge-label {
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-medium);
+            margin-top: var(--space-1);
+        }
+
+        /* 中间信息 */
+        .history-info {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        .history-name {
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            letter-spacing: var(--tracking-tight);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--color-text-primary);
+        }
+
+        .history-meta {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            line-height: var(--line-height-normal);
+        }
+
+        /* 右侧箭头 */
+        .history-arrow {
+            color: var(--color-text-tertiary);
+            flex-shrink: 0;
+        }
+
+        /* 桌面端 */
+        @media (min-width: 768px) {
+            body { background: var(--gray-100); padding: var(--space-10) var(--space-5); }
+            .phone-shell {
+                min-height: 800px;
+                border-radius: var(--radius-2xl);
+                box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+                overflow: hidden;
+            }
+        }
+    </style>
+</body>
+</html>

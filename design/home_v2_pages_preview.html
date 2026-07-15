@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页 V2 预览 - 历史记录 + 底部双按钮</title>
+    <style id="theme-vars">
+/* Brand CSS — AI Food Scanner v2 */
+/* Inspired by glassmorphism + gradient hero + ring animation style */
+:root {
+  /* ── Green scale (full) ── */
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-200: #bbf7d0;
+  --green-300: #86efac;
+  --green-400: #4ade80;
+  --green-500: #22c55e;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --green-800: #166534;
+  --green-900: #14532d;
+
+  /* Semantic */
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-500: #f59e0b;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+
+  --sky-50: #f0f9ff;
+  --sky-100: #e0f2fe;
+  --sky-500: #0ea5e9;
+  --sky-600: #0284c7;
+  --sky-700: #0369a1;
+
+  --red-50: #fef2f2;
+  --red-500: #ef4444;
+
+  /* Neutrals */
+  --gray-25: #fcfcfd;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+
+  /* Surface */
+  --color-bg: #f8faf8;
+  --color-bg-card: #ffffff;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #9ca3af;
+  --color-text-inverse: #ffffff;
+  --color-border: #e5e7eb;
+  --color-divider: #f3f4f6;
+
+  /* On-dark text (inside score hero) */
+  --text-on-dark: #ffffff;
+  --text-on-dark-60: rgba(255,255,255,0.6);
+  --text-on-dark-55: rgba(255,255,255,0.55);
+  --text-on-dark-45: rgba(255,255,255,0.45);
+  --text-on-dark-70: rgba(255,255,255,0.7);
+  --text-on-dark-15: rgba(255,255,255,0.15);
+  --overlay-dark-16: rgba(255,255,255,0.16);
+  --overlay-dark-20: rgba(255,255,255,0.2);
+  --overlay-dark-10: rgba(255,255,255,0.1);
+  --overlay-dark-08: rgba(255,255,255,0.08);
+  --border-dark-12: rgba(255,255,255,0.12);
+  --border-dark-04: rgba(0,0,0,0.04);
+  --border-dark-03: rgba(0,0,0,0.03);
+  --surface-glass: rgba(255,255,255,0.88);
+
+  /* Typography */
+  --font-family: 'DM Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family-num: 'DM Sans', 'DIN Alternate', 'Helvetica Neue', sans-serif;
+  --font-size-xs: 11px;
+  --font-size-sm: 13px;
+  --font-size-base: 15px;
+  --font-size-lg: 17px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-score: 52px;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.7;
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.02em;
+
+  /* Shape — larger radius matching reference */
+  --radius-full: 9999px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Depth — layered shadows */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.06), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --shadow-elevated: 0 8px 24px rgba(0,0,0,0.08);
+  --shadow-score: 0 8px 32px rgba(22,163,74,0.12), 0 2px 8px rgba(22,163,74,0.08);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--color-primary);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+    <div class="phone-shell">
+        <header class="top-header">
+            <h1 class="top-title">食品配料表识别</h1>
+            <p class="top-subtitle">拍照即懂，吃得更安心</p>
+        </header>
+
+        <main class="main-content">
+            <section>
+                <h2 class="section-title">最近识别</h2>
+                <div class="history-list">
+                    <div class="history-card safe">
+                        <div class="score-badge safe">
+                            <div class="score-badge-value">92</div>
+                            <div class="score-badge-label">安全</div>
+                        </div>
+                        <div class="history-info">
+                            <div class="history-name">鲜牛奶 250ml</div>
+                            <div class="history-meta">1种添加剂 · 2026-07-09</div>
+                        </div>
+                        <div class="history-arrow">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="history-card caution">
+                        <div class="score-badge caution">
+                            <div class="score-badge-value">70</div>
+                            <div class="score-badge-label">注意</div>
+                        </div>
+                        <div class="history-info">
+                            <div class="history-name">某品牌无糖苏打饼干</div>
+                            <div class="history-meta">3种添加剂 · 2026-07-08</div>
+                        </div>
+                        <div class="history-arrow">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="history-card danger">
+                        <div class="score-badge danger">
+                            <div class="score-badge-value">45</div>
+                            <div class="score-badge-label">高风险</div>
+                        </div>
+                        <div class="history-info">
+                            <div class="history-name">某品牌辣条</div>
+                            <div class="history-meta">7种添加剂 · 2026-07-06</div>
+                        </div>
+                        <div class="history-arrow">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="view-all-link">查看全部历史记录</div>
+            </section>
+
+            <!-- 空状态示例（默认隐藏，有历史记录时显示上方） -->
+            <section style="display:none;">
+                <h2 class="section-title">最近识别</h2>
+                <div class="empty-state">
+                    <div class="empty-state-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    </div>
+                    <p>还没有识别记录</p>
+                    <p style="font-size:13px;margin-top:4px;">点击下方拍照按钮开始</p>
+                </div>
+            </section>
+
+            <p class="disclaimer">AI识别仅供参考，请以包装原文为准</p>
+        </main>
+
+        <div class="action-bar">
+            <button class="action-btn action-btn-primary" onclick="alert('跳转到扫描页，直接打开相机')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                拍照识别
+            </button>
+            <button class="action-btn action-btn-secondary" onclick="alert('跳转到健康档案页')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                健康档案
+            </button>
+        </div>
+    </div>
+
+    <style>
+        @keyframes cardEnter {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-family);
+            background: var(--color-bg);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .phone-shell {
+            width: 100%;
+            max-width: 414px;
+            min-height: 100vh;
+            background: var(--color-bg);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 160px;
+        }
+
+        /* 顶部标题区 - glassmorphism */
+        .top-header {
+            padding: var(--space-5) var(--space-4) var(--space-4);
+            background: var(--surface-glass);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--border-dark-04);
+            animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .top-title {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-bold);
+            margin-bottom: var(--space-1);
+            letter-spacing: var(--tracking-tight);
+            line-height: var(--line-height-tight);
+        }
+
+        .top-subtitle {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+            font-weight: var(--font-weight-normal);
+        }
+
+        /* 主内容 */
+        .main-content {
+            flex: 1;
+            padding: var(--space-4);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+        }
+
+        /* 最近识别 */
+        .section-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-bold);
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+            margin-bottom: var(--space-1);
+            animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-3);
+        }
+
+        .history-card {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: 14px;
+            background: var(--color-bg-card);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+            transition: transform 0.15s ease;
+            border: 1px solid var(--border-dark-03);
+        }
+
+        .history-card:nth-child(1) { animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both; }
+        .history-card:nth-child(2) { animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
+        .history-card:nth-child(3) { animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both; }
+
+        .history-card:active { transform: scale(0.98); }
+
+        .history-card.safe { border-left: 4px solid var(--green-500); }
+        .history-card.caution { border-left: 4px solid var(--amber-500); }
+        .history-card.danger { border-left: 4px solid var(--red-500); }
+
+        .score-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-family: var(--font-family-num);
+        }
+
+        .score-badge.safe { background: var(--green-50); color: var(--green-700); border: 1px solid var(--green-100); }
+        .score-badge.caution { background: var(--amber-50); color: var(--amber-700); border: 1px solid var(--amber-100); }
+        .score-badge.danger { background: var(--red-50); color: var(--red-500); border: 1px solid #fecaca; }
+
+        .score-badge-value {
+            font-size: 20px;
+            font-weight: var(--font-weight-bold);
+            line-height: 1;
+        }
+
+        .score-badge-label {
+            font-size: var(--font-size-xs);
+            margin-top: 2px;
+        }
+
+        .history-info {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        .history-name {
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-meta {
+            font-size: var(--font-size-sm);
+            color: var(--color-text-secondary);
+        }
+
+        .history-arrow {
+            color: var(--color-text-tertiary);
+            flex-shrink: 0;
+        }
+
+        .view-all-link {
+            text-align: center;
+            padding: var(--space-3);
+            color: var(--green-600);
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            cursor: pointer;
+            animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px var(--space-5);
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: var(--space-3);
+        }
+
+        /* 底部固定操作栏 - glassmorphism */
+        .action-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 414px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-top: 1px solid var(--border-dark-04);
+            padding: var(--space-4);
+            display: flex;
+            flex-direction: row;
+            gap: var(--space-3);
+            z-index: 40;
+        }
+
+        .action-btn {
+            flex: 1;
+            height: 54px;
+            border-radius: var(--radius-full);
+            border: none;
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-bold);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: transform 0.15s ease;
+            font-family: var(--font-family);
+        }
+
+        .action-btn:active { transform: scale(0.98); }
+
+        .action-btn-primary {
+            background: linear-gradient(135deg, var(--green-600), var(--green-500));
+            color: white;
+            box-shadow: 0 4px 12px rgba(22,163,74,0.25);
+        }
+
+        .action-btn-secondary {
+            background: white;
+            color: var(--green-600);
+            border: 2px solid var(--gray-200);
+        }
+
+        /* 免责声明 */
+        .disclaimer {
+            text-align: center;
+            font-size: var(--font-size-sm);
+            color: var(--color-text-tertiary);
+            padding: var(--space-2) var(--space-4) 0;
+            line-height: var(--line-height-normal);
+            animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+        }
+
+        /* 桌面端 */
+        @media (min-width: 768px) {
+            body { background: #E8E8E0; padding: 40px 20px; }
+            .phone-shell {
+                min-height: 800px;
+                border-radius: var(--radius-2xl);
+                box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+                overflow: hidden;
+            }
+        }
+    </style>
+</body>
+</html>
