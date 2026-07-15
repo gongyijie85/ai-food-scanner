@@ -83,5 +83,4 @@ def _render_score_hero(
         f"{replay_btn}"
         f"</div></div>",
         unsafe_allow_html=True,
-        key=f"score-hero-{_safe(product_name)}-{score}",
     )
