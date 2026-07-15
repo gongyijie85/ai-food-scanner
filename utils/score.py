@@ -4,6 +4,7 @@ from services.additive_matcher import (
     _is_blocklisted,
     AdditiveMatcher,
     is_supplement_excipient,
+    MatchStatus,
 )
 from utils.data import (
     get_additive_override_repository,
@@ -43,6 +44,9 @@ def compute_score_from_additives(additives, health_groups=None):
             continue
         name = a.get("name", "")
         match = _MATCHER.match(name)
+        # 未识别项不参与评分，避免未知配料拉低总分
+        if match.status == MatchStatus.UNMATCHED or match.level == "":
+            continue
         score -= SCORE_PENALTY.get(match.level, 0)
         if match.level == "C":
             c_level_count += 1

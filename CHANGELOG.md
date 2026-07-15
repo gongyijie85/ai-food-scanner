@@ -1,5 +1,16 @@
 # 变更日志
 
+## v0.10.15 - 2026-07-15
+
+### AI 食品配料表识别工具 v0.10.15（评分模型与未命中项显示统一）
+
+- **文件**：`utils/score.py`、`components/additive_card.py`、`services/additive_matcher.py`、`tests/test_core.py`
+- **评分一致性修正**：`utils/score.py` 的 `compute_score_from_additives()` 显式跳过 `MatchStatus.UNMATCHED` 或 `level=""` 的添加剂，避免未识别配料在特殊场景下被误扣分；`services/additive_matcher.py` 的 `match()` 对未命中项已返回 `level=""` + `MatchStatus.UNMATCHED`，`classify()` 继续兼容旧接口返回 B。
+- **未识别项 UI 统一**：`components/additive_card.py` 将未命中项标签从「未识别」改为「未识别，请核对包装」；移除未识别项的等级形状图标，仅保留灰色标签，减少用户对 A/B/C 等级的误解。
+- **测试补强**：`tests/test_core.py` 新增 `test_unknown_match_returns_unmatched_and_empty_level`（验证 `match()` 返回 UNMATCHED + 空 level + 含「核对包装」的说明）和 `test_unmatched_mixed_with_b_level`（验证未命中项与 B 级项混合时未命中项不影响扣分）。
+- **范围说明**：本次完成 Work Item 6「评分模型与未命中项显示统一」，解决 `classify()` 返回 B 但 `compute_score_from_additives()` 不扣分之间的不一致表达，让用户在 UI 上明确看到「未识别」而非隐性忽略。
+- **全量质量门禁结果**：`python -m pytest -q` 97 项通过；`python -m flake8 . --max-line-length=120 --ignore=E501,W503,E402 --exclude=__pycache__,.venv,venv,.worktrees` 通过；`python -m black --check --diff --extend-exclude "(__pycache__|\.venv|venv|\.worktrees)" .` 通过；`python -m compileall -q .` 通过；`python -m bandit -r . -ll -ii -x __pycache__,.venv,venv,.worktrees` 无 issue。
+
 ## v0.10.14 - 2026-07-15
 
 ### AI 食品配料表识别工具 v0.10.14（GB 2760 数据质量补强 + 设计稿归档）

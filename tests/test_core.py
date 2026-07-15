@@ -157,6 +157,15 @@ class TestComputeScoreFromAdditives:
         score = compute_score_from_additives(additives)
         assert score == 100
 
+    def test_unmatched_mixed_with_b_level(self):
+        """未命中项与 B 级项混合时，未命中项不影响 B 级扣分"""
+        additives = [
+            {"name": "某种未知物质"},  # UNMATCHED，不扣分
+            {"name": "丙二醇"},  # B 级，扣 8 分
+        ]
+        score = compute_score_from_additives(additives)
+        assert score == 92
+
 
 class TestCheckDrugFoodConflicts:
     """测试 check_drug_food_conflicts 函数"""
@@ -646,6 +655,13 @@ class TestAdditiveMatcher:
         """未匹配名称默认 B 级"""
         level, _, _ = self._matcher().classify("某种未知合成物")
         assert level == "B"
+
+    def test_unknown_match_returns_unmatched_and_empty_level(self):
+        """match() 对未匹配项应返回 UNMATCHED 和空 level"""
+        result = self._matcher().match("某种未知合成物")
+        assert result.status == MatchStatus.UNMATCHED
+        assert result.level == ""
+        assert "核对包装" in result.note
 
     def test_cleaned_parentheses_match(self):
         """带括号残留的名称清洗后应命中标准库"""

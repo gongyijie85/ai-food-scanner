@@ -8,9 +8,9 @@ from utils.security import _safe
 
 def _get_level_info(level: str, status) -> tuple[str, str, str]:
     """统一返回添加剂等级信息：标签、颜色、形状图标."""
-    # 未匹配项：中性灰色，不参与评分
+    # 未匹配项：中性灰色，不参与评分，不显示等级图标
     if getattr(status, "value", "") == "unmatched" or level == "":
-        return "未识别", "#9E9E9E", "?"
+        return "未识别，请核对包装", "#9E9E9E", ""
     if level == "A":
         label, color, shape = "较友好", "#43A047", "●"
     elif level == "C":
@@ -109,14 +109,20 @@ def _render_additive_card(additives, key="additive_card"):
         ]
         meta = " · ".join(meta_parts)
 
-        if shape == "?":
-            clip = "none"
-        elif shape == "▲":
+        if shape == "▲":
             clip = "polygon(50% 0%, 0% 100%, 100% 100%)"
         elif shape == "■":
             clip = "polygon(0 0, 100% 0, 100% 100%, 0 100%)"
-        else:
+        elif shape == "●":
             clip = "circle(50%)"
+        else:
+            clip = ""
+        # 未识别项不显示等级图标
+        shape_html = (
+            f"<span class='result-additive-shape' style='background:{color};clip-path:{clip};'></span>"
+            if shape
+            else ""
+        )
         note_html = f"<div class='result-additive-note'>{note}</div>" if note else ""
         if ai_inferred:
             note_html += "<div class='ai-inferred-tag'>自动识别，请以包装为准</div>"
@@ -129,7 +135,7 @@ def _render_additive_card(additives, key="additive_card"):
         )
         html += (
             f"<div class='result-additive-item' style='border-left-color:{color};'>"
-            f"<span class='result-additive-shape' style='background:{color};clip-path:{clip};'></span>"
+            f"{shape_html}"
             f"<div class='result-additive-body'>"
             f"<div class='result-additive-name'>{raw_name}</div>"
             f"{canonical_html}"
