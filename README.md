@@ -10,6 +10,31 @@
 
 **初赛 Demo 帖（含 30 秒演示视频）**：https://forum.trae.cn/t/topic/51391
 
+
+## 当前阶段：商业化验证（V1）
+
+> 比赛阶段已结束。当前目标不是堆功能，而是用现有 Demo 验证：
+> **慢病/高龄老人的子女**，是否愿意用「拍照配料表 + 父母健康档案 → 个性化关注提示（参考，非医嘱）」并再次使用。
+
+| 项 | 说明 |
+|----|------|
+| 决策地图 | [#26 商业化落地蓝图与架构决策](https://github.com/gongyijie85/ai-food-scanner/issues/26) |
+| 招募手册 | [research/validation-recruitment-kit.md](research/validation-recruitment-kit.md) |
+| 样本记录表 | [research/validation-sample-log.csv](research/validation-sample-log.csv) |
+| 执行看板 | [research/validation-execution-board.md](research/validation-execution-board.md) |
+| 闸门 | 有效子女样本 ≥8 后判定 Go / Pivot / Stop（见 #28） |
+| 功能冻结 | 只保 L2：同意→档案→识别→参考分/关注提示→语音；禁止支付/原生 App/大功能（见 #29） |
+| 公开链接 | 同上「公开体验地址」（受访者用自己手机打开；**验证时不要用** `?demo=1`，以免跳过档案） |
+
+**执行者本周动作**：按手册发出 ≥15 条 1v1 邀请，用 CSV 记人。
+
+相关研究：
+- [变现与价格带](research/commercial-monetization-competitors.md)
+- [合规红线](research/health-claims-compliance-redlines.md)
+- [冷启动获客](research/silver-family-acquisition-channels.md)
+
+---
+
 ## 一句话介绍
 
 面向 **3.1 亿中国老年人** 和 **8300 万慢病人群** 的食品配料表识别工具。
