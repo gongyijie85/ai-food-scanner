@@ -10,7 +10,8 @@ def _get_level_info(level: str, status) -> tuple[str, str, str]:
     """统一返回添加剂等级信息：标签、颜色、形状图标."""
     # 未匹配项：中性灰色，不参与评分，不显示等级图标
     if getattr(status, "value", "") == "unmatched" or level == "":
-        return "未识别，请核对包装", "#9E9E9E", ""
+        # 文案避免「未识别到」像识别失败：这里是「标准库未匹配」，不是没看到该词
+        return "待核对包装", "#9E9E9E", ""
     if level == "A":
         label, color, shape = "较友好", "#43A047", "●"
     elif level == "C":

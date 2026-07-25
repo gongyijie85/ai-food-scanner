@@ -368,25 +368,45 @@ def _tag_inferred_ingredients(data: dict) -> dict:
 
 
 def _split_ingredient_text(text: str) -> list:
-    """把配料表原文切成配料名列表（兜底用）."""
+    """把配料表原文切成配料名列表（兜底用）.
+
+    尊重中英文括号嵌套，避免把「鱼糜(海水鱼肉,鳕鱼肉,...)」拆碎。
+    """
     if not text or not isinstance(text, str):
         return []
     s = text.strip()
-    # 去掉常见前缀
     s = re.sub(r"^(配料表?|原料|成分)[：:\s]*", "", s)
     s = re.sub(r"[。；;]+$", "", s)
-    parts = re.split(r"[,，、;；\n/|]+", s)
+
+    parts = []
+    buf = []
+    depth = 0
+    for ch in s:
+        if ch in "(（":
+            depth += 1
+            buf.append(ch)
+        elif ch in ")）":
+            depth = max(0, depth - 1)
+            buf.append(ch)
+        elif ch in ",，、;；\n" and depth == 0:
+            item = "".join(buf).strip()
+            if item:
+                parts.append(item)
+            buf = []
+        else:
+            buf.append(ch)
+    tail = "".join(buf).strip()
+    if tail:
+        parts.append(tail)
+
     out = []
-    for p in parts:
-        item = p.strip()
-        item = re.sub(r"^[0-9]+[\.、\)]\s*", "", item)
-        # 去掉添加量尾巴，如「白砂糖（添加量≥10%）」保留主体
-        if not item or len(item) < 1:
+    for item in parts:
+        item = re.sub(r"^[0-9]+[\.、\)]\s*", "", item).strip()
+        if not item:
             continue
-        if len(item) > 40:
-            item = item[:40]
+        if len(item) > 80:
+            item = item[:80]
         out.append(item)
-    # 去重保序
     seen = set()
     uniq = []
     for x in out:
@@ -395,6 +415,76 @@ def _split_ingredient_text(text: str) -> list:
         seen.add(x)
         uniq.append(x)
     return uniq
+
+
+def _harvest_additives_from_text(data: dict) -> dict:
+    """从 ocr_text / ingredients 中补捞风险表里的常见添加剂名.
+
+    模型常把「三聚磷酸钠」等埋在复合配料括号里，导致 additives 只剩一项。
+    按名称从长到短匹配，已占用区间不可再被短名（如「山梨酸」）截胡。
+    """
+    from utils.data import get_additive_override_repository
+
+    override = get_additive_override_repository()
+    names = sorted(override.to_dict().keys(), key=len, reverse=True)
+    if not names:
+        return data
+
+    blob_parts = [str(data.get("ocr_text", "") or "")]
+    for ing in data.get("ingredients") or []:
+        blob_parts.append(str(ing))
+    blob = " ".join(blob_parts)
+    if not blob.strip():
+        return data
+
+    existing = set()
+    additives = data.get("additives")
+    if not isinstance(additives, list):
+        additives = []
+        data["additives"] = additives
+    for a in additives:
+        if isinstance(a, dict) and a.get("name"):
+            existing.add(_clean_name(a.get("name", "")))
+
+    # 记录已占用的 [start, end) 区间，避免「山梨酸」命中「山梨酸钾」子串
+    occupied: list = []
+
+    def _is_free(start: int, end: int) -> bool:
+        for a, b in occupied:
+            if start < b and end > a:
+                return False
+        return True
+
+    for name in names:
+        if len(name) < 2:
+            continue
+        if name in existing:
+            # 仍占用原文中所有该长名出现位置
+            start = 0
+            while True:
+                idx = blob.find(name, start)
+                if idx < 0:
+                    break
+                if _is_free(idx, idx + len(name)):
+                    occupied.append((idx, idx + len(name)))
+                start = idx + len(name)
+            continue
+
+        start = 0
+        found = False
+        # 占用全文所有出现位置，避免 ocr+ingredients 重复文本里短名二次命中
+        while True:
+            idx = blob.find(name, start)
+            if idx < 0:
+                break
+            if _is_free(idx, idx + len(name)):
+                occupied.append((idx, idx + len(name)))
+                found = True
+            start = idx + len(name)
+        if found:
+            additives.append({"name": name, "harvested": True})
+            existing.add(name)
+    return data
 
 
 def _recover_ingredients_from_ocr(data: dict) -> dict:
@@ -517,6 +607,9 @@ def normalize_model_output(raw: str) -> str:
 
     # 6.5) ingredients 为空时从 ocr_text 恢复
     data = _recover_ingredients_from_ocr(data)
+
+    # 6.6) 从原文/配料中补捞漏提的添加剂（嵌套在复合配料括号里的常见项）
+    data = _harvest_additives_from_text(data)
 
     # 7) 校验 additives 是否能在 ocr_text 中找到，标记 AI 推断项
     data = _tag_inferred_ingredients(data)

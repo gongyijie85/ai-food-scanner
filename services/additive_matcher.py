@@ -258,7 +258,28 @@ class AdditiveMatcher:
                 page_ref=standard.page_ref,
             )
 
-        # 6. 标准库未命中 -> 不参与评分
+        # 6. SQLite 标准库未命中：回退到应用风险覆盖表（CSV）
+        # 当前 gb2760_2024.sqlite 导入不完整，常见添加剂（如山梨酸钾）只在 CSV 中。
+        override = self.override_repo.find(clean)
+        if override is None and clean != _strip_parentheses(clean):
+            override = self.override_repo.find(_strip_parentheses(clean))
+            if override is not None:
+                clean = _strip_parentheses(clean)
+        if override is not None:
+            return AdditiveMatchResult(
+                raw_name=raw_name,
+                canonical_name=clean,
+                status=MatchStatus.RATED,
+                cns="",
+                ins="",
+                function=override.note or "",
+                scopes_summary="",
+                level=override.level,
+                note=override.note or "应用风险表收录",
+                page_ref="",
+            )
+
+        # 7. 仍未命中 -> 不参与评分
         return AdditiveMatchResult(
             raw_name=raw_name,
             canonical_name=raw_name,

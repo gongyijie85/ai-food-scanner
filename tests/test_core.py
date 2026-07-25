@@ -382,6 +382,45 @@ class TestNormalizeModelOutput:
         assert data["ingredients"] == ["仅此一项"]
         assert not data.get("ingredients_recovered_from_ocr")
 
+    def test_nested_parens_ingredient_split(self):
+        """嵌套括号内的逗号不切断复合配料"""
+        raw = json.dumps(
+            {
+                "type": "food",
+                "product_name": "鳕鱼肠",
+                "ocr_text": "配料表：鱼糜(海水鱼肉,鳕鱼肉,白砂糖)(≥68%),食用淀粉,水。",
+                "ingredients": [],
+                "additives": [],
+            }
+        )
+        out = normalize_model_output(raw)
+        data = json.loads(out)
+        assert any(str(x).startswith("鱼糜") for x in data["ingredients"])
+        assert "食用淀粉" in data["ingredients"]
+
+    def test_harvest_nested_additives_without_substring_false_positive(self):
+        """从复合配料中补捞添加剂，且不把山梨酸钾误拆成山梨酸"""
+        raw = json.dumps(
+            {
+                "type": "food",
+                "product_name": "鳕鱼肠",
+                "ocr_text": (
+                    "配料表：鱼糜(海水鱼肉,鳕鱼肉,山梨糖醇,三聚磷酸钠,焦磷酸钠)(≥68%),"
+                    "食用淀粉,山梨酸钾。"
+                ),
+                "ingredients": [],
+                "additives": [{"name": "山梨酸钾"}],
+            }
+        )
+        out = normalize_model_output(raw)
+        data = json.loads(out)
+        names = [a["name"] for a in data["additives"]]
+        assert "山梨酸钾" in names
+        assert "三聚磷酸钠" in names
+        assert "焦磷酸钠" in names
+        assert "山梨糖醇" in names
+        assert "山梨酸" not in names
+
 
 class TestIsBlocklisted:
     """测试 _is_blocklisted 辅助函数"""
