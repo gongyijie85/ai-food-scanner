@@ -350,6 +350,38 @@ class TestNormalizeModelOutput:
         data = json.loads(out)
         assert data["additives"][0].get("ai_inferred") is False
 
+    def test_recover_ingredients_from_ocr_when_empty(self):
+        """ingredients 为空时应从 ocr_text 切分恢复，避免「配料没找到」"""
+        raw = json.dumps(
+            {
+                "type": "food",
+                "product_name": "山楂糕",
+                "ocr_text": "配料：山楂、低聚果糖、浓缩苹果汁。",
+                "ingredients": [],
+                "additives": [],
+            }
+        )
+        out = normalize_model_output(raw)
+        data = json.loads(out)
+        assert data["ingredients"] == ["山楂", "低聚果糖", "浓缩苹果汁"]
+        assert data.get("ingredients_recovered_from_ocr") is True
+
+    def test_keep_existing_ingredients_without_recover(self):
+        """已有 ingredients 时不覆盖"""
+        raw = json.dumps(
+            {
+                "type": "food",
+                "product_name": "测试",
+                "ocr_text": "配料：A、B、C。",
+                "ingredients": ["仅此一项"],
+                "additives": [],
+            }
+        )
+        out = normalize_model_output(raw)
+        data = json.loads(out)
+        assert data["ingredients"] == ["仅此一项"]
+        assert not data.get("ingredients_recovered_from_ocr")
+
 
 class TestIsBlocklisted:
     """测试 _is_blocklisted 辅助函数"""

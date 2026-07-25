@@ -54,17 +54,95 @@ def _analyze_warnings(result):
     return engine.analyze(result, profile)
 
 
+def _build_speak_content(result, warnings):
+    """组装适老语音文案：分数 + 关注提示 + 配料摘要 + 免责."""
+    score = result.get("score", 0)
+    product_name = result.get("product_name", "该产品")
+    advice = str(result.get("advice", "") or "").strip()
+    ingredients = result.get("ingredients") or []
+    additives = result.get("additives") or []
+    parts = [f"识别结果。{product_name}，配料参考分{score}分。"]
+
+    if warnings:
+        titles = [getattr(w, "title", None) or (w.get("title") if isinstance(w, dict) else "") for w in warnings[:4]]
+        titles = [t for t in titles if t]
+        if titles:
+            parts.append("需要留意：" + "；".join(titles) + "。")
+
+    named = []
+    for a in additives[:5]:
+        if isinstance(a, dict) and a.get("name"):
+            named.append(str(a["name"]))
+    if named:
+        parts.append("识别到的添加剂包括：" + "、".join(named) + "。")
+    elif ingredients:
+        preview = [str(x) for x in ingredients[:6] if str(x).strip()]
+        if preview:
+            parts.append("主要配料：" + "、".join(preview) + "。")
+    else:
+        ocr = str(result.get("ocr_text", "") or "").strip()
+        if ocr:
+            parts.append("配料列表不完整，请对照包装原文核对。")
+        else:
+            parts.append("未能识别配料表文字，请重新对准配料表拍照。")
+
+    if advice:
+        parts.append(advice if advice.endswith("。") else advice + "。")
+    parts.append("本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生、药师或营养师。")
+    return "".join(parts)
+
+
+def _render_ingredients_section(result):
+    """配料列表：有则展示标签，无则展示原文/重拍提示（避免「配料消失」）。"""
+    ingredients = result.get("ingredients") or []
+    ocr_text = str(result.get("ocr_text", "") or "").strip()
+    recovered = bool(result.get("ingredients_recovered_from_ocr"))
+
+    st.markdown(
+        "<div class='content-card ingredients-card'>"
+        "<h2 class='card-title'>全部配料</h2>"
+        "<div class='card-body'>",
+        unsafe_allow_html=True,
+    )
+
+    if ingredients:
+        if recovered:
+            st.caption("已根据识别到的原文自动整理配料，请与包装核对。")
+        tags_html = "".join(
+            f"<span class='ingredient-tag'>{_safe(item)}</span>" for item in ingredients
+        )
+        st.markdown(
+            f"<div class='ingredient-tags'>{tags_html}</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            "<div class='ingredients-empty'>"
+            "<p class='ingredients-empty-title'>暂时没看清配料列表</p>"
+            "<p class='ingredients-empty-tip'>"
+            "请重新对准包装上的「配料表」文字拍照：光线充足、尽量平行、配料小字占满画面。"
+            "</p></div>",
+            unsafe_allow_html=True,
+        )
+
+    if ocr_text:
+        st.markdown(
+            f"<div class='ocr-text-box'><div class='ocr-text-label'>识别到的原文</div>"
+            f"<p class='ocr-text-body'>{_safe(ocr_text)}</p></div>",
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("</div></div>", unsafe_allow_html=True)
+
+
 def render_food_page(result):
     """普通食品结果页：根据设备类型自适应渲染."""
     score = result.get("score", 0)
     product_name = result.get("product_name", "未知")
     advice = result.get("advice", "")
     additives = result.get("additives", [])
-    ingredients = result.get("ingredients", [])
 
     render_top_nav("识别结果", back_target="home")
-
-    speak_content = f"评分{score}分。{advice}本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生/药师/营养师。"
 
     # 1) 配料参考分摘要
     _render_score_hero(score, product_name)
@@ -74,10 +152,19 @@ def render_food_page(result):
     if warnings:
         render_personal_warnings(warnings)
 
-    # 3) 添加剂匹配
+    # 3) 语音提前到中部，手机端少滚动（手势路径更稳）
+    speak_content = _build_speak_content(result, warnings)
+    voice_control_panel(
+        speak_content,
+        key_prefix="tts_food",
+        button_text=f"{_ICON_SPEAKER} 听结果",
+        wrapper_class="voice-controls voice-controls-primary",
+    )
+
+    # 4) 添加剂匹配
     _render_additive_card(additives)
 
-    # 4) 一般饮食建议
+    # 5) 一般饮食建议
     if advice:
         st.markdown(
             "<div class='content-card'>"
@@ -94,35 +181,11 @@ def render_food_page(result):
             unsafe_allow_html=True,
         )
 
-    # 5) 全部配料
-    if ingredients:
-        with st.container():
-            st.markdown(
-                "<div class='expand-section-marker'></div>", unsafe_allow_html=True
-            )
-            with st.expander("查看全部配料"):
-                tags_html = "".join(
-                    f"<span class='ingredient-tag'>{_safe(item)}</span>"
-                    for item in ingredients
-                )
-                st.markdown(
-                    f"<div class='ingredient-tags'>{tags_html}</div>",
-                    unsafe_allow_html=True,
-                )
-                ocr_text = result.get("ocr_text", "")
-                if ocr_text:
-                    st.caption(f"识别到的配料表原文：{_safe(ocr_text)}")
+    # 6) 全部配料（始终展示区域，空状态给重拍提示）
+    _render_ingredients_section(result)
 
     # 营养成分（可选，有数据时显示）
     render_nutrition_bars(result)
-
-    # 6) 语音与操作
-    voice_control_panel(
-        speak_content,
-        key_prefix="tts_food",
-        button_text=f"{_ICON_SPEAKER} 一键播报全部结果",
-        wrapper_class="voice-controls",
-    )
 
     with st.container():
         st.markdown(
@@ -130,10 +193,10 @@ def render_food_page(result):
         )
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("再扫一个", key="food_btn_scan", use_container_width=True):
+            if st.button("再扫一个", key="food_btn_scan", width="stretch"):
                 switch_page("scan")
         with col2:
-            if st.button("返回首页", key="food_btn_home", use_container_width=True):
+            if st.button("返回首页", key="food_btn_home", width="stretch"):
                 switch_page("home")
 
 

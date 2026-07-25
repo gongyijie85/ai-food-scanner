@@ -91,7 +91,65 @@ def _render_tts_namespace():
                 }
             }
 
+            function pickZhVoice(synth) {
+                var voices = [];
+                try { voices = synth.getVoices() || []; } catch(e) { voices = []; }
+                var preferred = [
+                    'xiaoxiao', '晓晓', 'yaoyao', '瑶瑶', 'tingting', '婷婷',
+                    'meijia', '美佳', 'google 普通话', 'google 中文', 'chinese (simplified)',
+                    'siri', 'sin-ji', 'sinji'
+                ];
+                var i, j, name, lang, lowerName;
+                for (j = 0; j < preferred.length; j++) {
+                    var key = preferred[j];
+                    for (i = 0; i < voices.length; i++) {
+                        name = voices[i].name || '';
+                        lowerName = name.toLowerCase();
+                        if (lowerName.indexOf(key) >= 0 || name.indexOf(key) >= 0) {
+                            return voices[i];
+                        }
+                    }
+                }
+                for (i = 0; i < voices.length; i++) {
+                    lang = (voices[i].lang || '').toLowerCase();
+                    if (lang.indexOf('zh') === 0 || lang.indexOf('cmn') === 0) {
+                        return voices[i];
+                    }
+                }
+                return null;
+            }
+
+            /** 手机端长文本易失败：按句切分排队播报 */
+            function splitUtterances(text, maxLen) {
+                maxLen = maxLen || 80;
+                text = (text || '').replace(/\s+/g, ' ').trim();
+                if (!text) return [];
+                var chunks = [];
+                var parts = text.split(/([。！？；\n]+)/);
+                var buf = '';
+                for (var i = 0; i < parts.length; i++) {
+                    var p = parts[i];
+                    if (!p) continue;
+                    if ((buf + p).length <= maxLen) {
+                        buf += p;
+                    } else {
+                        if (buf) chunks.push(buf);
+                        if (p.length <= maxLen) {
+                            buf = p;
+                        } else {
+                            for (var k = 0; k < p.length; k += maxLen) {
+                                chunks.push(p.slice(k, k + maxLen));
+                            }
+                            buf = '';
+                        }
+                    }
+                }
+                if (buf) chunks.push(buf);
+                return chunks.length ? chunks : [text.slice(0, maxLen)];
+            }
+
             parent.foodScannerTts = parent.foodScannerTts || {
+                _queue: [],
                 speak: function(btnId, errId, text, rate) {
                     var btn = parent.document.getElementById(btnId);
                     var err = parent.document.getElementById(errId);
@@ -108,60 +166,75 @@ def _render_tts_namespace():
                     try { synth.cancel(); } catch(e) {}
                     try { synth.resume(); } catch(e) {}
 
-                    var u = new parent.SpeechSynthesisUtterance(text);
-                    u.lang = 'zh-CN';
-                    u.rate = rate;
-                    u.pitch = 1.0;
-                    u.volume = 1.0;
+                    // iOS/微信：用户手势内先 unlock
+                    try {
+                        var unlock = new parent.SpeechSynthesisUtterance(' ');
+                        unlock.volume = 0;
+                        unlock.rate = 1;
+                        synth.speak(unlock);
+                        synth.cancel();
+                    } catch(e) {}
 
-                    var voices = synth.getVoices();
-                    var selected = null;
-                    for (var i = 0; i < voices.length; i++) {
-                        var name = voices[i].name || '';
-                        var lang = voices[i].lang || '';
-                        var lowerName = name.toLowerCase();
-                        if (!selected && (lowerName.indexOf('xiaoxiao') >= 0 || lowerName.indexOf('晓晓') >= 0)) {
-                            selected = voices[i];
-                        }
-                        if (!selected && (lowerName.indexOf('yaoyao') >= 0 || lowerName.indexOf('瑶瑶') >= 0)) {
-                            selected = voices[i];
-                        }
-                        if (!selected && name.indexOf('Google 普通话') >= 0) {
-                            selected = voices[i];
-                        }
-                        if (!selected && name.indexOf('Google 中文') >= 0) {
-                            selected = voices[i];
-                        }
-                        if (!selected && (lang.indexOf('zh-CN') === 0 || lang.indexOf('cmn-CN') === 0)) {
-                            selected = voices[i];
-                        }
-                    }
-                    if (selected) u.voice = selected;
+                    var isMobile = /iPhone|iPad|iPod|Android|Mobile/i.test(parent.navigator.userAgent || '');
+                    var chunks = splitUtterances(text, isMobile ? 60 : 120);
+                    var selected = pickZhVoice(synth);
+                    var idx = 0;
 
-                    u.onend = function() {
+                    function finishOk() {
                         if (btn) btn.innerHTML = originalHtml;
                         if (err) err.textContent = '';
-                    };
-                    u.onerror = function(e) {
+                    }
+                    function finishErr(e) {
                         if (btn) btn.innerHTML = originalHtml;
-                        var errMsg = '播报失败，请尝试刷新页面或调高手机音量';
+                        var errMsg = '播报失败，请调高手机音量，或换系统浏览器（Chrome/Safari）再试';
                         try {
                             var errType = (e && (e.error || e.type || e.message || '')).toString().toLowerCase();
                             if (errType.indexOf('not-allowed') >= 0 || errType.indexOf('notallowed') >= 0) {
-                                errMsg = '浏览器阻止了语音播放，请刷新后点击页面任意位置再试';
+                                errMsg = '浏览器阻止了语音，请先点一下页面空白处，再点「听结果」';
+                            } else if (errType.indexOf('interrupted') >= 0 || errType.indexOf('canceled') >= 0) {
+                                return;
                             }
                         } catch(_) {}
                         if (err) err.textContent = errMsg;
                         console.warn('[TTS error]', e);
-                    };
-
-                    try {
-                        synth.speak(u);
-                    } catch(e) {
-                        if (btn) btn.innerHTML = originalHtml;
-                        if (err) err.textContent = '播报失败，请刷新页面后重试';
-                        console.warn('[TTS speak]', e);
                     }
+                    function speakNext() {
+                        if (idx >= chunks.length) {
+                            finishOk();
+                            return;
+                        }
+                        var u = new parent.SpeechSynthesisUtterance(chunks[idx]);
+                        u.lang = 'zh-CN';
+                        u.rate = rate || 1.0;
+                        u.pitch = 1.0;
+                        u.volume = 1.0;
+                        if (selected) u.voice = selected;
+                        u.onend = function() {
+                            idx += 1;
+                            speakNext();
+                        };
+                        u.onerror = function(e) {
+                            finishErr(e);
+                        };
+                        try {
+                            synth.speak(u);
+                        } catch(e) {
+                            finishErr(e);
+                        }
+                    }
+
+                    // 语音列表异步加载时再试一次选声
+                    try {
+                        if (!selected && synth.onvoiceschanged !== undefined) {
+                            var once = function() {
+                                selected = pickZhVoice(synth);
+                                try { synth.onvoiceschanged = null; } catch(_) {}
+                            };
+                            synth.onvoiceschanged = once;
+                        }
+                    } catch(e) {}
+
+                    speakNext();
                 },
                 stop: function() {
                     try { parent.speechSynthesis.cancel(); } catch(e) {}

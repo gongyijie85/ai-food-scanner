@@ -1851,9 +1851,184 @@ div[data-testid="stVerticalBlock"]:has(.preview-card-marker) div[data-testid="st
   /* 手机端：首页大按钮防止超出 */
   .st-key-home_goto_scan .stButton > button,
   .st-key-home_goto_scan_desktop .stButton > button {
-    width: 180px !important;
-    height: 180px !important;
+    width: min(180px, 42vw) !important;
+    height: min(180px, 42vw) !important;
+    font-size: 20px !important;
+  }
+
+  /* —— 手机适配增强：上传 / 语音 / 配料 / 底栏 —— */
+  .scan-page-tip-wrap {
+    margin: 8px 0 16px 0;
+  }
+  .scan-page-tip {
     font-size: 22px !important;
+    font-weight: 700 !important;
+    line-height: 1.35 !important;
+    margin: 0 0 6px 0 !important;
+    color: var(--color-text-primary) !important;
+  }
+  .scan-page-tip-sub {
+    font-size: 16px !important;
+    line-height: 1.45 !important;
+    margin: 0 !important;
+    color: var(--color-text-secondary) !important;
+  }
+
+  /* 上传区更大、更好点 */
+  .stFileUploader > div > div,
+  div:has(> .scan-upload-marker) + div .stFileUploader > div > div,
+  div:has(.scan-upload-marker) ~ div .stFileUploader > div > div {
+    min-height: 180px !important;
+    padding: 24px 16px !important;
+  }
+  [data-testid="stFileUploader"] section,
+  [data-testid="stFileUploaderDropzone"] {
+    min-height: 160px !important;
+  }
+  [data-testid="stFileUploaderFile"] {
+    min-width: 0 !important;
+  }
+  [data-testid="stFileUploaderFile"] * {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  /* 主操作按钮更高 */
+  .stButton > button {
+    min-height: 56px !important;
+    font-size: 18px !important;
+    border-radius: 14px !important;
+  }
+
+  /* 语音按钮：全宽、大触控、贴合安全区 */
+  .voice-controls,
+  .voice-controls-primary,
+  .voice-control-inline {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin: 12px 0 8px 0 !important;
+    align-items: stretch !important;
+  }
+  .voice-float-btn,
+  .food-scanner-tts-btn {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-height: 56px !important;
+    min-width: 0 !important;
+    font-size: 20px !important;
+    border-radius: 999px !important;
+    border: none !important;
+    background: linear-gradient(135deg, #2E7D32, #43A047) !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 4px 14px rgba(46, 125, 50, 0.28) !important;
+    padding: 12px 20px !important;
+  }
+  .voice-stop-btn,
+  .food-scanner-tts-stop-btn {
+    flex: 1 1 auto !important;
+    min-height: 48px !important;
+    min-width: 96px !important;
+    font-size: 17px !important;
+    border-radius: 999px !important;
+    border: 2px solid var(--color-border) !important;
+    background: #fff !important;
+    color: var(--color-text-secondary) !important;
+    font-weight: 600 !important;
+    padding: 10px 16px !important;
+  }
+  .tts-err {
+    display: block !important;
+    width: 100% !important;
+    font-size: 15px !important;
+    color: #C62828 !important;
+    line-height: 1.4 !important;
+    margin-top: 4px !important;
+  }
+
+  /* 配料标签云：手机好扫 */
+  .ingredient-tags {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .ingredient-tag {
+    font-size: 16px !important;
+    padding: 8px 12px !important;
+    border-radius: 999px !important;
+    background: #F1F8E9 !important;
+    border: 1px solid #C8E6C9 !important;
+    line-height: 1.3 !important;
+    max-width: 100% !important;
+    word-break: break-word !important;
+  }
+  .ingredients-empty {
+    padding: 12px 4px 8px;
+  }
+  .ingredients-empty-title {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    margin: 0 0 8px 0 !important;
+    color: var(--color-text-primary) !important;
+  }
+  .ingredients-empty-tip {
+    font-size: 16px !important;
+    margin: 0 !important;
+    color: var(--color-text-secondary) !important;
+    line-height: 1.5 !important;
+  }
+  .ocr-text-box {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #FAFAFA;
+    border: 1px solid var(--color-border);
+  }
+  .ocr-text-label {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin-bottom: 6px;
+  }
+  .ocr-text-body {
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+    margin: 0 !important;
+    word-break: break-word !important;
+  }
+
+  /* 底部双按钮：堆叠更易点 */
+  div[data-testid="stHorizontalBlock"]:has(+ *) ,
+  div.bottom-action-bar-marker + div[data-testid="stHorizontalBlock"],
+  div:has(> .bottom-action-bar-marker) ~ div[data-testid="stHorizontalBlock"] {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  /* 分数区避免挤爆 */
+  .score-hero,
+  .result-score-hero {
+    gap: 12px !important;
+  }
+  .score-circle {
+    width: 96px !important;
+    height: 96px !important;
+  }
+  .score-circle .score-num,
+  .score-num {
+    font-size: 34px !important;
+  }
+  .product-name {
+    font-size: 22px !important;
+    line-height: 1.3 !important;
+    word-break: break-word !important;
+  }
+
+  /* 主内容底部留白，避免被底栏挡住 */
+  .stMainBlockContainer {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 

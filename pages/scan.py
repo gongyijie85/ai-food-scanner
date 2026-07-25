@@ -133,10 +133,14 @@ def render_scan_page():
     groups, api_key, uploader_key = _scan_common_setup()
 
     st.markdown(
-        "<p class='scan-page-tip'>对准配料表拍照或从相册选择</p>",
+        "<div class='scan-page-tip-wrap'>"
+        "<p class='scan-page-tip'>对准包装上的「配料表」文字拍照</p>"
+        "<p class='scan-page-tip-sub'>小字要清晰、光线够亮、尽量平行；模糊或只拍了产品正面容易识别失败</p>"
+        "</div>",
         unsafe_allow_html=True,
     )
 
+    st.markdown("<div class='scan-upload-marker'></div>", unsafe_allow_html=True)
     # 统一图片上传入口：手机端自动支持拍照或相册，桌面端为文件选择
     uploaded_file = st.file_uploader(
         "选择配料表图片",

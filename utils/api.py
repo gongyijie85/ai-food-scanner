@@ -367,6 +367,56 @@ def _tag_inferred_ingredients(data: dict) -> dict:
     return data
 
 
+def _split_ingredient_text(text: str) -> list:
+    """把配料表原文切成配料名列表（兜底用）."""
+    if not text or not isinstance(text, str):
+        return []
+    s = text.strip()
+    # 去掉常见前缀
+    s = re.sub(r"^(配料表?|原料|成分)[：:\s]*", "", s)
+    s = re.sub(r"[。；;]+$", "", s)
+    parts = re.split(r"[,，、;；\n/|]+", s)
+    out = []
+    for p in parts:
+        item = p.strip()
+        item = re.sub(r"^[0-9]+[\.、\)]\s*", "", item)
+        # 去掉添加量尾巴，如「白砂糖（添加量≥10%）」保留主体
+        if not item or len(item) < 1:
+            continue
+        if len(item) > 40:
+            item = item[:40]
+        out.append(item)
+    # 去重保序
+    seen = set()
+    uniq = []
+    for x in out:
+        if x in seen:
+            continue
+        seen.add(x)
+        uniq.append(x)
+    return uniq
+
+
+def _recover_ingredients_from_ocr(data: dict) -> dict:
+    """ingredients 为空时，尝试从 ocr_text 切分恢复，减少「配料没找到」.
+
+    不编造包装上没有的文字；仅当模型漏提 ingredients 但留下了 OCR 原文时启用。
+    """
+    ings = data.get("ingredients")
+    if isinstance(ings, list) and any(str(x).strip() for x in ings):
+        return data
+    ocr = str(data.get("ocr_text", "") or "").strip()
+    if not ocr:
+        return data
+    recovered = _split_ingredient_text(ocr)
+    if recovered:
+        data["ingredients"] = recovered
+        data["ingredients_recovered_from_ocr"] = True
+    elif not isinstance(ings, list):
+        data["ingredients"] = []
+    return data
+
+
 def normalize_model_output(raw: str) -> str:
     """把 MiMo 的原始返回统一成标准 JSON 字符串.
 
@@ -464,6 +514,9 @@ def normalize_model_output(raw: str) -> str:
 
     # 6) 删除模型自带评分
     data.pop("score", None)
+
+    # 6.5) ingredients 为空时从 ocr_text 恢复
+    data = _recover_ingredients_from_ocr(data)
 
     # 7) 校验 additives 是否能在 ocr_text 中找到，标记 AI 推断项
     data = _tag_inferred_ingredients(data)
