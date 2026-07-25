@@ -95,3 +95,13 @@ demo_*.png
 # TTS demo 生成的音频文件（本地试听，不进仓库）
 demos/tts_comparison/*.mp3
 demos/tts_comparison/*.wav
+
+# Local agent scratch / logs / runtime
+.scratch/
+.scratch_*
+server.log
+server.err
+data/food_scanner.db
+*.db
+!data/gb2760_2024.sqlite
+

@@ -1,0 +1,2 @@
+id,date,channel,relation,role,device_own,path_complete,archive_filled,voice_ok,reuse_verbal,reuse_rescan_7d,reuse_count,delta_clear,pay_tier,pay_signal,soft_fail_notes,blocker_notes,quote,valid_sample
+S01,YYYY-MM-DD,微信熟人,强熟人,子女,是,是,是,是,是,未知,1,是,2,是,,,"" ,是
