@@ -19,6 +19,7 @@ from utils.data import (
     get_additive_risk_repository,
     load_health_data,
 )
+from utils.display import short_product_name, status_copy_for_result
 from utils.helpers import detect_device_type, switch_page
 from utils.security import _safe
 
@@ -141,11 +142,23 @@ def render_food_page(result):
     product_name = result.get("product_name", "未知")
     advice = result.get("advice", "")
     additives = result.get("additives", [])
+    display_name = short_product_name(product_name)
+    status_label, status_meaning, score_class = status_copy_for_result(
+        score, additives
+    )
 
     render_top_nav("识别结果", back_target="home")
 
-    # 1) 配料参考分摘要
-    _render_score_hero(score, product_name)
+    # 1) 配料参考分摘要（短名 + 与添加剂一致的状态）
+    _render_score_hero(
+        score,
+        display_name,
+        status_label=status_label,
+        status_meaning=status_meaning,
+        score_class=score_class,
+    )
+    if display_name != (product_name or "").strip() and product_name:
+        st.caption(f"全称：{_safe(product_name)}")
 
     # 2) 个性化警告
     warnings = _analyze_warnings(result)
