@@ -65,7 +65,10 @@ def _build_speak_content(result, warnings):
     parts = [f"识别结果。{product_name}，配料参考分{score}分。"]
 
     if warnings:
-        titles = [getattr(w, "title", None) or (w.get("title") if isinstance(w, dict) else "") for w in warnings[:4]]
+        titles = [
+            getattr(w, "title", None) or (w.get("title") if isinstance(w, dict) else "")
+            for w in warnings[:4]
+        ]
         titles = [t for t in titles if t]
         if titles:
             parts.append("需要留意：" + "；".join(titles) + "。")
@@ -89,7 +92,9 @@ def _build_speak_content(result, warnings):
 
     if advice:
         parts.append(advice if advice.endswith("。") else advice + "。")
-    parts.append("本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生、药师或营养师。")
+    parts.append(
+        "本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生、药师或营养师。"
+    )
     return "".join(parts)
 
 
@@ -143,9 +148,7 @@ def render_food_page(result):
     advice = result.get("advice", "")
     additives = result.get("additives", [])
     display_name = short_product_name(product_name)
-    status_label, status_meaning, score_class = status_copy_for_result(
-        score, additives
-    )
+    status_label, status_meaning, score_class = status_copy_for_result(score, additives)
 
     render_top_nav("识别结果", back_target="home")
 

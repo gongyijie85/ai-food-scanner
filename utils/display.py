@@ -52,7 +52,9 @@ def format_scan_time(ts: str) -> str:
         try:
             if "T" in c or re.match(r"\d{4}-\d{2}-\d{2}", c):
                 dt = datetime.fromisoformat(c.replace("Z", ""))
-                return f"{dt.year}年{dt.month}月{dt.day}日 {dt.hour:02d}:{dt.minute:02d}"
+                return (
+                    f"{dt.year}年{dt.month}月{dt.day}日 {dt.hour:02d}:{dt.minute:02d}"
+                )
         except ValueError:
             continue
     # 已是日期前缀

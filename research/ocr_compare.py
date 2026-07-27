@@ -1,8 +1,8 @@
 """OCR+VLM 与纯 VLM 效果对比脚本。
 
 用法：
-    cd d:\GBT\ai-food-scanner
-    python research\ocr_compare.py [图片路径1] [图片路径2] ...
+    cd D:/GBT/ai-food-scanner
+    python research/ocr_compare.py [图片路径1] [图片路径2] ...
 
 环境变量：
     - OCR_PROVIDER=baidu（默认）/ paddle / none
@@ -33,8 +33,17 @@ st.error = lambda msg, *args, **kwargs: print(f"[UI错误] {msg}")
 st.toast = lambda *args, **kwargs: None
 
 from services.ocr_provider import get_provider
-from utils.api import build_system_prompt, call_api_with_fallback, encode_image_to_base64
-from utils.config import AGNES_API_KEY, MIMO_API_KEY, OCR_CONFIDENCE_THRESHOLD, OCR_PROVIDER
+from utils.api import (
+    build_system_prompt,
+    call_api_with_fallback,
+    encode_image_to_base64,
+)
+from utils.config import (
+    AGNES_API_KEY,
+    MIMO_API_KEY,
+    OCR_CONFIDENCE_THRESHOLD,
+    OCR_PROVIDER,
+)
 
 
 def _count_items(raw: str) -> dict:

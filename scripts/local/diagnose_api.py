@@ -3,7 +3,6 @@
 import os
 import sys
 import requests
-import base64
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -30,7 +29,7 @@ def test_api(name, url, api_key, model_name):
     print(f"测试 {name} ({model_name})...")
 
     if not api_key:
-        print(f"  跳过: 未配置API密钥")
+        print("  跳过: 未配置API密钥")
         return False
 
     # 构建最小请求（文本模式，不需要图片）
@@ -53,20 +52,20 @@ def test_api(name, url, api_key, model_name):
             data = resp.json()
             content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
             print(f"  响应内容: {content[:50]}")
-            print(f"  结果: 正常")
+            print("  结果: 正常")
             return True
         elif resp.status_code == 401:
-            print(f"  结果: 认证失败 (401) - API密钥已过期或无效")
+            print("  结果: 认证失败 (401) - API密钥已过期或无效")
         elif resp.status_code == 429:
-            print(f"  结果: 请求过多 (429) - 配额已用完")
+            print("  结果: 请求过多 (429) - 配额已用完")
         elif resp.status_code == 503:
-            print(f"  结果: 服务不可用 (503)")
+            print("  结果: 服务不可用 (503)")
         else:
             print(f"  结果: 错误 ({resp.status_code})")
             print(f"  响应: {resp.text[:200]}")
 
     except requests.exceptions.Timeout:
-        print(f"  结果: 超时 (15秒无响应)")
+        print("  结果: 超时 (15秒无响应)")
     except requests.exceptions.ConnectionError as e:
         print(f"  结果: 连接失败 - {str(e)[:100]}")
     except Exception as e:
