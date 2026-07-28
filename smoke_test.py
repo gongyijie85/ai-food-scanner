@@ -115,9 +115,7 @@ def main():
         assert not any(
             "格式" in e or "有效图片" in e for e in errors
         ), f"模糊图不应报格式错误: {errors}"
-        page.screenshot(
-            path=str(ARTIFACTS_DIR / "smoke_scan_blur.png"), full_page=True
-        )
+        page.screenshot(path=str(ARTIFACTS_DIR / "smoke_scan_blur.png"), full_page=True)
 
         # 3) 非图片文件（伪 jpg 内容）：应在上传后即时提示格式错误
         errors = _upload_and_errors(str(REPO_ROOT / "invalid.jpg"))

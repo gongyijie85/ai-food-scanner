@@ -38,7 +38,9 @@ def _unconfirmed_badge(warning) -> str:
     """未确认配料来源的警告追加提示徽标，复用添加剂卡片同款样式."""
     if not getattr(warning, "unconfirmed", False):
         return ""
-    return "<div class='ai-inferred-tag'>基于未在包装原文中确认的配料，请以包装为准</div>"
+    return (
+        "<div class='ai-inferred-tag'>基于未在包装原文中确认的配料，请以包装为准</div>"
+    )
 
 
 def _severity_icon(severity: str) -> str:

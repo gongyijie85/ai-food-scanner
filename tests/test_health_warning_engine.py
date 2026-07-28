@@ -19,7 +19,9 @@ class _EmptyOverrideRepo:
 
 def _engine(conflicts=None, allergens=None):
     matcher = AdditiveMatcher(_EmptyStandardRepo(), _EmptyOverrideRepo())
-    return HealthWarningEngine(matcher, conflicts=conflicts or [], allergens=allergens or [])
+    return HealthWarningEngine(
+        matcher, conflicts=conflicts or [], allergens=allergens or []
+    )
 
 
 class TestDrugConflictUnconfirmedFlag:

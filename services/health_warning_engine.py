@@ -180,7 +180,9 @@ class HealthWarningEngine:
 
         ingredients = [str(i) for i in result.get("ingredients", [])]
         additive_names = [
-            a.get("name", "") for a in result.get("additives", []) if isinstance(a, dict)
+            a.get("name", "")
+            for a in result.get("additives", [])
+            if isinstance(a, dict)
         ]
         # 候选按单条配料/添加剂名称逐一比对，而不是拼接成一个长字符串再做子串
         # 查找——拼接后跨条目边界的子串匹配（例如两条相邻配料被空格连接后
@@ -192,7 +194,6 @@ class HealthWarningEngine:
 
         matched = []
         any_confirmed_match = False
-        any_unconfirmed_match = False
         for allergen in user_allergens:
             name = allergen.get("name", "")
             keywords = [kw for kw in [name, *allergen.get("examples", [])] if kw]
@@ -203,9 +204,7 @@ class HealthWarningEngine:
             for cand in candidates:
                 if any(kw in cand for kw in keywords):
                     hit = True
-                    if cand in unconfirmed:
-                        any_unconfirmed_match = True
-                    else:
+                    if cand not in unconfirmed:
                         any_confirmed_match = True
             if hit:
                 matched.append(name or keywords[0])
