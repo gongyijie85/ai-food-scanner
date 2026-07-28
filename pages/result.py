@@ -113,7 +113,17 @@ def _render_ingredients_section(result):
 
     if ingredients:
         if recovered:
-            st.caption("已根据识别到的原文自动整理配料，请与包装核对。")
+            st.markdown(
+                "<div class='advice-block advice-block-general'>"
+                "<div class='advice-block-icon'>⚠️</div>"
+                "<div class='advice-block-body'>"
+                "<div class='advice-block-title'>配料为自动整理，请与包装核对</div>"
+                "<p class='advice-block-text'>"
+                "未能直接识别出配料表，已根据拍到的文字自动整理，可能与包装原文有出入，"
+                "请核对包装后再参考本页提示。"
+                "</p></div></div>",
+                unsafe_allow_html=True,
+            )
         tags_html = "".join(
             f"<span class='ingredient-tag'>{_safe(item)}</span>" for item in ingredients
         )
