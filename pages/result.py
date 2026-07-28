@@ -7,6 +7,7 @@ from components import (
     _render_additive_card,
     _render_score_hero,
     render_empty_state,
+    render_feedback_entry,
     render_nutrition_bars,
     render_personal_warnings,
     render_top_nav,
@@ -212,6 +213,9 @@ def render_food_page(result):
 
     # 营养成分（可选，有数据时显示）
     render_nutrition_bars(result)
+
+    # 纠错反馈入口
+    render_feedback_entry(product_name)
 
     with st.container():
         st.markdown(

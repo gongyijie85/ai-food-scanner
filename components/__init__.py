@@ -1,6 +1,7 @@
 """可复用 UI 组件包."""
 
 from components.additive_card import _render_additive_card
+from components.feedback import render_feedback_entry
 from components.icons import (
     _ICON_ALERT,
     _ICON_CAMERA,
@@ -36,6 +37,7 @@ __all__ = [
     "_render_tts_namespace",
     "render_empty_state",
     "render_error",
+    "render_feedback_entry",
     "render_navigation",
     "render_nutrition_bars",
     "render_personal_warnings",
