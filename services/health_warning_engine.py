@@ -15,12 +15,14 @@ class HealthWarning:
         severity: high / medium / low
         title: 短标题
         description: 详细说明
+        unconfirmed: 该警告是否基于未在包装原文中确认的配料（AI 推断），默认 False
     """
 
     category: str
     severity: str
     title: str
     description: str
+    unconfirmed: bool = False
 
 
 # 食品原料风险规则配置
@@ -144,6 +146,8 @@ class HealthWarningEngine:
         if not user_drug_ids:
             return []
 
+        unconfirmed = set(result.get("ingredients_unconfirmed", []))
+
         warnings = []
         for c in self.conflicts:
             if c.get("drug_id") not in user_drug_ids:
@@ -162,6 +166,7 @@ class HealthWarningEngine:
                                 f"可能存在相互作用：{c.get('description', '')} "
                                 f"建议：{recommendation}。"
                                 f"请勿自行停药或改变饮食，请先咨询医生或药师。",
+                                unconfirmed=ing_str in unconfirmed,
                             )
                         )
                         break  # 每个冲突只算一次
@@ -175,18 +180,24 @@ class HealthWarningEngine:
 
         ingredients = result.get("ingredients", [])
         additives = result.get("additives", [])
+        unconfirmed_text = " ".join(result.get("ingredients_unconfirmed", []))
         all_text = " ".join(ingredients)
         all_text += " " + " ".join(a.get("name", "") for a in additives)
 
         matched = []
+        any_unconfirmed = False
         for allergen in user_allergens:
             name = allergen.get("name", "")
             if name and name in all_text:
                 matched.append(name)
+                if name in unconfirmed_text:
+                    any_unconfirmed = True
                 continue
             for ex in allergen.get("examples", []):
                 if ex in all_text:
                     matched.append(name or ex)
+                    if ex in unconfirmed_text:
+                        any_unconfirmed = True
                     break
 
         if not matched:
@@ -198,6 +209,7 @@ class HealthWarningEngine:
                 severity="high",
                 title="过敏原提示",
                 description=f"可能含有您过敏的配料：{'、'.join(sorted(set(matched)))}，建议确认后再食用。",
+                unconfirmed=any_unconfirmed,
             )
         ]
 
