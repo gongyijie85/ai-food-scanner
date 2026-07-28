@@ -29,6 +29,7 @@ last_api_response.txt
 
 # 测试产物
 test_label.jpg
+!test_label.jpg
 supplement_1.jpg
 supplement_2.jpg
 supplement_3.jpg
@@ -89,7 +90,9 @@ smoke_history.png
 smoke_detail.png
 smoke_scan*.png
 invalid.jpg
+!invalid.jpg
 test_label_blur.jpg
+!test_label_blur.jpg
 demo_*.png
 
 # TTS demo 生成的音频文件（本地试听，不进仓库）
