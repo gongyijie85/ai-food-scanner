@@ -108,3 +108,28 @@ data/food_scanner.db
 *.db
 !data/gb2760_2024.sqlite
 
+# 本地 SQLite 数据库（含用户扫描记录，不能入仓）
+data/*.db
+
+# 截图 base64 / 分片 / 上传产物
+screenshots/*_b64.txt
+screenshots/*.json
+screenshots/upload_chunks/
+screenshots/test_100k.txt
+
+# 论坛/图片修复一次性脚本
+check_post_content.py
+fix_forum_*.py
+fix_homepage_image.py
+fix_update_logs.py
+home_b64.txt
+
+# 本地服务/上传辅助脚本（含个人路径或 PAT）
+serve_*.py
+upload_*.py
+upload_*.js
+start.ps1
+
+# API 诊断脚本（含真实 key 风险）
+tests/diagnose_api*.py
+
