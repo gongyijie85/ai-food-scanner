@@ -8,8 +8,11 @@ from playwright.sync_api import sync_playwright
 # 冒烟测试使用无效 key，专门验证本地 UI/校验路径，不消耗真实 API 额度
 os.environ.setdefault("MIMO_API_KEY", "dummy-key-for-smoke-test")
 
-DATA_DIR = Path(__file__).resolve().parent / "data"
+REPO_ROOT = Path(__file__).resolve().parent
+DATA_DIR = REPO_ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
+ARTIFACTS_DIR = REPO_ROOT / "smoke_artifacts"
+ARTIFACTS_DIR.mkdir(exist_ok=True)
 
 # 构造 3 条测试历史记录
 now = datetime.now()
@@ -59,7 +62,7 @@ def main():
         page.goto("http://localhost:8503/?demo=1")
         page.wait_for_load_state("networkidle")
         page.wait_for_timeout(1500)
-        page.screenshot(path="d:/GBT/ai-food-scanner/smoke_home.png", full_page=True)
+        page.screenshot(path=str(ARTIFACTS_DIR / "smoke_home.png"), full_page=True)
 
         # 检查首页"拍照识别"按钮可见且尺寸合理
         scan_btn = page.get_by_role("button", name="拍照识别").first
@@ -92,7 +95,7 @@ def main():
         page.get_by_role("button", name="历史").first.click()
         page.wait_for_load_state("networkidle")
         page.wait_for_timeout(1500)
-        page.screenshot(path="d:/GBT/ai-food-scanner/smoke_history.png", full_page=True)
+        page.screenshot(path=str(ARTIFACTS_DIR / "smoke_history.png"), full_page=True)
 
         # 检查历史页有 3 条可点击行且没有单独的“查看”文字按钮
         buttons = page.locator("button").all()
@@ -106,14 +109,14 @@ def main():
         # 点击第一条历史记录下方的查看详情按钮，进入详情
         page.get_by_role("button", name="查看详情").first.click()
         page.wait_for_timeout(1500)
-        page.screenshot(path="d:/GBT/ai-food-scanner/smoke_detail.png", full_page=True)
+        page.screenshot(path=str(ARTIFACTS_DIR / "smoke_detail.png"), full_page=True)
         assert page.get_by_text("产品详情").first.is_visible()
 
         # 扫描页：回归四类场景（清晰图/模糊图/非图片/接口失败）
         page.get_by_role("button", name="扫描").first.click()
         page.wait_for_load_state("networkidle")
         page.wait_for_timeout(1500)
-        page.screenshot(path="d:/GBT/ai-food-scanner/smoke_scan.png", full_page=True)
+        page.screenshot(path=str(ARTIFACTS_DIR / "smoke_scan.png"), full_page=True)
 
         # 辅助函数：直接操作隐藏 input 上传文件并返回可见的错误文本列表
         def _upload_and_errors(file_path: str):
@@ -132,42 +135,42 @@ def main():
             ]
 
         # 1) 清晰配料表图片：应成功出现预览，无格式错误
-        errors = _upload_and_errors("d:/GBT/ai-food-scanner/test_label.jpg")
+        errors = _upload_and_errors(str(REPO_ROOT / "test_label.jpg"))
         assert not any(
             "格式" in e or "有效图片" in e for e in errors
         ), f"清晰图不应报格式错误: {errors}"
         assert page.locator("img").count() > 0, "清晰图上传后应显示预览"
         page.screenshot(
-            path="d:/GBT/ai-food-scanner/smoke_scan_clear.png", full_page=True
+            path=str(ARTIFACTS_DIR / "smoke_scan_clear.png"), full_page=True
         )
 
         # 2) 模糊图片：同样应被接受（仅在识别阶段可能失败）
-        errors = _upload_and_errors("d:/GBT/ai-food-scanner/test_label_blur.jpg")
+        errors = _upload_and_errors(str(REPO_ROOT / "test_label_blur.jpg"))
         assert not any(
             "格式" in e or "有效图片" in e for e in errors
         ), f"模糊图不应报格式错误: {errors}"
         page.screenshot(
-            path="d:/GBT/ai-food-scanner/smoke_scan_blur.png", full_page=True
+            path=str(ARTIFACTS_DIR / "smoke_scan_blur.png"), full_page=True
         )
 
         # 3) 非图片文件（伪 jpg 内容）：应在上传后即时提示格式错误
-        errors = _upload_and_errors("d:/GBT/ai-food-scanner/invalid.jpg")
+        errors = _upload_and_errors(str(REPO_ROOT / "invalid.jpg"))
         assert any(
             "格式" in e or "JPG" in e or "PNG" in e for e in errors
         ), f"非图片文件应提示格式错误: {errors}"
         page.screenshot(
-            path="d:/GBT/ai-food-scanner/smoke_scan_non_image.png", full_page=True
+            path=str(ARTIFACTS_DIR / "smoke_scan_non_image.png"), full_page=True
         )
 
         # 4) 接口失败：上传有效图片并点击识别，因 key 无效应给出明确不可用提示
-        errors = _upload_and_errors("d:/GBT/ai-food-scanner/test_label.jpg")
+        errors = _upload_and_errors(str(REPO_ROOT / "test_label.jpg"))
         assert not any(
             "格式" in e or "有效图片" in e for e in errors
         ), f"接口失败场景不应报格式错误: {errors}"
         page.get_by_role("button", name="开始识别").first.click()
         page.wait_for_timeout(5000)
         page.screenshot(
-            path="d:/GBT/ai-food-scanner/smoke_scan_api_fail.png", full_page=True
+            path=str(ARTIFACTS_DIR / "smoke_scan_api_fail.png"), full_page=True
         )
         body_text = page.locator("body").inner_text()
         assert "识别失败" in body_text, f"接口失败应给出明确提示: {body_text[:500]}"
