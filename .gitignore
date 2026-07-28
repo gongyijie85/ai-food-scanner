@@ -82,6 +82,10 @@ ui_ux_report.html
 # 本地冒烟测试数据与诊断脚本
 data/history.json
 data/history_full.json
+# 会话隔离后的历史记录文件（data/history_<session_id>.json 等）与用户反馈文件
+data/history_*.json
+data/history_full_*.json
+data/feedback.json
 inspect_*.py
 inspect_*.png
 inspect_btn.py

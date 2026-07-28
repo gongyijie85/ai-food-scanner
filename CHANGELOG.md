@@ -1,5 +1,16 @@
 # 变更日志
 
+## v0.10.23 - 2026-07-28
+
+### 终审跨任务修复（冒烟测试断言 / gitignore / 文档同步 / 过敏原判定）
+
+- **迁移提示**：历史记录已改为按浏览器会话隔离存储（`data/history_<session_id>.json` / `data/history_full_<session_id>.json`），部署本次更新后，旧版共享文件 `data/history.json` / `data/history_full.json` 不再被读取，将成为孤立文件；已有用户下次访问时会看到历史记录为空（相当于重新开始一个新会话），属于预期行为，无需迁移旧数据
+- **冒烟测试**：`smoke_test.py` 不再手工写入已废弃的共享历史文件，改为依赖 `?demo=1` 演示模式自身的样例数据播种断言历史页
+- **过敏原判定**：`_check_allergens` 仅在所有命中过敏原均来自未确认配料时才标记 `unconfirmed=True`，避免一条已确认的过敏原匹配被另一条未确认匹配拖累可信度
+- **文档同步**：`LEGAL_REVIEW.md` / `CODE_WIKI.md` / `HANDOFF.md` 更新为会话隔离后的文件命名与真实上限；`README.md` 字号描述改为如实反映部分辅助信息仍为 12–14px
+- **清理**：移除误提交的 `smoke_test_async.py`（含硬编码 Windows 路径与 `NameError` 缺陷，未被任何地方引用）
+- **测试**：`pytest` 全量通过
+
 ## v0.10.22 - 2026-07-25
 
 ### 修复语音无声

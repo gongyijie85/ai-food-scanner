@@ -178,38 +178,51 @@ class HealthWarningEngine:
         if not user_allergens:
             return []
 
-        ingredients = result.get("ingredients", [])
-        additives = result.get("additives", [])
-        unconfirmed_text = " ".join(result.get("ingredients_unconfirmed", []))
-        all_text = " ".join(ingredients)
-        all_text += " " + " ".join(a.get("name", "") for a in additives)
+        ingredients = [str(i) for i in result.get("ingredients", [])]
+        additive_names = [
+            a.get("name", "") for a in result.get("additives", []) if isinstance(a, dict)
+        ]
+        # 候选按单条配料/添加剂名称逐一比对，而不是拼接成一个长字符串再做子串
+        # 查找——拼接后跨条目边界的子串匹配（例如两条相邻配料被空格连接后
+        # 恰好拼出过敏原关键词）会产生误判，逐条比对可避免该问题。
+        candidates = ingredients + additive_names
+        # 与 _check_drug_conflicts 一致，使用精确集合成员判断（而非在拼接
+        # 文本中做子串查找）来确定某条候选是否来自未确认配料。
+        unconfirmed = set(result.get("ingredients_unconfirmed", []))
 
         matched = []
-        any_unconfirmed = False
+        any_confirmed_match = False
+        any_unconfirmed_match = False
         for allergen in user_allergens:
             name = allergen.get("name", "")
-            if name and name in all_text:
-                matched.append(name)
-                if name in unconfirmed_text:
-                    any_unconfirmed = True
+            keywords = [kw for kw in [name, *allergen.get("examples", [])] if kw]
+            if not keywords:
                 continue
-            for ex in allergen.get("examples", []):
-                if ex in all_text:
-                    matched.append(name or ex)
-                    if ex in unconfirmed_text:
-                        any_unconfirmed = True
-                    break
+
+            hit = False
+            for cand in candidates:
+                if any(kw in cand for kw in keywords):
+                    hit = True
+                    if cand in unconfirmed:
+                        any_unconfirmed_match = True
+                    else:
+                        any_confirmed_match = True
+            if hit:
+                matched.append(name or keywords[0])
 
         if not matched:
             return []
 
+        # 只要存在任意一条“已确认”的过敏原匹配，整体就不应因另一条未确认匹配
+        # 而被降级为 unconfirmed——对健康安全类提示，宁可多提示也不能漏提示。
+        # 只有当全部命中都来自未确认配料时，才整体标记为 unconfirmed。
         return [
             HealthWarning(
                 category="allergen",
                 severity="high",
                 title="过敏原提示",
                 description=f"可能含有您过敏的配料：{'、'.join(sorted(set(matched)))}，建议确认后再食用。",
-                unconfirmed=any_unconfirmed,
+                unconfirmed=not any_confirmed_match,
             )
         ]
 

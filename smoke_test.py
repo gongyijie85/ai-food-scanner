@@ -1,6 +1,4 @@
-import json
 import os
-from datetime import datetime, timedelta
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -9,51 +7,17 @@ from playwright.sync_api import sync_playwright
 os.environ.setdefault("MIMO_API_KEY", "dummy-key-for-smoke-test")
 
 REPO_ROOT = Path(__file__).resolve().parent
-DATA_DIR = REPO_ROOT / "data"
-DATA_DIR.mkdir(exist_ok=True)
 ARTIFACTS_DIR = REPO_ROOT / "smoke_artifacts"
 ARTIFACTS_DIR.mkdir(exist_ok=True)
 
-# 构造 3 条测试历史记录
-now = datetime.now()
-history = []
-full = []
-for i, (name, score, type_) in enumerate(
-    [
-        ("测试牛奶", 85, "food"),
-        ("测试鱼油胶囊", 72, "supplement"),
-        ("测试辣条", 45, "food"),
-    ]
-):
-    ts = (now - timedelta(hours=i)).isoformat(timespec="seconds")
-    record = {
-        "timestamp": ts,
-        "product_name": name,
-        "score": score,
-        "type": type_,
-        "additives_count": i + 1,
-    }
-    history.append(record)
-    full.append(
-        {
-            **record,
-            "additives": [{"name": f"添加剂{i}", "risk": "low"}],
-            "ingredients": ["水", "糖"],
-            "advice": "适量食用",
-        }
-    )
-
-
-def _write_test_data():
-    with open(DATA_DIR / "history.json", "w", encoding="utf-8") as f:
-        json.dump(history, f, ensure_ascii=False, indent=2)
-    with open(DATA_DIR / "history_full.json", "w", encoding="utf-8") as f:
-        json.dump(full, f, ensure_ascii=False, indent=2)
+# 注：历史记录现按浏览器会话隔离存储（data/history_<session_id>.json），
+# 冒烟测试不再手工写入共享的 data/history.json / history_full.json（那两个文件
+# 已不被 utils/history.py 读取）。?demo=1 演示模式会在会话首次访问时自动通过
+# app.py 的 _seed_demo_history_if_needed() 写入样例历史，因此下方直接依赖该
+# 样例数据进行断言即可。
 
 
 def main():
-    _write_test_data()
-
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(viewport={"width": 1280, "height": 800})
@@ -103,8 +67,10 @@ def main():
         print("history buttons:", labels[:20])
         assert "查看" not in labels, "应移除单独的查看按钮"
         # 历史记录卡片以 HTML 渲染，检查页面文本中可见产品名
+        # （?demo=1 演示模式会自动播种样例历史，见 app.py 的
+        # _seed_demo_history_if_needed()，这里断言其中一条样例产品名）
         page_text = page.locator("body").inner_text()
-        assert "测试牛奶" in page_text, "应显示测试历史记录"
+        assert "沂蒙公社山楂糕" in page_text, "应显示演示模式样例历史记录"
 
         # 点击第一条历史记录下方的查看详情按钮，进入详情
         page.get_by_role("button", name="查看详情").first.click()

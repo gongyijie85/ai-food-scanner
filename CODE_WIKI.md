@@ -86,8 +86,8 @@ ai-food-scanner/
 │   ├── allergens.json          # 过敏原分类数据
 │   ├── common_drugs.json       # 常见药物分类数据
 │   ├── drug_food_conflicts.json# 药物-食物冲突数据
-│   ├── history.json            # 历史记录摘要（自动生成）
-│   └── history_full.json       # 历史记录完整快照（自动生成）
+│   ├── history_<session_id>.json       # 历史记录摘要（按会话隔离，自动生成）
+│   └── history_full_<session_id>.json  # 历史记录完整快照（按会话隔离，自动生成）
 │
 ├── tests/
 │   ├── __init__.py
@@ -384,7 +384,7 @@ render_food() / render_supplement()  渲染结果页
 
 - **位置**：[app.py#L805-L819](file:///d:/GBT/ai-food-scanner/app.py#L805-L819)
 - **装饰器**：`@st.cache_data(ttl=300)`
-- **数据源**：`data/history.json`
+- **数据源**：`data/history_<session_id>.json`（按浏览器会话隔离，session_id 为随机生成的会话标识）
 - **返回**：`list[dict]`，每条含 timestamp/product_name/score/type/additives_count
 
 #### `save_history(record)` — 保存历史摘要
@@ -395,7 +395,7 @@ render_food() / render_supplement()  渲染结果页
 #### `add_history(result)` — 识别成功后添加历史
 
 - **位置**：[app.py#L864-L884](file:///d:/GBT/ai-food-scanner/app.py#L864-L884)
-- **作用**：同时保存摘要（history.json）和完整快照（history_full.json）
+- **作用**：同时保存摘要（history_<session_id>.json）和完整快照（history_full_<session_id>.json）
 - **隐私保护**：不保存图片数据
 
 ### 5.9 页面渲染模块
@@ -466,7 +466,7 @@ render_food() / render_supplement()  渲染结果页
 #### `render_detail_page()` — 产品详情页
 
 - **位置**：[app.py#L2011-L2081](file:///d:/GBT/ai-food-scanner/app.py#L2011-L2081)
-- **数据源**：`history_full.json` 完整快照
+- **数据源**：`history_full_<session_id>.json` 完整快照（按会话隔离）
 - **组成**：评分英雄区 + 扫描信息卡 + 添加剂 + 营养 + 建议 + 全部配料 + 底部操作栏
 
 #### `render_health_profile_page()` — 健康档案页
@@ -583,7 +583,7 @@ render_food() / render_supplement()  渲染结果页
 }
 ```
 
-### 6.6 history.json — 历史记录摘要（自动生成）
+### 6.6 history_<session_id>.json — 历史记录摘要（按会话隔离，自动生成）
 
 ```json
 [

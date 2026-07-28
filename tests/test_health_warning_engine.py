@@ -99,6 +99,47 @@ class TestAllergenUnconfirmedFlag:
         assert len(warnings) == 1
         assert warnings[0].unconfirmed is False
 
+    def test_one_confirmed_one_unconfirmed_allergen_is_not_flagged(self):
+        """两个过敏原均命中，其中一个已确认、一个未确认：
+        整体 unconfirmed 应为 False（存在确认匹配时不应被未确认匹配拖累可信度）"""
+        engine = _engine(allergens=[])
+        result = {
+            "ingredients": ["花生酱", "牛奶"],
+            "additives": [],
+            "ingredients_unconfirmed": ["牛奶"],
+        }
+        profile = {
+            "allergens": [
+                {"name": "花生", "examples": ["花生酱"]},
+                {"name": "牛奶", "examples": ["牛奶"]},
+            ]
+        }
+
+        warnings = engine._check_allergens(result, profile)
+
+        assert len(warnings) == 1
+        assert warnings[0].unconfirmed is False
+
+    def test_both_allergens_unconfirmed_is_flagged(self):
+        """两个过敏原均命中，且均来自未确认配料：整体 unconfirmed 应为 True"""
+        engine = _engine(allergens=[])
+        result = {
+            "ingredients": ["花生酱", "牛奶"],
+            "additives": [],
+            "ingredients_unconfirmed": ["花生酱", "牛奶"],
+        }
+        profile = {
+            "allergens": [
+                {"name": "花生", "examples": ["花生酱"]},
+                {"name": "牛奶", "examples": ["牛奶"]},
+            ]
+        }
+
+        warnings = engine._check_allergens(result, profile)
+
+        assert len(warnings) == 1
+        assert warnings[0].unconfirmed is True
+
 
 def test_health_warning_unconfirmed_defaults_to_false():
     """不显式传入 unconfirmed 时应默认为 False，保持旧调用方兼容"""
