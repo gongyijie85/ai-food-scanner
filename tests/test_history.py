@@ -60,3 +60,10 @@ class TestSessionIsolation:
         assert len(history.load_history()) == 1
         assert len(history.load_history_full()) == 1
         assert history.load_history_full()[0]["product_name"] == "测试"
+
+    def test_public_load_functions_expose_working_clear(self):
+        """load_history/load_history_full 应暴露可调用的 .clear()（app.py 演示模式依赖此接口）."""
+        # 这两个调用不应抛出 AttributeError（回归测试：曾因 @st.cache_data 装饰在
+        # 私有函数上，导致公开包装函数缺少 .clear() 属性）。
+        history.load_history.clear()
+        history.load_history_full.clear()

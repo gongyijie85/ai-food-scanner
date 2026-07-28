@@ -27,10 +27,12 @@ def _get_session_id() -> str:
 
 
 def _history_path(session_id: str) -> str:
+    """返回指定会话的历史记录摘要文件路径."""
     return os.path.join(_DATA_DIR, f"history_{session_id}.json")
 
 
 def _history_full_path(session_id: str) -> str:
+    """返回指定会话的完整历史快照文件路径."""
     return os.path.join(_DATA_DIR, f"history_full_{session_id}.json")
 
 
@@ -54,6 +56,11 @@ def load_history():
     return _load_history_for_session(_get_session_id())
 
 
+# 公开包装函数需要暴露 .clear()，供 app.py 演示模式(?demo=1)重置缓存使用；
+# 委托给底层被 @st.cache_data 装饰的函数。
+load_history.clear = _load_history_for_session.clear
+
+
 def save_history(record):
     """追加一条历史记录到当前会话的本地 JSON 文件，并保留最近 50 条.
 
@@ -68,8 +75,8 @@ def save_history(record):
         os.makedirs(_DATA_DIR, exist_ok=True)  # 兜底确保 data 目录存在
         with open(_history_path(session_id), "w", encoding="utf-8") as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
-        # 写入后清除缓存，确保展示侧立即刷新
-        _load_history_for_session.clear()
+        # 写入后清除当前会话的缓存，确保展示侧立即刷新（仅清除本会话，不影响其他会话）
+        _load_history_for_session.clear(session_id)
     except OSError:
         # 写入失败不阻断主流程
         pass
@@ -91,6 +98,10 @@ def load_history_full():
     return _load_history_full_for_session(_get_session_id())
 
 
+# 同上：暴露 .clear() 供 app.py 演示模式重置缓存使用。
+load_history_full.clear = _load_history_full_for_session.clear
+
+
 def save_history_full(result):
     """保存完整识别结果快照到当前会话，最多 _HISTORY_FULL_MAX 条."""
     session_id = _get_session_id()
@@ -101,7 +112,7 @@ def save_history_full(result):
         os.makedirs(_DATA_DIR, exist_ok=True)
         with open(_history_full_path(session_id), "w", encoding="utf-8") as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
-        _load_history_full_for_session.clear()
+        _load_history_full_for_session.clear(session_id)
     except OSError:
         pass
 
