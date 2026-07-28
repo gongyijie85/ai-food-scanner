@@ -4,7 +4,9 @@ import pages.result as result_page
 
 
 class TestIngredientsSectionLowConfidenceNotice:
-    def test_recovered_ingredients_shows_prominent_warning_not_caption(self, monkeypatch):
+    def test_recovered_ingredients_shows_prominent_warning_not_caption(
+        self, monkeypatch
+    ):
         """兜底恢复的配料列表应展示醒目警示块，而非小字 caption."""
         markdown_calls = []
         monkeypatch.setattr(
