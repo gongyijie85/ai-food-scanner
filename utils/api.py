@@ -350,20 +350,33 @@ def _item_in_ocr_text(item: str, ocr_text: str) -> bool:
 
 
 def _tag_inferred_ingredients(data: dict) -> dict:
-    """把 additives 中未在 ocr_text 出现的项标记为 ai_inferred。"""
+    """标记/收集未在 ocr_text 中原文出现的 AI 推断项.
+
+    additives：逐项写入 ai_inferred 布尔字段（供 UI 逐条渲染徽标）。
+    ingredients：收集未在 ocr_text 出现的项名到 data["ingredients_unconfirmed"]
+    （ingredients 本身是 list[str]，不能像 additives 那样逐项写字段，
+    因此用一个平行列表记录未确认项，供下游过敏原/药物冲突判断标注来源）。
+    """
     ocr_text = str(data.get("ocr_text", ""))
     if not ocr_text:
         return data
 
     additives = data.get("additives")
-    if not isinstance(additives, list):
-        return data
+    if isinstance(additives, list):
+        for item in additives:
+            if not isinstance(item, dict):
+                continue
+            name = item.get("name", "")
+            item["ai_inferred"] = not _item_in_ocr_text(name, ocr_text)
 
-    for item in additives:
-        if not isinstance(item, dict):
-            continue
-        name = item.get("name", "")
-        item["ai_inferred"] = not _item_in_ocr_text(name, ocr_text)
+    ingredients = data.get("ingredients")
+    if isinstance(ingredients, list):
+        data["ingredients_unconfirmed"] = [
+            ing
+            for ing in ingredients
+            if isinstance(ing, str) and not _item_in_ocr_text(ing, ocr_text)
+        ]
+
     return data
 
 

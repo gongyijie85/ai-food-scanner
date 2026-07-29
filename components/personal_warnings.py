@@ -19,6 +19,7 @@ def render_personal_warnings(warnings):
         f"<div class='advice-block-body'>"
         f"<div class='advice-block-title'>{_safe(w.title)}</div>"
         f"<p class='advice-block-text'>{_safe(w.description)}</p>"
+        f"{_unconfirmed_badge(w)}"
         f"</div></div>"
         for w in warnings
     )
@@ -30,6 +31,15 @@ def render_personal_warnings(warnings):
         + "<p class='result-card-footnote'>本工具不能代替医生，有疑问请咨询医生或药师</p>"
         "</div>",
         unsafe_allow_html=True,
+    )
+
+
+def _unconfirmed_badge(warning) -> str:
+    """未确认配料来源的警告追加提示徽标，复用添加剂卡片同款样式."""
+    if not getattr(warning, "unconfirmed", False):
+        return ""
+    return (
+        "<div class='ai-inferred-tag'>基于未在包装原文中确认的配料，请以包装为准</div>"
     )
 
 

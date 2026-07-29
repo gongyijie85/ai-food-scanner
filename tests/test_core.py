@@ -421,6 +421,36 @@ class TestNormalizeModelOutput:
         assert "山梨糖醇" in names
         assert "山梨酸" not in names
 
+    def test_ingredients_unconfirmed_marks_items_not_in_ocr(self):
+        """ingredients 中未在 ocr_text 出现的项应被收集到 ingredients_unconfirmed"""
+        raw = json.dumps(
+            {
+                "type": "food",
+                "product_name": "测试",
+                "ocr_text": "配料：山楂、低聚果糖、浓缩苹果汁。",
+                "ingredients": ["山楂", "低聚果糖", "浓缩苹果汁", "白砂糖"],
+                "additives": [],
+            }
+        )
+        out = normalize_model_output(raw)
+        data = json.loads(out)
+        assert data["ingredients_unconfirmed"] == ["白砂糖"]
+
+    def test_ingredients_unconfirmed_empty_when_all_present(self):
+        """全部 ingredients 均在 ocr_text 中出现时，ingredients_unconfirmed 应为空列表"""
+        raw = json.dumps(
+            {
+                "type": "food",
+                "product_name": "测试",
+                "ocr_text": "配料：山楂、低聚果糖。",
+                "ingredients": ["山楂", "低聚果糖"],
+                "additives": [],
+            }
+        )
+        out = normalize_model_output(raw)
+        data = json.loads(out)
+        assert data["ingredients_unconfirmed"] == []
+
 
 class TestIsBlocklisted:
     """测试 _is_blocklisted 辅助函数"""

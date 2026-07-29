@@ -29,6 +29,7 @@ last_api_response.txt
 
 # 测试产物
 test_label.jpg
+!test_label.jpg
 supplement_1.jpg
 supplement_2.jpg
 supplement_3.jpg
@@ -81,6 +82,10 @@ ui_ux_report.html
 # 本地冒烟测试数据与诊断脚本
 data/history.json
 data/history_full.json
+# 会话隔离后的历史记录文件（data/history_<session_id>.json 等）与用户反馈文件
+data/history_*.json
+data/history_full_*.json
+data/feedback.json
 inspect_*.py
 inspect_*.png
 inspect_btn.py
@@ -89,7 +94,9 @@ smoke_history.png
 smoke_detail.png
 smoke_scan*.png
 invalid.jpg
+!invalid.jpg
 test_label_blur.jpg
+!test_label_blur.jpg
 demo_*.png
 
 # TTS demo 生成的音频文件（本地试听，不进仓库）
@@ -104,4 +111,29 @@ server.err
 data/food_scanner.db
 *.db
 !data/gb2760_2024.sqlite
+
+# 本地 SQLite 数据库（含用户扫描记录，不能入仓）
+data/*.db
+
+# 截图 base64 / 分片 / 上传产物
+screenshots/*_b64.txt
+screenshots/*.json
+screenshots/upload_chunks/
+screenshots/test_100k.txt
+
+# 论坛/图片修复一次性脚本
+check_post_content.py
+fix_forum_*.py
+fix_homepage_image.py
+fix_update_logs.py
+home_b64.txt
+
+# 本地服务/上传辅助脚本（含个人路径或 PAT）
+serve_*.py
+upload_*.py
+upload_*.js
+start.ps1
+
+# API 诊断脚本（含真实 key 风险）
+tests/diagnose_api*.py
 

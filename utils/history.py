@@ -1,82 +1,118 @@
-"""历史记录本地 JSON 持久化工具。"""
+"""历史记录本地 JSON 持久化工具.
+
+按浏览器会话隔离：每个会话拥有独立的 history_<session_id>.json /
+history_full_<session_id>.json 文件，避免 Streamlit Cloud 等多用户共享部署下
+不同用户看到彼此的识别历史。对外公开函数签名保持不变，调用方无需改动。
+"""
 
 import json
 import os
+import uuid
 from datetime import datetime
 
 import streamlit as st
 
 from utils.data import _DATA_DIR
 
-# 历史记录本地文件路径
-_HISTORY_PATH = os.path.join(_DATA_DIR, "history.json")
 # 最多保留最近 50 条（超出自动删除最旧的）
 _HISTORY_MAX = 50
-
-# 完整历史快照路径与上限
-# 与 _HISTORY_MAX 对齐：避免详情页索引越界（详情页基于 50 条索引，快照只留 20 条会让 idx=21~49 的记录读不到完整数据）
-_HISTORY_FULL_PATH = os.path.join(_DATA_DIR, "history_full.json")
 _HISTORY_FULL_MAX = 50
 
 
-@st.cache_data(ttl=300)
-def load_history():
-    """读取本地历史记录 JSON，返回 list[dict].
-
-    文件不存在或损坏时返回空列表，不抛异常（初赛版本：刷新不丢失）。
-    每条记录字段：timestamp, product_name, score, type(food/supplement), additives_count。
-    """
-    try:
-        with open(_HISTORY_PATH, encoding="utf-8") as f:
-            data = json.load(f)
-        if isinstance(data, list):
-            return data
-        return []
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return []
+def _get_session_id() -> str:
+    """获取当前浏览器会话的稳定标识，用于隔离每个会话的历史记录文件."""
+    if "history_session_id" not in st.session_state:
+        st.session_state["history_session_id"] = uuid.uuid4().hex[:12]
+    return st.session_state["history_session_id"]
 
 
-def save_history(record):
-    """追加一条历史记录到本地 JSON 文件，并保留最近 50 条.
+def _history_path(session_id: str) -> str:
+    """返回指定会话的历史记录摘要文件路径."""
+    return os.path.join(_DATA_DIR, f"history_{session_id}.json")
 
-    record: dict，至少包含 timestamp/product_name/score/type/additives_count。
-    异常时静默忽略（写入失败不阻断识别主流程）。
-    """
-    try:
-        history = load_history()
-        history.insert(0, record)
-        history = history[:_HISTORY_MAX]  # 截断到最近 50 条
-        os.makedirs(_DATA_DIR, exist_ok=True)  # 兜底确保 data 目录存在
-        with open(_HISTORY_PATH, "w", encoding="utf-8") as f:
-            json.dump(history, f, ensure_ascii=False, indent=2)
-        # 写入后清除缓存，确保展示侧立即刷新
-        load_history.clear()
-    except OSError:
-        # 写入失败不阻断主流程
-        pass
+
+def _history_full_path(session_id: str) -> str:
+    """返回指定会话的完整历史快照文件路径."""
+    return os.path.join(_DATA_DIR, f"history_full_{session_id}.json")
 
 
 @st.cache_data(ttl=300)
-def load_history_full():
-    """读取完整历史快照."""
+def _load_history_for_session(session_id: str):
+    """读取指定会话的历史记录 JSON，返回 list[dict]."""
     try:
-        with open(_HISTORY_FULL_PATH, encoding="utf-8") as f:
+        with open(_history_path(session_id), encoding="utf-8") as f:
             data = json.load(f)
         return data if isinstance(data, list) else []
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return []
 
 
-def save_history_full(result):
-    """保存完整识别结果快照，最多 _HISTORY_FULL_MAX 条."""
+def load_history():
+    """读取当前会话的历史记录，返回 list[dict].
+
+    文件不存在或损坏时返回空列表，不抛异常（初赛版本：刷新不丢失）。
+    每条记录字段：timestamp, product_name, score, type(food/supplement), additives_count。
+    """
+    return _load_history_for_session(_get_session_id())
+
+
+# 公开包装函数需要暴露 .clear()，供 app.py 演示模式(?demo=1)重置缓存使用；
+# 委托给底层被 @st.cache_data 装饰的函数。
+load_history.clear = _load_history_for_session.clear
+
+
+def save_history(record):
+    """追加一条历史记录到当前会话的本地 JSON 文件，并保留最近 50 条.
+
+    record: dict，至少包含 timestamp/product_name/score/type/additives_count。
+    异常时静默忽略（写入失败不阻断识别主流程）。
+    """
+    session_id = _get_session_id()
     try:
-        history = load_history_full()
-        history.insert(0, result)
+        history = _load_history_for_session(session_id)
+        history = [record] + list(history)
+        history = history[:_HISTORY_MAX]  # 截断到最近 50 条
+        os.makedirs(_DATA_DIR, exist_ok=True)  # 兜底确保 data 目录存在
+        with open(_history_path(session_id), "w", encoding="utf-8") as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+        # 写入后清除当前会话的缓存，确保展示侧立即刷新（仅清除本会话，不影响其他会话）
+        _load_history_for_session.clear(session_id)
+    except OSError:
+        # 写入失败不阻断主流程
+        pass
+
+
+@st.cache_data(ttl=300)
+def _load_history_full_for_session(session_id: str):
+    """读取指定会话的完整历史快照."""
+    try:
+        with open(_history_full_path(session_id), encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return []
+
+
+def load_history_full():
+    """读取当前会话的完整历史快照."""
+    return _load_history_full_for_session(_get_session_id())
+
+
+# 同上：暴露 .clear() 供 app.py 演示模式重置缓存使用。
+load_history_full.clear = _load_history_full_for_session.clear
+
+
+def save_history_full(result):
+    """保存完整识别结果快照到当前会话，最多 _HISTORY_FULL_MAX 条."""
+    session_id = _get_session_id()
+    try:
+        history = _load_history_full_for_session(session_id)
+        history = [result] + list(history)
         history = history[:_HISTORY_FULL_MAX]
         os.makedirs(_DATA_DIR, exist_ok=True)
-        with open(_HISTORY_FULL_PATH, "w", encoding="utf-8") as f:
+        with open(_history_full_path(session_id), "w", encoding="utf-8") as f:
             json.dump(history, f, ensure_ascii=False, indent=2)
-        load_history_full.clear()
+        _load_history_full_for_session.clear(session_id)
     except OSError:
         pass
 

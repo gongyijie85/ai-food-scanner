@@ -236,14 +236,14 @@ git push origin HEAD
 ### 7.1 当前方案（JSON 文件）
 
 **存储位置**：
-- `data/history.json`：最近 50 条历史记录摘要（运行期自动生成）
-- `data/history_full.json`：完整识别结果快照（最多 20 条，运行期自动生成）
+- `data/history_<session_id>.json`：最近 50 条历史记录摘要（运行期自动生成，按浏览器会话隔离，session_id 为随机生成的会话标识）
+- `data/history_full_<session_id>.json`：完整识别结果快照（最多 50 条，运行期自动生成，按浏览器会话隔离）
 - 健康档案信息：仅保存在当前浏览器会话的 `st.session_state` 中
 
 **限制**：
-- Streamlit Cloud 多用户共享文件系统，所有用户看到相同的历史记录
-- 容器重启后数据丢失
-- 无用户隔离，存在隐私风险
+- 已按会话隔离（session_id 随机生成），不同用户/不同会话看到各自独立的历史记录，不再互相可见
+- 容器重启或 Streamlit Cloud 共享文件系统回收后，历史文件仍可能丢失
+- 会话标识存于 session_state，非强安全凭证；当前也不提供用户主动删除历史文件的入口
 
 **适用场景**：
 - 初赛 Demo 阶段够用
@@ -269,7 +269,7 @@ CREATE TABLE history (
 );
 
 # 迁移脚本思路
-# 1. 读取 data/history_full.json
+# 1. 读取各会话的 data/history_full_<session_id>.json
 # 2. 解析 JSON 并插入 SQLite
 # 3. 修改 load_history() / save_history() 使用 SQLite
 ```

@@ -61,7 +61,7 @@ def render_health_profile():
         unsafe_allow_html=True,
     )
     st.markdown(
-        "<p style='color:#616161;font-size:13px;margin-bottom:14px;'>"
+        "<p style='color:#616161;font-size:var(--font-size-caption);margin-bottom:14px;'>"
         "多选后，识别结果会据此给出个性化提醒</p>",
         unsafe_allow_html=True,
     )
@@ -144,7 +144,7 @@ def render_health_profile():
         unsafe_allow_html=True,
     )
     st.markdown(
-        "<p style='color:#616161;font-size:13px;margin-bottom:14px;'>"
+        "<p style='color:#616161;font-size:var(--font-size-caption);margin-bottom:14px;'>"
         "选填，用于配料交互提醒</p>",
         unsafe_allow_html=True,
     )

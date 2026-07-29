@@ -19,7 +19,7 @@ def _get_level_info(level: str, status) -> tuple[str, str, str]:
     else:
         label, color, shape = "注意", "#FF9800", "▲"
     # status 是 MatchStatus 枚举或带有 value 属性的对象
-    if getattr(status, "value", "") == "pending":
+    if getattr(status, "value", "") == "pending_rating":
         label = "待确认"
     return label, color, shape
 
