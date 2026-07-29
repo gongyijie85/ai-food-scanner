@@ -41,7 +41,6 @@ def main():
         skip_texts = {
             "拍照识别",
             "健康档案",
-            "查看详情",
             "查看全部历史记录",
             "首页",
             "历史",
@@ -72,8 +71,10 @@ def main():
         page_text = page.locator("body").inner_text()
         assert "沂蒙公社山楂糕" in page_text, "应显示演示模式样例历史记录"
 
-        # 点击第一条历史记录下方的查看详情按钮，进入详情
-        page.get_by_role("button", name="查看详情").first.click()
+        # 历史记录列表为整行可点击按钮（无单独的"查看详情"按钮，
+        # 见 pages/history.py 的 render_history_page），点击已断言
+        # 存在的样例产品行进入详情页
+        page.get_by_role("button", name="沂蒙公社山楂糕").first.click()
         page.wait_for_timeout(1500)
         page.screenshot(path=str(ARTIFACTS_DIR / "smoke_detail.png"), full_page=True)
         assert page.get_by_text("产品详情").first.is_visible()
