@@ -205,7 +205,9 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
             },
         ],
         "temperature": 0,
-        "max_tokens": 2048,
+        # v1.5.0（2026-06-25）已验证 1024 太小会导致 finish_reason=length，
+        # 模型返回空内容或半截 JSON；此处保持 >=4096（勿再为"性能优化"调低）。
+        "max_tokens": 4096,
         "response_format": {"type": "json_object"},
     }
 

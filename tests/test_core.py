@@ -706,6 +706,37 @@ class TestCallApiWithFallback:
         assert result is None
 
 
+class TestCallApiPayload:
+    """回归测试：max_tokens 过低会导致模型响应被截断为空内容.
+
+    v1.5.0（2026-06-25）已定位过一次同样的问题：1024 太小导致
+    finish_reason=length，模型返回空内容或半截 JSON，当时修复为 4096。
+    之后被"性能优化"悄悄改回 2048，在生产环境重新触发了同一个 bug
+    （耗时 103s、status=200、响应长度=0）。这里锁定一个下限，防止再次回归。
+    """
+
+    def test_max_tokens_is_high_enough_to_avoid_truncation(self, monkeypatch):
+        """请求体中的 max_tokens 不应低于 4096，避免长 JSON 响应被截断为空"""
+        from utils.api import call_api
+
+        captured = {}
+
+        class _FakeResp:
+            status_code = 200
+
+            def json(self):
+                return {"choices": [{"message": {"content": "{}"}}]}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["payload"] = json
+            return _FakeResp()
+
+        monkeypatch.setattr("requests.post", fake_post)
+        call_api("fake_key", "fake_base64", "fake_system_prompt")
+
+        assert captured["payload"]["max_tokens"] >= 4096
+
+
 class TestAdditiveRiskRepository:
     """测试应用自定义风险覆盖表（CSV）仓库"""
 

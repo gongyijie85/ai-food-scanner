@@ -1,5 +1,15 @@
 # 变更日志
 
+## v0.10.24 - 2026-07-30
+
+### 修复生产环境识别失败（max_tokens 回归）
+
+- **现象**：Streamlit Cloud 生产日志显示 MiMo 调用耗时 103.71s、`status=200` 但「响应长度=0」，随即误判为"MiMo 调用失败"并降级到 Agnes（Agnes 域名当前对任意路径均返回 `404 Resource not found`，属于第三方服务侧问题，非本仓库代码可修复），最终用户看到"识别服务地址错误"+"识别服务暂时不可用"两条错误
+- **根因**：`utils/api.py` 的 `max_tokens` 在某次"优化性能"改动中从 v1.5.0（2026-06-25）已验证过的 4096 调回 2048，重新触发了当时记录过的同一个 bug——配料表 JSON 较长时模型响应被截断（`finish_reason: length`），`content` 字段返回空字符串
+- **修复**：`max_tokens` 恢复为 4096，并加注释禁止再因"性能优化"调低；新增回归测试 `TestCallApiPayload::test_max_tokens_is_high_enough_to_avoid_truncation`（mock `requests.post` 断言请求体 `max_tokens>=4096`），防止同一问题第三次发生
+- **文档同步**：`CODE_WIKI.md` 更新 max_tokens 说明及历史教训
+- **测试**：`pytest` 134 项通过（新增 1 项）
+
 ## v0.10.23 - 2026-07-28
 
 ### 终审跨任务修复（冒烟测试断言 / gitignore / 文档同步 / 过敏原判定）
