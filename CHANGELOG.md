@@ -1,10 +1,24 @@
 # 变更日志
 
+## v0.10.25 - 2026-07-30
+
+### 修复 Agnes 降级备用完全失效（域名/模型名/鉴权头三处过期）
+
+- **勘误**：v0.10.24 曾把 Agnes 侧的 404 归因为"第三方服务下线，非本仓库代码可修复"——经查 https://www.agnes-ai.com/zh-Hans/docs/agnes-25-flash 证实这个结论是错的，Agnes 服务本身仍在运行，是本仓库的配置三处同时过期了
+- **根因**（`utils/api.py`）：
+  1. `AGNES_API_URL` 用的是 `api.agnes-ai.com`，但当前正确子域名是 `apihub.agnes-ai.com`——旧域名对任意路径（含根路径）都返回统一的 `404 Resource not found`，具有极强误导性
+  2. `AGNES_MODEL_NAME` 是 `agnes-20-flash`，当前正确模型名是 `agnes-2.5-flash`
+  3. `call_api()` 对 Agnes 请求也套用了 MiMo 的 `api-key` 请求头；Agnes 实际要求 `Authorization: Bearer <key>`，用 `api-key` 头会被当作"未提供令牌"直接拒绝，即使 URL/模型名都对也无法通过鉴权
+- **修复**：三处一并修正；`call_api()` 按 `url == AGNES_API_URL` 选择鉴权头风格；实测用假 key 请求，报错从 `404 Resource not found` 变为 `401 无效的令牌`，证明请求已能正确路由到鉴权层
+- **回归测试**：新增 `TestCallApiAgnesAuthHeader`（2 项：Agnes 用 Bearer、MiMo 仍用 api-key 不受影响）
+- **同步修正**：`scripts/local/diagnose_api.py` / `diagnose_api2.py`（诊断脚本此前一直在测一个错的域名）、`README.md` 模型选型表
+- **测试**：`pytest` 136 项通过（新增 2 项）
+
 ## v0.10.24 - 2026-07-30
 
 ### 修复生产环境识别失败（max_tokens 回归）
 
-- **现象**：Streamlit Cloud 生产日志显示 MiMo 调用耗时 103.71s、`status=200` 但「响应长度=0」，随即误判为"MiMo 调用失败"并降级到 Agnes（Agnes 域名当前对任意路径均返回 `404 Resource not found`，属于第三方服务侧问题，非本仓库代码可修复），最终用户看到"识别服务地址错误"+"识别服务暂时不可用"两条错误
+- **现象**：Streamlit Cloud 生产日志显示 MiMo 调用耗时 103.71s、`status=200` 但「响应长度=0」，随即误判为"MiMo 调用失败"并降级到 Agnes（当时把 Agnes 侧 404 误判为第三方服务下线，实际原因见 v0.10.25），最终用户看到"识别服务地址错误"+"识别服务暂时不可用"两条错误
 - **根因**：`utils/api.py` 的 `max_tokens` 在某次"优化性能"改动中从 v1.5.0（2026-06-25）已验证过的 4096 调回 2048，重新触发了当时记录过的同一个 bug——配料表 JSON 较长时模型响应被截断（`finish_reason: length`），`content` 字段返回空字符串
 - **修复**：`max_tokens` 恢复为 4096，并加注释禁止再因"性能优化"调低；新增回归测试 `TestCallApiPayload::test_max_tokens_is_high_enough_to_avoid_truncation`（mock `requests.post` 断言请求体 `max_tokens>=4096`），防止同一问题第三次发生
 - **文档同步**：`CODE_WIKI.md` 更新 max_tokens 说明及历史教训

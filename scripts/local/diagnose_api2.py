@@ -10,19 +10,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 AGNES_KEY = os.getenv("AGNES_API_KEY", "")
-AGNES_URL = "https://api.agnes-ai.com/v1/chat/completions"
+# 2026-07-30 核實 https://www.agnes-ai.com/zh-Hans/docs/agnes-25-flash：
+# 正确 base URL 是 apihub 子域名（旧的 api.agnes-ai.com 对任何路径都返回
+# 404 Resource not found，域名本身就是错的，不是模型名问题）。
+AGNES_URL = "https://apihub.agnes-ai.com/v1/chat/completions"
 
-# 尝试多种模型名称变体
+# 尝试多种模型名称变体（确认 agnes-2.5-flash 为准确名称后，其余仅作保留排查）
 model_names = [
-    "Agnes-2.0-Flash",
-    "Agnes-2.0-flash",
+    "agnes-2.5-flash",
+    "Agnes-2.5-Flash",
     "agnes-2.0-flash",
-    "agnes-2.0-Flash",
-    "Agnes-20-Flash",
     "agnes-20-flash",
 ]
 
-headers = {"api-key": AGNES_KEY, "Content-Type": "application/json"}
+headers = {"Authorization": f"Bearer {AGNES_KEY}", "Content-Type": "application/json"}
 
 for model in model_names:
     payload = {

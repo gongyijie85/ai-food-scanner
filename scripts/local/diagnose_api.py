@@ -14,7 +14,7 @@ MIMO_KEY = os.getenv("MIMO_API_KEY", "")
 AGNES_KEY = os.getenv("AGNES_API_KEY", "")
 
 MIMO_URL = "https://token-plan-sgp.xiaomimimo.com/v1/chat/completions"
-AGNES_URL = "https://api.agnes-ai.com/v1/chat/completions"
+AGNES_URL = "https://apihub.agnes-ai.com/v1/chat/completions"
 
 print("=" * 50)
 print("API连接诊断")
@@ -33,7 +33,14 @@ def test_api(name, url, api_key, model_name):
         return False
 
     # 构建最小请求（文本模式，不需要图片）
-    headers = {"api-key": api_key, "Content-Type": "application/json"}
+    # Agnes 用 Authorization: Bearer 鑑權，MiMo 用 api-key（两者不通用）
+    if "agnes" in url:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+    else:
+        headers = {"api-key": api_key, "Content-Type": "application/json"}
     payload = {
         "model": model_name,
         "messages": [
@@ -77,7 +84,7 @@ def test_api(name, url, api_key, model_name):
 # 测试两个API
 mimo_ok = test_api("MiMo", MIMO_URL, MIMO_KEY, "mimo-v2.5")
 print()
-agnes_ok = test_api("Agnes", AGNES_URL, AGNES_KEY, "Agnes-2.0-Flash")
+agnes_ok = test_api("Agnes", AGNES_URL, AGNES_KEY, "agnes-2.5-flash")
 
 print()
 print("=" * 50)

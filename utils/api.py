@@ -26,8 +26,11 @@ API_URL = "https://token-plan-sgp.xiaomimimo.com/v1/chat/completions"
 MODEL_NAME = "mimo-v2.5"
 
 # Agnes 降級備用模型（僅在 MiMo 失敗時調用）
-AGNES_API_URL = "https://api.agnes-ai.com/v1/chat/completions"
-AGNES_MODEL_NAME = "agnes-20-flash"
+# 2026-07-30 核實 https://www.agnes-ai.com/zh-Hans/docs/agnes-25-flash：
+# base URL 是 apihub（非 api）子域名，模型名是 agnes-2.5-flash（非 agnes-20-flash），
+# 鑑權需要 Authorization: Bearer（非 MiMo 用的 api-key），否則會拿到 401/404。
+AGNES_API_URL = "https://apihub.agnes-ai.com/v1/chat/completions"
+AGNES_MODEL_NAME = "agnes-2.5-flash"
 
 # 建议文案模板（降低模型随机性，统一兜底）
 # 键必须与 CONDITION_ITEMS 中的疾病名一致；"孕妇/儿童" 永不匹配（HEALTH_GROUPS 无此组合），已移除
@@ -185,7 +188,14 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
         if detail:
             logger.error(f"API错误详情: {detail}")
 
-    headers = {"api-key": api_key, "Content-Type": "application/json"}
+    # Agnes 用 Authorization: Bearer 鑑權，MiMo 用 api-key；两者不通用
+    if url == AGNES_API_URL:
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+    else:
+        headers = {"api-key": api_key, "Content-Type": "application/json"}
     payload = {
         "model": model,
         "messages": [

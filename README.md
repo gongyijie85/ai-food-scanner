@@ -171,7 +171,7 @@ Yuka（8000 万用户）、薄荷健康、营养盒子、Foodvisor、MyFitnessPa
 | 层 | 选型 | 原因 |
 |----|------|------|
 | 多模态 API | MiMo Vision (mimo-v2.5) | 小米自研，Token Plan 价格低，已验证支持图片输入 |
-| 降级备用 | Agnes-2.0-Flash | MiMo 失败时自动切换，免费额度兜底 |
+| 降级备用 | Agnes-2.5-Flash | MiMo 失败时自动切换，免费额度兜底 |
 | 框架 | Streamlit | Python 一键 Web 化，开发快，演示友好 |
 | 适老化样式 | 自研 CSS | 正文 18px、48px+ 触摸区域、高对比度（部分辅助信息为 12–14px） |
 | 语音播报 | 浏览器原生 SpeechSynthesis | 零依赖，Microsoft Yaoyao 女声 |

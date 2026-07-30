@@ -737,6 +737,68 @@ class TestCallApiPayload:
         assert captured["payload"]["max_tokens"] >= 4096
 
 
+class TestCallApiAgnesAuthHeader:
+    """回归测试：Agnes 与 MiMo 使用不同的鉴权请求头.
+
+    据 https://www.agnes-ai.com/zh-Hans/docs/agnes-25-flash（2026-07-30 核实）：
+    Agnes 当前正确的 base URL 是 apihub.agnes-ai.com（而非 api.agnes-ai.com），
+    模型名是 agnes-2.5-flash（而非 agnes-20-flash），且鉴权头必须是
+    `Authorization: Bearer <key>`，不是 MiMo 用的 `api-key: <key>`。
+    此前代码对两个 provider 使用同一套 `api-key` 请求头，导致 Agnes 侧
+    永远拿到"未提供令牌"而 404/401，使备用降级完全失效。
+    """
+
+    def test_agnes_url_uses_bearer_auth_header(self, monkeypatch):
+        """请求 AGNES_API_URL 时应使用 Authorization: Bearer，而非 api-key"""
+        from utils.api import AGNES_API_URL, AGNES_MODEL_NAME, call_api
+
+        captured = {}
+
+        class _FakeResp:
+            status_code = 200
+
+            def json(self):
+                return {"choices": [{"message": {"content": "{}"}}]}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["headers"] = headers
+            return _FakeResp()
+
+        monkeypatch.setattr("requests.post", fake_post)
+        call_api(
+            "fake_agnes_key",
+            "fake_base64",
+            "fake_system_prompt",
+            url=AGNES_API_URL,
+            model=AGNES_MODEL_NAME,
+        )
+
+        assert captured["headers"].get("Authorization") == "Bearer fake_agnes_key"
+        assert "api-key" not in captured["headers"]
+
+    def test_mimo_url_still_uses_api_key_header(self, monkeypatch):
+        """默认 MiMo 请求应保持使用 api-key 请求头（不应被 Agnes 修复误改）"""
+        from utils.api import call_api
+
+        captured = {}
+
+        class _FakeResp:
+            status_code = 200
+
+            def json(self):
+                return {"choices": [{"message": {"content": "{}"}}]}
+
+        def fake_post(url, headers=None, json=None, timeout=None):
+            captured["headers"] = headers
+            return _FakeResp()
+
+        monkeypatch.setattr("requests.post", fake_post)
+        call_api("fake_mimo_key", "fake_base64", "fake_system_prompt")
+
+        assert captured["headers"].get("api-key") == "fake_mimo_key"
+        assert "Authorization" not in captured["headers"]
+
+
 class TestAdditiveRiskRepository:
     """测试应用自定义风险覆盖表（CSV）仓库"""
 
