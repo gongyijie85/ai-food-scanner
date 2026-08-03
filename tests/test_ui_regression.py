@@ -26,7 +26,7 @@ class TestHistoryButtonLabel:
         label = _history_button_label(
             item={},
             score=100,
-            status_text="良好",
+            status_text="较省心",
             bar_color="#43A047",
             name="测试产品",
             additives_count=2,
@@ -34,7 +34,7 @@ class TestHistoryButtonLabel:
         )
         assert "测试产品" in label
         assert "100" in label
-        assert "良好" in label
+        assert "较省心" in label
         assert "2种添加剂" in label
         assert "2026-07-14" in label
 
@@ -43,7 +43,7 @@ class TestHistoryButtonLabel:
         label = _history_button_label(
             item={},
             score=85,
-            status_text="良好",
+            status_text="较省心",
             bar_color="#43A047",
             name="<b>测试</b>",
             additives_count=0,
@@ -57,7 +57,7 @@ class TestHistoryButtonLabel:
         safe = _history_button_label(
             item={},
             score=80,
-            status_text="良好",
+            status_text="较省心",
             bar_color="#43A047",
             name="A",
             additives_count=0,
@@ -66,8 +66,8 @@ class TestHistoryButtonLabel:
         caution = _history_button_label(
             item={},
             score=60,
-            status_text="注意",
-            bar_color="#F57F17",
+            status_text="要注意",
+            bar_color="#FF9800",
             name="B",
             additives_count=0,
             ts="2026-07-14",
@@ -75,7 +75,7 @@ class TestHistoryButtonLabel:
         danger = _history_button_label(
             item={},
             score=59,
-            status_text="高风险",
+            status_text="建议少吃",
             bar_color="#E53935",
             name="C",
             additives_count=0,
@@ -93,7 +93,7 @@ class TestHistoryRowLabel:
         """标签应包含产品名、分数、状态、添加剂数量、日期."""
         label = _history_row_label(
             score=92,
-            status_text="良好",
+            status_text="较省心",
             bar_color="#43A047",
             name="历史产品",
             additives_count=1,
@@ -101,7 +101,7 @@ class TestHistoryRowLabel:
         )
         assert "历史产品" in label
         assert "92" in label
-        assert "良好" in label
+        assert "较省心" in label
         assert "1种添加剂" in label
         assert "2026-07-13" in label
 
@@ -109,7 +109,7 @@ class TestHistoryRowLabel:
         """标签不能包含 HTML 标签."""
         label = _history_row_label(
             score=55,
-            status_text="高风险",
+            status_text="建议少吃",
             bar_color="#E53935",
             name="<script>alert(1)</script>",
             additives_count=3,

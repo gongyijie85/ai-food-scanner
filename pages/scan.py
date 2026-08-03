@@ -5,7 +5,8 @@ import os
 import streamlit as st
 from PIL import Image
 
-from components import render_error, render_top_nav
+from components import render_top_nav
+from components.scan_guide import render_scan_fail_block, render_scan_guide_block
 from components.user_guide import render_user_guide
 from utils.api import (
     AGNES_API_URL,
@@ -16,6 +17,7 @@ from utils.api import (
     call_api_with_fallback,
     encode_image_to_base64,
     get_api_key,
+    get_last_api_error,
     normalize_model_output,
     parse_result,
 )
@@ -88,13 +90,20 @@ def _scan_validate_and_recognize(uploaded, api_key, groups):
             st.session_state["last_result"] = result
             add_history(result, default_engine=MODEL_NAME)
             st.session_state["scan_upload_key"] += 1
+            st.session_state.pop("scan_fail_kind", None)
             switch_page("result")
         else:
             status.update(label="识别失败", state="error")
-            if raw:
-                render_error("返回内容不是合法 JSON", "请重试或更换图片")
+            # 优先按 API 错误分类（auth/network），勿把密钥问题说成「拍糊了」
+            api_code = (get_last_api_error() or {}).get("code")
+            if api_code in ("auth", "network", "busy", "parse"):
+                kind = api_code
+            elif raw:
+                kind = "json"
             else:
-                render_error("识别服务暂时不可用", "请检查网络或 API 密钥后重试")
+                kind = "network"
+            st.session_state["scan_fail_kind"] = kind
+            st.rerun()
 
 
 def _render_recent_scans():
@@ -128,20 +137,43 @@ def _render_recent_scans():
 
 
 def render_scan_page():
-    """扫描上传页：统一图片上传入口."""
+    """扫描上传页：统一图片上传入口 + 拍得清引导."""
     render_top_nav("扫描识别", back_target="home")
     render_user_guide("scan")
 
     groups, api_key, uploader_key = _scan_common_setup()
 
+    # 失败恢复：按 auth/network/json 等分类展示（密钥问题勿说成拍糊）
+    fail_kind = st.session_state.get("scan_fail_kind")
+    _fail_ok = (
+        "json",
+        "network",
+        "format",
+        "oversize",
+        "auth",
+        "busy",
+        "parse",
+        "generic",
+    )
+    if fail_kind:
+        kind = fail_kind if fail_kind in _fail_ok else "generic"
+        render_scan_fail_block(kind)
+        if kind == "auth":
+            dismiss = "知道了，去更新密钥"
+        elif kind in ("network", "busy"):
+            dismiss = "知道了，稍后重试"
+        else:
+            dismiss = "知道了，我重新拍"
+        if st.button(dismiss, key="scan_fail_dismiss", width="stretch"):
+            st.session_state.pop("scan_fail_kind", None)
+            st.rerun()
+    else:
+        render_scan_guide_block(show_compare=True)
+
     st.markdown(
-        "<div class='scan-page-tip-wrap'>"
-        "<p class='scan-page-tip'>对准包装上的「配料表」文字拍照</p>"
-        "<p class='scan-page-tip-sub'>小字要清晰、光线够亮、尽量平行；模糊或只拍了产品正面容易识别失败</p>"
-        "</div>",
+        "<p class='scan-upload-label'>选择或拍摄配料表照片</p>",
         unsafe_allow_html=True,
     )
-
     st.markdown("<div class='scan-upload-marker'></div>", unsafe_allow_html=True)
     # 统一图片上传入口：手机端自动支持拍照或相册，桌面端为文件选择
     uploaded_file = st.file_uploader(
@@ -158,13 +190,17 @@ def render_scan_page():
             Image.open(uploaded_file).verify()
             uploaded_file.seek(0)
         except Exception:
-            st.error("文件格式似乎不是有效图片，请重新上传 jpg/png")
+            render_scan_fail_block("format")
+            st.stop()
+
+        if uploaded_file.size > 5 * 1024 * 1024:
+            render_scan_fail_block("oversize")
             st.stop()
 
         st.markdown(
             f"<div class='scan-preview-info'>已选择："
             f"{_safe(getattr(uploaded_file, 'name', '未命名'))} · "
-            f"{uploaded_file.size / 1024:.0f}KB</div>",
+            f"{uploaded_file.size / 1024:.0f}KB · 请确认是「配料表」那一面</div>",
             unsafe_allow_html=True,
         )
         st.image(uploaded_file, width="stretch")
@@ -173,11 +209,13 @@ def render_scan_page():
         with col1:
             if st.button("重新选择", key="scan_retake", width="stretch"):
                 st.session_state["scan_upload_key"] += 1
+                st.session_state.pop("scan_fail_kind", None)
                 st.rerun()
         with col2:
             if st.button(
                 "开始识别", type="primary", key="scan_confirm", width="stretch"
             ):
+                st.session_state.pop("scan_fail_kind", None)
                 _scan_validate_and_recognize(uploaded_file, api_key, groups)
 
     # 最近识别

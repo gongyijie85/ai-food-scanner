@@ -656,7 +656,9 @@ class TestCallApiWithFallback:
 
         call_count = {"mimo": 0, "agnes": 0}
 
-        def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
+        def mock_call_api(
+            api_key, image_b64, system_prompt, url=None, model=None, **kwargs
+        ):
             if url and "agnes" in url:
                 call_count["agnes"] += 1
                 return "agnes_result"
@@ -677,7 +679,9 @@ class TestCallApiWithFallback:
 
         call_count = {"mimo": 0, "agnes": 0}
 
-        def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
+        def mock_call_api(
+            api_key, image_b64, system_prompt, url=None, model=None, **kwargs
+        ):
             if url and "agnes" in url:
                 call_count["agnes"] += 1
                 return "agnes_result"
@@ -697,7 +701,9 @@ class TestCallApiWithFallback:
         """MiMo 失敗且無 Agnes key 時應返回 None"""
         from utils.api import call_api_with_fallback
 
-        def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
+        def mock_call_api(
+            api_key, image_b64, system_prompt, url=None, model=None, **kwargs
+        ):
             return None
 
         monkeypatch.setattr("utils.api.call_api", mock_call_api)
@@ -706,13 +712,17 @@ class TestCallApiWithFallback:
 
     def test_mimo_fail_agnes_also_fail_returns_none(self, monkeypatch):
         """MiMo 和 Agnes 都失敗時應返回 None"""
-        from utils.api import call_api_with_fallback
+        from utils.api import call_api_with_fallback, _set_last_api_error
 
-        def mock_call_api(api_key, image_b64, system_prompt, url=None, model=None):
+        def mock_call_api(
+            api_key, image_b64, system_prompt, url=None, model=None, **kwargs
+        ):
+            _set_last_api_error("network", "down")
             return None
 
         monkeypatch.setattr("utils.api.call_api", mock_call_api)
         monkeypatch.setattr("streamlit.toast", lambda *a, **kw: None)
+        monkeypatch.setattr("streamlit.error", lambda *a, **kw: None)
         result = call_api_with_fallback(
             "mimo_key", "img", "prompt", agnes_key="agnes_key"
         )

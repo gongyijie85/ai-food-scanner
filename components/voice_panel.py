@@ -93,15 +93,16 @@ def voice_control_panel(
   button {{ font-family:inherit; cursor:pointer; border-radius:999px; font-weight:700; border:none;
     min-height:52px; padding:12px 18px; font-size:17px; -webkit-tap-highlight-color:transparent; }}
   #speak-{uid} {{ flex:1 1 100%; background:linear-gradient(135deg,#2E7D32,#43A047); color:#fff;
-    box-shadow:0 4px 14px rgba(46,125,50,.28); }}
+    box-shadow:0 4px 14px rgba(46,125,50,.28); letter-spacing:0.02em; }}
+  #speak-{uid}.is-playing {{ background:linear-gradient(135deg,#E65100,#FF9800); }}
   #stop-{uid} {{ flex:1 1 auto; min-width:96px; background:#fff; color:#555; border:2px solid #ddd; }}
   #err-{uid} {{ width:100%; color:#C62828; font-size:14px; min-height:1.2em; }}
-  #meta-{uid} {{ width:100%; color:#888; font-size:12px; }}
+  #meta-{uid} {{ width:100%; color:#888; font-size:13px; line-height:1.4; }}
   audio {{ display:none; }}
 </style></head><body>
 <div class="wrap">
-  <button type="button" id="speak-{uid}">听结果</button>
-  <button type="button" id="stop-{uid}">停止</button>
+  <button type="button" id="speak-{uid}" aria-label="听结果">听结果</button>
+  <button type="button" id="stop-{uid}" aria-label="停止朗读">停止</button>
   <div id="err-{uid}"></div>
   <div id="meta-{uid}">音色：{html.escape(engine_label)} · 预览：{preview_esc}</div>
 </div>
@@ -156,7 +157,17 @@ def voice_control_panel(
     return out.length?out:[text.slice(0,maxLen)];
   }}
   function finish() {{
-    if (speakBtn) {{ speakBtn.disabled=false; speakBtn.innerHTML=label0; }}
+    if (speakBtn) {{
+      speakBtn.disabled=false;
+      speakBtn.innerHTML=label0;
+      speakBtn.classList.remove("is-playing");
+    }}
+  }}
+  function markPlaying() {{
+    if (speakBtn) {{
+      speakBtn.innerHTML="正在读… 可点停止";
+      speakBtn.classList.add("is-playing");
+    }}
   }}
   function speakBrowser() {{
     if (!synth) {{
@@ -208,8 +219,7 @@ def voice_control_panel(
   if (speakBtn) speakBtn.addEventListener("click", function(ev) {{
     ev.preventDefault();
     setErr("");
-    speakBtn.innerHTML = "播报中…";
-    speakBtn.disabled = true;
+    markPlaying();
     if (AUDIO_B64) speakCloud(); else speakBrowser();
   }});
   if (stopBtn) stopBtn.addEventListener("click", function(ev) {{

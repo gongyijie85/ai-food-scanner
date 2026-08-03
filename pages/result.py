@@ -21,7 +21,11 @@ from utils.data import (
     get_additive_risk_repository,
     load_health_data,
 )
-from utils.display import short_product_name, status_copy_for_result
+from utils.display import (
+    family_conclusion_for_result,
+    short_product_name,
+    status_copy_for_result,
+)
 from utils.helpers import detect_device_type, switch_page
 from utils.security import _safe
 
@@ -200,8 +204,10 @@ def render_food_page(result):
     additives = result.get("additives", [])
     display_name = short_product_name(product_name)
     status_label, status_meaning, score_class = status_copy_for_result(score, additives)
+    family_line, family_tone = family_conclusion_for_result(score, additives)
 
     render_top_nav("识别结果", back_target="home")
+    # 结果页指引默认收起，避免挤占「一句话结论」首屏
     render_user_guide("result")
 
     # 1) 配料参考分摘要（短名 + 与添加剂一致的状态）
@@ -215,6 +221,15 @@ def render_food_page(result):
     if display_name != (product_name or "").strip() and product_name:
         st.caption(f"全称：{_safe(product_name)}")
 
+    # 1b) 家人一句话结论（结论优先）
+    st.markdown(
+        f"<div class='family-verdict family-verdict-{_safe(family_tone)}' role='status'>"
+        f"<span class='family-verdict-kicker'>一句话</span>"
+        f"<p class='family-verdict-text'>{_safe(family_line)}</p>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
     # 2) 个性化警告
     warnings = _analyze_warnings(result)
     if warnings:
@@ -222,14 +237,22 @@ def render_food_page(result):
 
     # 3) 语音提前到中部，手机端少滚动（手势路径更稳）
     speak_content = _build_speak_content(result, warnings)
+    # 语音稿开头带上家庭结论，听感与屏幕一致
+    if family_line and not speak_content.startswith("给家人"):
+        speak_content = family_line + "。" + speak_content
     voice_control_panel(
         speak_content,
         key_prefix="tts_food",
         button_text=f"{_ICON_SPEAKER} 听结果",
         wrapper_class="voice-controls voice-controls-primary",
     )
+    st.markdown(
+        "<p class='voice-hint-line'>点上方绿色大按钮，可听完整结果"
+        "（微信内若无声，请用系统浏览器打开）</p>",
+        unsafe_allow_html=True,
+    )
 
-    # 4) 添加剂匹配
+    # 4) 添加剂匹配（默认只展开需留意项）
     _render_additive_card(additives)
 
     # 5) 一般饮食建议
@@ -446,10 +469,30 @@ def render_result_page():
     """结果页：分发食品/保健食品."""
     result = st.session_state.get("last_result")
     if not result:
-        render_empty_state("暂无识别结果", "请返回首页扫描")
+        render_empty_state(
+            "暂无识别结果",
+            "请先扫描配料表；本地预览样式可加载示例结果。",
+        )
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button(
+                "查看示例结果", use_container_width=True, key="result_empty_sample"
+            ):
+                from utils.sample_result import build_sample_food_result
+
+                st.session_state["last_result"] = build_sample_food_result()
+                st.rerun()
+        with col_b:
+            if st.button("去扫描", use_container_width=True, key="result_empty_scan"):
+                switch_page("scan")
         if st.button("返回首页", use_container_width=True, key="result_empty_home"):
             switch_page("home")
         return
+    if result.get("_offline") or result.get("_sample_preview"):
+        note = result.get("_offline_note") or (
+            "当前为本地示例/离线配料解析（未调用识别 API），仅供预览。"
+        )
+        st.caption(str(note))
     if result.get("type") == "supplement":
         render_supplement_page(result)
     else:

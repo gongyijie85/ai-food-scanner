@@ -1,0 +1,51 @@
+{
+  "type": "food",
+  "product_name": "沂蒙公社广白巧好山楂",
+  "ocr_text": "配料表：山楂、白砂糖、果胶、柠檬酸。",
+  "ingredients": [
+    "山楂",
+    "白砂糖",
+    "果胶",
+    "柠檬酸"
+  ],
+  "additives": [
+    {
+      "name": "果胶",
+      "ai_inferred": false,
+      "level": "A",
+      "status": "rated",
+      "canonical_name": "果胶",
+      "cns": "20.006",
+      "function": "乳化剂 稳定剂 增稠剂",
+      "code": "440",
+      "ins": "440",
+      "note": "增稠剂"
+    },
+    {
+      "name": "柠檬酸",
+      "ai_inferred": false,
+      "level": "A",
+      "status": "rated",
+      "canonical_name": "柠檬酸",
+      "cns": "01.101",
+      "function": "酸度调节剂 抗氧化剂",
+      "code": "330",
+      "ins": "330",
+      "note": "常见酸度调节剂"
+    }
+  ],
+  "advice": "普通人群可适量食用，建议保持均衡饮食。",
+  "nutrition_nrv": {
+    "能量": "1471千焦 18%",
+    "蛋白质": "0.3克 1%",
+    "脂肪": "0.3克 1%",
+    "碳水化合物": "85.5克 29%",
+    "钠": "18毫克 1%"
+  },
+  "ingredients_unconfirmed": [],
+  "score": 100,
+  "_offline": true,
+  "_offline_note": "API 密钥无效时的本地配料解析预览（配料据包装照片人工校对）",
+  "scan_date": "2026-08-03",
+  "timestamp": "2026-08-03T14:00:00"
+}

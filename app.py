@@ -4,6 +4,8 @@
 运行环境：Python 3.10+
 依赖：pip install streamlit requests pillow
 运行命令：streamlit run app.py
+本地直达结果页（示例数据）：streamlit run app.py 后打开
+  http://localhost:8501/?page=result&sample=1&device=mobile
 """
 
 import logging
@@ -37,6 +39,7 @@ from pages import (
 from utils.constants import _BASE_DIR
 from utils.helpers import detect_device_type, switch_page
 from utils.history import show_history
+from utils.sample_result import apply_deep_link
 from utils.security import _safe
 
 # ========== 日志配置 ==========
@@ -49,8 +52,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ai-food-scanner")
 
-# 加载本地 .env（如果存在），便于本地测试；Streamlit Cloud 仍使用 Secrets
-load_dotenv()
+# 本地优先使用项目根目录 .env（override=True）。
+# 默认 load_dotenv() 不会覆盖已有 OS 环境变量；本机若残留过期/错误的
+# MIMO_API_KEY（例如 IDE/其它工具注入的 tp-eyJ... JWT 形态），会把 .env 里
+# 有效的 Token Plan 密钥盖掉，表现为 401 Invalid API Key。
+# Streamlit Cloud 通常没有 .env，仍走 Secrets / 平台环境变量。
+_env_file = _PROJECT_ROOT / ".env"
+if _env_file.is_file():
+    load_dotenv(_env_file, override=True)
+else:
+    load_dotenv()
 
 
 # ========== 适老化样式 ==========
@@ -251,6 +262,9 @@ def main():
 
     # 评委快速模式：URL ?demo=1 自动完成法律同意与引导
     _apply_demo_mode()
+
+    # 深链：?page=result&sample=1 等（本地预览样式 / 直达结果页）
+    apply_deep_link(st.session_state, st.query_params)
 
     # 首次访问：先法律同意，再触发 4 步引导
     if "legal_agreed" not in st.session_state:

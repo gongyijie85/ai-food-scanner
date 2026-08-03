@@ -14,7 +14,10 @@ from components import (
 from utils.api import MODEL_NAME
 from utils.display import (
     build_detail_speak,
+    family_conclusion_for_result,
+    filter_history_entries,
     format_scan_time,
+    history_band_for_score,
     short_product_name,
     status_copy_for_result,
 )
@@ -39,8 +42,13 @@ def _history_row_label(score, status_text, bar_color, name, additives_count, ts)
 
 
 def render_history_page():
-    """历史记录页：搜索栏 + 分段控制器 + 整行可点击列表."""
+    """历史记录页：搜索 +「要注意」筛选 + 整行可点击列表."""
     render_top_nav("历史记录", back_target="home")
+
+    st.markdown(
+        "<p class='history-page-hint'>筛选「要注意」可快速复盘少买/留意的商品</p>",
+        unsafe_allow_html=True,
+    )
 
     # 搜索栏（原生 st.text_input）
     search = st.text_input(
@@ -50,44 +58,40 @@ def render_history_page():
         label_visibility="collapsed",
     )
 
-    # 风险筛选：原生 segmented_control，无需手动 rerun
-    filter_options = ["全部", "良好", "注意", "高风险"]
+    # 档位筛选：全部 / 要注意（&lt;80）/ 较省心（≥80）
+    # 新 key 避免旧 segmented 会话态残留「良好/高风险」
+    filter_options = ["全部", "要注意", "较省心"]
     current_filter = (
         st.segmented_control(
-            "风险筛选",
+            "记录筛选",
             options=filter_options,
             default="全部",
-            key="history_filter_segmented",
+            key="history_filter_band_v2",
             label_visibility="collapsed",
         )
         or "全部"
     )
 
     history = load_history()
-    filtered = []
-    for idx, item in enumerate(history):
-        name = item.get("product_name", "")
-        score = item.get("score", 0)
-        if search and search.lower() not in name.lower():
-            continue
-        if current_filter == "良好" and score < 80:
-            continue
-        if current_filter == "注意" and not (60 <= score < 80):
-            continue
-        if current_filter == "高风险" and score >= 60:
-            continue
-        filtered.append((idx, item))
+    filtered = filter_history_entries(history, search=search or "", band=current_filter)
 
     if not filtered:
         if not history:
             render_empty_state("还没有扫描记录", "去首页拍第一张配料表吧")
             if st.button(
-                "开始扫描",
+                "拍配料表",
                 type="primary",
                 width="stretch",
                 key="hist_empty_scan",
             ):
                 switch_page("scan")
+        elif current_filter == "要注意":
+            st.success("当前没有「要注意」的记录，挺好的")
+            if st.button("查看全部记录", key="hist_show_all", width="stretch"):
+                st.session_state["history_filter_band_v2"] = "全部"
+                st.rerun()
+        elif current_filter == "较省心":
+            st.info("还没有较省心的记录，去拍一张配料表试试")
         else:
             st.info("没有匹配的记录")
         return
@@ -95,12 +99,7 @@ def render_history_page():
     # 历史列表：整行可点击按钮
     for idx, item in filtered:
         score = item.get("score", 0)
-        if score >= 80:
-            status_class, status_text, bar_color = "safe", "良好", "#43A047"
-        elif score >= 60:
-            status_class, status_text, bar_color = "caution", "注意", "#F57F17"
-        else:
-            status_class, status_text, bar_color = "danger", "高风险", "#C62828"
+        status_class, status_text, bar_color = history_band_for_score(score)
         ts = format_scan_time(item.get("timestamp", ""))
         # 列表只显示日期部分更短
         if "日" in ts:
@@ -150,6 +149,7 @@ def render_detail_page():
 
     display_name = short_product_name(product_name)
     label, meaning, score_class = status_copy_for_result(score, additives)
+    family_line, family_tone = family_conclusion_for_result(score, additives)
 
     render_top_nav("产品详情", back_target=st.session_state.get("prev_page", "home"))
 
@@ -171,10 +171,20 @@ def render_detail_page():
     if display_name != (product_name or "").strip() and product_name:
         st.caption(f"全称：{_safe(product_name)}")
 
+    st.markdown(
+        f"<div class='family-verdict family-verdict-{_safe(family_tone)}' role='status'>"
+        f"<span class='family-verdict-kicker'>一句话</span>"
+        f"<p class='family-verdict-text'>{_safe(family_line)}</p>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
     # 语音（子女回看历史时也能听）
     speak = build_detail_speak(
         product_name, score, additives, advice=advice, ingredients=ingredients
     )
+    if family_line and not speak.startswith("给家人"):
+        speak = family_line + "。" + speak
     voice_control_panel(
         speak,
         key_prefix="tts_detail",

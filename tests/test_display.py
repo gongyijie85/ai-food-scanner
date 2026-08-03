@@ -2,8 +2,14 @@
 
 from utils.display import (
     build_detail_speak,
+    family_conclusion_for_result,
+    filter_history_entries,
     format_scan_time,
+    history_band_for_score,
+    history_needs_attention,
+    is_attention_additive,
     short_product_name,
+    split_additives_by_attention,
     status_copy_for_result,
 )
 
@@ -56,3 +62,69 @@ class TestBuildDetailSpeak:
         assert "92" in text
         assert "山梨糖醇" in text
         assert "参考" in text
+
+
+class TestFamilyConclusion:
+    def test_caution_mentions_additive(self):
+        text, tone = family_conclusion_for_result(
+            72, [{"name": "阿斯巴甜", "level": "B"}]
+        )
+        assert tone == "caution"
+        assert "偶尔" in text
+        assert "阿斯巴甜" in text
+        assert text.startswith("给家人")
+
+    def test_danger_prefers_less(self):
+        text, tone = family_conclusion_for_result(
+            40, [{"name": "胭脂红", "level": "C"}]
+        )
+        assert tone == "danger"
+        assert "少" in text
+        assert "胭脂红" in text
+
+    def test_safe_calm_copy(self):
+        text, tone = family_conclusion_for_result(
+            95, [{"name": "甜菊糖苷", "level": "A"}]
+        )
+        assert tone == "safe"
+        assert "省心" in text
+
+
+class TestHistoryBandAndFilter:
+    def test_band_copy(self):
+        assert history_band_for_score(90)[1] == "较省心"
+        assert history_band_for_score(70)[1] == "要注意"
+        assert history_band_for_score(40)[1] == "建议少吃"
+        assert history_needs_attention(79) is True
+        assert history_needs_attention(80) is False
+
+    def test_filter_attention_and_safe(self):
+        hist = [
+            {"product_name": "A饼干", "score": 90},
+            {"product_name": "B薯片", "score": 55},
+            {"product_name": "C糖", "score": 72},
+        ]
+        att = filter_history_entries(hist, band="要注意")
+        assert [x[1]["product_name"] for x in att] == ["B薯片", "C糖"]
+        safe = filter_history_entries(hist, band="较省心")
+        assert [x[1]["product_name"] for x in safe] == ["A饼干"]
+        q = filter_history_entries(hist, search="薯", band="全部")
+        assert len(q) == 1 and q[0][1]["product_name"] == "B薯片"
+
+
+class TestSplitAdditives:
+    def test_a_is_friendly_b_is_attention(self):
+        assert is_attention_additive({"name": "x", "level": "A"}) is False
+        assert is_attention_additive({"name": "y", "level": "B"}) is True
+        att, fri = split_additives_by_attention(
+            [
+                {"name": "山梨酸钾", "level": "A"},
+                {"name": "阿斯巴甜", "level": "B"},
+                {"name": "胭脂红", "level": "C"},
+            ]
+        )
+        names_att = [a["name"] for a in att]
+        names_fri = [a["name"] for a in fri]
+        assert names_fri == ["山梨酸钾"]
+        assert names_att[0] == "胭脂红"
+        assert "阿斯巴甜" in names_att

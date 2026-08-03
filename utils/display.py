@@ -63,6 +63,106 @@ def format_scan_time(ts: str) -> str:
     return raw[:16]
 
 
+def _additive_status_str(item: Any) -> str:
+    if not isinstance(item, dict):
+        return ""
+    status = item.get("status")
+    if hasattr(status, "value"):
+        return str(status.value or "").lower()
+    return str(status or "").lower()
+
+
+def is_attention_additive(item: Any) -> bool:
+    """是否默认展示在「需要留意」列表（非较友好 A 级）。"""
+    if not isinstance(item, dict):
+        return True
+    status = _additive_status_str(item)
+    if status in ("unmatched", "pending_rating"):
+        return True
+    level = str(item.get("level", "") or "").upper()
+    if level == "A":
+        return False
+    # B/C/空 level：默认需要人看一眼
+    return True
+
+
+def split_additives_by_attention(
+    additives: Sequence[Any] | None,
+) -> Tuple[List[Any], List[Any]]:
+    """拆成 (需要留意, 较友好)， internally 仍按风险大致排序。"""
+    attention: List[Any] = []
+    friendly: List[Any] = []
+    for a in additives or []:
+        if is_attention_additive(a):
+            attention.append(a)
+        else:
+            friendly.append(a)
+
+    def _risk_key(x: Any) -> int:
+        if not isinstance(x, dict):
+            return 1
+        level = str(x.get("level", "") or "").upper()
+        status = _additive_status_str(x)
+        if level == "C":
+            return 0
+        if status == "unmatched" or level == "B" or status == "pending_rating":
+            return 1
+        if level == "A":
+            return 3
+        return 2
+
+    attention = sorted(attention, key=_risk_key)
+    friendly = sorted(friendly, key=lambda x: str((x or {}).get("name", "")))
+    return attention, friendly
+
+
+def family_conclusion_for_result(
+    score: int, additives: Sequence[Any] | None = None
+) -> Tuple[str, str]:
+    """家人一句话结论：(文案, tone)。
+
+    tone: safe | caution | danger — 对应 CSS family-verdict-*。
+    口语、短句、不写医疗承诺。
+    """
+    try:
+        score_i = int(score)
+    except (TypeError, ValueError):
+        score_i = 0
+
+    _, _, score_class = status_copy_for_result(score_i, additives)
+    attention, _friendly = split_additives_by_attention(additives)
+
+    names: List[str] = []
+    for a in attention:
+        if not isinstance(a, dict):
+            continue
+        n = str(a.get("name") or "").strip()
+        if n and n not in names:
+            names.append(n)
+        if len(names) >= 2:
+            break
+    name_part = "、".join(names) if names else ""
+
+    if score_class == "score-danger":
+        if name_part:
+            text = f"给家人：建议少买或少吃 · 留意{name_part}"
+        else:
+            text = "给家人：建议少买或少吃 · 请先看下方关注项"
+        return text, "danger"
+    if score_class == "score-caution":
+        if name_part:
+            text = f"给家人：可以偶尔吃 · 留意{name_part}"
+        else:
+            text = "给家人：可以偶尔吃 · 有少量需留意项"
+        return text, "caution"
+    # safe
+    if name_part:
+        # 仅有待核对包装等灰项时仍可能进 attention
+        text = f"给家人：配料较省心 · 请核对{name_part}"
+        return text, "caution"
+    return "给家人：配料看起来比较省心 · 仍请对照包装", "safe"
+
+
 def status_copy_for_result(
     score: int, additives: Sequence[Any] | None = None
 ) -> Tuple[str, str, str]:
@@ -98,6 +198,58 @@ def status_copy_for_result(
         "根据当前规则，暂未标出需特别注意的添加剂；仍请以包装与医嘱为准",
         "score-safe",
     )
+
+
+def history_band_for_score(score: int) -> Tuple[str, str, str]:
+    """历史/首页列表状态：(css_class, 文案, 色值).
+
+    与结果页语气对齐：较省心 / 要注意 / 建议少吃（不用「良好/高风险」恐吓感）。
+    """
+    try:
+        s = int(score)
+    except (TypeError, ValueError):
+        s = 0
+    if s >= 80:
+        return "safe", "较省心", "#43A047"
+    if s >= 60:
+        return "caution", "要注意", "#FF9800"
+    return "danger", "建议少吃", "#E53935"
+
+
+def history_needs_attention(score: int) -> bool:
+    """分数 < 80 视为「要注意」（含注意 + 建议少吃）."""
+    try:
+        return int(score) < 80
+    except (TypeError, ValueError):
+        return True
+
+
+def filter_history_entries(
+    history: Sequence[Any] | None,
+    *,
+    search: str = "",
+    band: str = "全部",
+) -> List[Tuple[int, Any]]:
+    """按搜索与档位筛选历史，返回 [(原下标, item), ...].
+
+    band: 全部 | 要注意 | 较省心
+    """
+    q = (search or "").strip().lower()
+    band = (band or "全部").strip()
+    out: List[Tuple[int, Any]] = []
+    for idx, item in enumerate(history or []):
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("product_name", "") or "")
+        if q and q not in name.lower():
+            continue
+        score = item.get("score", 0)
+        if band == "要注意" and not history_needs_attention(score):
+            continue
+        if band == "较省心" and history_needs_attention(score):
+            continue
+        out.append((idx, item))
+    return out
 
 
 def build_detail_speak(

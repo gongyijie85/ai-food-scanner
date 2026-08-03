@@ -24,6 +24,24 @@ from utils.score import (
 
 logger = logging.getLogger("ai-food-scanner")
 
+# 最近一次 API 失败分类（供扫描页适老提示：auth / network / parse / busy / generic）
+_last_api_error: dict = {"code": None, "msg": ""}
+
+
+def get_last_api_error() -> dict:
+    """返回最近一次 call_api 失败信息（浅拷贝）."""
+    return dict(_last_api_error)
+
+
+def _set_last_api_error(code: str | None, msg: str = "") -> None:
+    _last_api_error["code"] = code
+    _last_api_error["msg"] = msg or ""
+
+
+def clear_last_api_error() -> None:
+    _set_last_api_error(None, "")
+
+
 # MiMo Token Plan - 新加坡集群
 API_URL = "https://token-plan-sgp.xiaomimimo.com/v1/chat/completions"
 MODEL_NAME = "mimo-v2.5"
@@ -56,13 +74,16 @@ def get_api_key():
     - 本地开发使用 .env（已被 .gitignore 排除，禁止提交）；
     - 生产环境（Streamlit Cloud）必须使用 Settings → Secrets 配置，禁止在源码中写死 key；
     - 不要把真实 key 写入 README、issue、commit message 或聊天记录。
+
+    注意：app 启动时应 load_dotenv(override=True) 加载项目 .env，避免 OS 里
+    残留的错误 MIMO_API_KEY 覆盖 .env（常见 401 假阳性）。
     """
-    key = os.getenv("MIMO_API_KEY", "")
+    key = (os.getenv("MIMO_API_KEY") or "").strip()
     if key:
         return key
     try:
-        return st.secrets["MIMO_API_KEY"]
-    except (KeyError, FileNotFoundError):
+        return str(st.secrets["MIMO_API_KEY"]).strip()
+    except (KeyError, FileNotFoundError, TypeError):
         return ""
 
 
@@ -170,7 +191,15 @@ def build_system_prompt(groups):
     )
 
 
-def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
+def call_api(
+    api_key,
+    image_b64,
+    system_prompt,
+    url=API_URL,
+    model=MODEL_NAME,
+    *,
+    silent: bool = False,
+):
     """调用多模态 API（默认 MiMo，可切換 Agnes），返回模型回复文本.
 
     Phase 4 (v0.2.5) 健壮性增强：
@@ -178,16 +207,19 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
     - 仅网络错误或 5xx 状态码才重试，4xx 直接返回不重试
     - 错误提示使用用户友好文案，不直接展示 resp.text
     - 原始错误信息仅写入日志（v0.7.2 起不再在 UI 折叠区展示，防泄露）
+    - silent=True：不 st.error（用于 fallback 中间步，由外层统一提示）
     """
 
-    def _err(msg, detail=""):
+    def _err(msg, detail="", code: str = "generic"):
         """统一错误提示；detail 仅写入日志，不在 UI 展示（防泄露 resp.text）.
 
         安全说明：
         - resp.text 可能包含上游服务返回的请求 ID / 鉴权细节，不可信；
         - 用户侧只看 msg（友好文案），detail 只进 logger，便于事后排查。
         """
-        st.error(msg)
+        _set_last_api_error(code, msg)
+        if not silent:
+            st.error(msg)
         if detail:
             logger.error(f"API错误详情: {detail}")
 
@@ -225,6 +257,7 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
     }
 
     # 日志：记录请求开始
+    clear_last_api_error()
     img_size_kb = len(image_b64) / 1024
     logger.info(f"API调用开始: model={model}, 图片大小={img_size_kb:.1f}KB")
     start_time = time.time()
@@ -234,7 +267,8 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
     for attempt in range(1, max_attempts + 1):
         # 发起请求
         try:
-            resp = requests.post(url, headers=headers, json=payload, timeout=30)
+            # 视觉模型偶发 >30s；过短易把可用服务误判为失败
+            resp = requests.post(url, headers=headers, json=payload, timeout=60)
         except requests.exceptions.Timeout:
             # 超时属于网络错误，可重试
             logger.warning(f"API请求超时: attempt={attempt}, timeout=30s")
@@ -246,6 +280,7 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
             _err(
                 "识别服务暂时不可用，请稍后重试。",
                 f"Timeout after 30s, attempts={attempt}",
+                code="network",
             )
             return None
         except requests.exceptions.RequestException as e:
@@ -256,7 +291,11 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
                 continue
             elapsed = time.time() - start_time
             logger.error(f"API调用失败: 网络错误, 总耗时={elapsed:.2f}s")
-            _err("网络连接失败，请检查网络后重试。", str(e)[:1000])
+            _err(
+                "网络连接失败，请检查网络后重试。",
+                str(e)[:1000],
+                code="network",
+            )
             return None
 
         # 收到 HTTP 响应
@@ -267,6 +306,7 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
                 logger.info(
                     f"API调用成功: status=200, 耗时={elapsed:.2f}s, 响应长度={len(content)}"
                 )
+                clear_last_api_error()
                 return content
             except (KeyError, IndexError, json.JSONDecodeError) as e:
                 # 响应内容解析失败：不重试（重试也不会变好）
@@ -274,6 +314,7 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
                 _err(
                     "识别结果解析失败，请重试。",
                     f"Parse error: {e}\n{resp.text[:1000]}",
+                    code="parse",
                 )
                 return None
 
@@ -285,14 +326,20 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
             # 按状态码细分用户提示，避免把限流误判为密钥问题
             if resp.status_code in (401, 403):
                 user_msg = "API 密钥无效或无权限，请检查密钥后重试。"
+                err_code = "auth"
             elif resp.status_code == 429:
                 user_msg = "识别服务繁忙，请稍后再试。"
+                err_code = "busy"
             elif resp.status_code == 404:
                 user_msg = "识别服务地址错误，请联系管理员。"
+                err_code = "generic"
             else:
                 # 400 / 405 / 406 等：请求异常，不是密钥问题
                 user_msg = "请求异常，请稍后重试或更换图片。"
-            _err(user_msg, f"HTTP {resp.status_code}\n{resp.text[:1000]}")
+                err_code = "generic"
+            _err(
+                user_msg, f"HTTP {resp.status_code}\n{resp.text[:1000]}", code=err_code
+            )
             return None
 
         # 5xx 服务端错误：可重试
@@ -307,6 +354,7 @@ def call_api(api_key, image_b64, system_prompt, url=API_URL, model=MODEL_NAME):
         _err(
             "识别服务暂时不可用，请稍后重试。",
             f"HTTP {resp.status_code}\n{resp.text[:1000]}",
+            code="network",
         )
         return None
 
@@ -319,8 +367,25 @@ def call_api_with_fallback(mimo_key, image_b64, system_prompt, agnes_key=None):
     默认主模型是 MiMo，备用是 Agnes。
     可通过环境变量 PRIMARY_PROVIDER=agnes 切换主模型为 Agnes，
     方便对比不同模型对同一配料表的识别效果。
+    中间失败 silent，最终失败只弹一次友好错误（避免 401+超时连环 st.error）。
     """
     use_agnes_primary = os.getenv("PRIMARY_PROVIDER", "").lower() == "agnes"
+    clear_last_api_error()
+
+    def _finalize_failure():
+        err = get_last_api_error()
+        code = err.get("code") or "network"
+        msg = err.get("msg") or "识别服务暂时不可用，请稍后重试。"
+        if code == "auth":
+            msg = (
+                "识别密钥无效或未配置（MiMo/Agnes）。"
+                "请在服务器环境变量中更新 MIMO_API_KEY 后重试；"
+                "这与照片清晰度无关。"
+            )
+        elif code == "network":
+            msg = "识别服务连不上或超时，请检查网络后重试。照片本身可能没问题。"
+        st.error(msg)
+        return None
 
     if use_agnes_primary and agnes_key:
         logger.info("使用 Agnes 作为主识别模型")
@@ -330,28 +395,42 @@ def call_api_with_fallback(mimo_key, image_b64, system_prompt, agnes_key=None):
             system_prompt,
             url=AGNES_API_URL,
             model=AGNES_MODEL_NAME,
+            silent=True,
         )
         if raw:
             return raw
         if mimo_key:
             logger.warning("Agnes 调用失败，降级到 MiMo")
             st.toast("备用识别服务未返回结果，已切换主服务", icon="🔄")
-            return call_api(mimo_key, image_b64, system_prompt)
-        return None
+            raw = call_api(mimo_key, image_b64, system_prompt, silent=True)
+            if raw:
+                return raw
+        return _finalize_failure()
 
-    raw = call_api(mimo_key, image_b64, system_prompt)
+    raw = call_api(mimo_key, image_b64, system_prompt, silent=bool(agnes_key))
     if raw:
         return raw
     if agnes_key:
         logger.warning("MiMo 调用失败，降级到 Agnes 备用模型")
-        st.toast("主识别服务繁忙，已自动切换备用服务", icon="🔄")
-        return call_api(
+        # 主服务 401 时不要提示「繁忙」，避免误导
+        if get_last_api_error().get("code") == "auth":
+            st.toast("主识别密钥无效，尝试备用服务…", icon="🔑")
+        else:
+            st.toast("主识别服务繁忙，已自动切换备用服务", icon="🔄")
+        raw = call_api(
             agnes_key,
             image_b64,
             system_prompt,
             url=AGNES_API_URL,
             model=AGNES_MODEL_NAME,
+            silent=True,
         )
+        if raw:
+            return raw
+        return _finalize_failure()
+    # 无备用时 call_api 已非 silent 弹过错；若 silent 路径需补一条
+    if get_last_api_error().get("code"):
+        return _finalize_failure()
     return None
 
 
