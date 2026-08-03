@@ -121,7 +121,15 @@ def add_history(result, default_engine="未知"):
     """识别成功后保存一条历史记录（Phase 4 起改为本地 JSON 持久化，刷新不丢失）.
 
     不保存图片数据（隐私保护，已在 Phase 0 确认）。
+    摘要带 needs_attention / attention_tone，列表不再依赖分数叙事。
     """
+    from utils.result_presentation import build_result_presentation
+
+    pres = build_result_presentation(result if isinstance(result, dict) else {})
+    needs = pres.tone in ("caution", "danger") or pres.recognition_state in (
+        "partial",
+        "unconfirmed",
+    )
     record = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "product_name": result.get("product_name", "未知"),
@@ -129,6 +137,9 @@ def add_history(result, default_engine="未知"):
         "type": str(result.get("type", "food")),
         "additives_count": len(result.get("additives", [])),
         "engine": result.get("engine", default_engine),
+        "needs_attention": needs,
+        "attention_tone": pres.tone,
+        "recognition_state": pres.recognition_state,
     }
     save_history(record)
     # 保存完整识别快照供详情页使用
@@ -145,16 +156,20 @@ def show_history(switch_page_func, safe_func, max_items: int = 3):
     if not history:
         st.caption("暂无记录")
         return
+    from utils.display import history_band_for_item
+
     for idx, item in enumerate(history[:max_items]):
-        score = item.get("score", 0)
-        status = "safe" if score >= 80 else ("caution" if score >= 60 else "danger")
+        status, status_text, _ = history_band_for_item(item)
         # 简短时间显示（YYYY-MM-DD HH:MM），适老化不显示秒
         ts = item.get("timestamp", "")
         time_str = ts[:16].replace("T", " ") if ts else ""
         # 类型标签：保健食品 / 食品
         type_tag = "保健食品" if item.get("type") == "supplement" else "食品"
         name = safe_func(item.get("product_name", "未知"))
-        label = f"{name} [{type_tag}]\n{score}分 · {item.get('additives_count', 0)}种 · {time_str}"
+        label = (
+            f"{name} [{type_tag}]\n"
+            f"{status_text} · {item.get('additives_count', 0)}种 · {time_str}"
+        )
         # 用 marker 给样式提供状态色，整行按钮点击查看详情
         st.markdown(
             f"<div class='sidebar-history-row-marker {status}'></div>",

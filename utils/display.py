@@ -200,27 +200,52 @@ def status_copy_for_result(
 
 
 def history_band_for_score(score: int) -> Tuple[str, str, str]:
-    """历史/首页列表状态：(css_class, 文案, 色值).
+    """历史列表状态（遗留：仅有分数时的弱回退）→ (css_class, 文案, 色值).
 
-    与结果页语气对齐：较省心 / 要注意 / 建议少吃（不用「良好/高风险」恐吓感）。
+    新记录优先用 history_band_for_item / needs_attention 字段。
     """
     try:
         s = int(score)
     except (TypeError, ValueError):
         s = 0
     if s >= 80:
-        return "safe", "较省心", "#43A047"
+        return "safe", "暂无高关注", "#43A047"
     if s >= 60:
-        return "caution", "要注意", "#FF9800"
-    return "danger", "建议少吃", "#E53935"
+        return "caution", "有关注项", "#FF9800"
+    return "danger", "需重点看", "#E53935"
 
 
 def history_needs_attention(score: int) -> bool:
-    """分数 < 80 视为「要注意」（含注意 + 建议少吃）."""
+    """遗留：分数 < 80 视为有关注项；新代码请用 item 的 needs_attention."""
     try:
         return int(score) < 80
     except (TypeError, ValueError):
         return True
+
+
+def history_item_needs_attention(item: Any) -> bool:
+    """摘要记录是否「有关注项」：优先 needs_attention 字段，否则弱回退分数."""
+    if not isinstance(item, dict):
+        return True
+    if "needs_attention" in item:
+        return bool(item.get("needs_attention"))
+    return history_needs_attention(item.get("score", 0))
+
+
+def history_band_for_item(item: Any) -> Tuple[str, str, str]:
+    """历史/首页列表状态，不以「XX 分」叙事."""
+    if not isinstance(item, dict):
+        return "caution", "有关注项", "#FF9800"
+    tone = str(item.get("attention_tone") or "").lower()
+    if tone == "danger":
+        return "danger", "需重点看", "#E53935"
+    if tone == "safe" or (
+        "needs_attention" in item and not item.get("needs_attention")
+    ):
+        return "safe", "暂无高关注", "#43A047"
+    if "needs_attention" in item and item.get("needs_attention"):
+        return "caution", "有关注项", "#FF9800"
+    return history_band_for_score(item.get("score", 0))
 
 
 def filter_history_entries(
@@ -231,7 +256,7 @@ def filter_history_entries(
 ) -> List[Tuple[int, Any]]:
     """按搜索与档位筛选历史，返回 [(原下标, item), ...].
 
-    band: 全部 | 要注意 | 较省心
+    band: 全部 | 要注意 | 较省心（文案兼容旧 UI；语义=有关注项 / 暂无高关注）
     """
     q = (search or "").strip().lower()
     band = (band or "全部").strip()
@@ -242,10 +267,10 @@ def filter_history_entries(
         name = str(item.get("product_name", "") or "")
         if q and q not in name.lower():
             continue
-        score = item.get("score", 0)
-        if band == "要注意" and not history_needs_attention(score):
+        needs = history_item_needs_attention(item)
+        if band in ("要注意", "有关注项") and not needs:
             continue
-        if band == "较省心" and history_needs_attention(score):
+        if band in ("较省心", "暂无高关注") and needs:
             continue
         out.append((idx, item))
     return out

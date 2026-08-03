@@ -22,19 +22,19 @@ class TestHistoryButtonLabel:
     """测试首页历史按钮纯文本标签."""
 
     def test_label_contains_key_info(self):
-        """标签应包含产品名、分数、状态、添加剂数量、日期."""
+        """标签应包含产品名、状态、添加剂数量、日期；无分数主叙事."""
         label = _history_button_label(
             item={},
             score=100,
-            status_text="较省心",
+            status_text="暂无高关注",
             bar_color="#43A047",
             name="测试产品",
             additives_count=2,
             ts="2026-07-14",
         )
         assert "测试产品" in label
-        assert "100" in label
-        assert "较省心" in label
+        assert " 分" not in label
+        assert "暂无高关注" in label
         assert "2种添加剂" in label
         assert "2026-07-14" in label
 
@@ -53,11 +53,11 @@ class TestHistoryButtonLabel:
         assert ">" not in label
 
     def test_label_status_emoji_safe_caution_danger(self):
-        """不同分数区间应使用对应状态 emoji."""
+        """状态文案映射对应 emoji（不再按分数）."""
         safe = _history_button_label(
             item={},
             score=80,
-            status_text="较省心",
+            status_text="暂无高关注",
             bar_color="#43A047",
             name="A",
             additives_count=0,
@@ -66,7 +66,7 @@ class TestHistoryButtonLabel:
         caution = _history_button_label(
             item={},
             score=60,
-            status_text="要注意",
+            status_text="有关注项",
             bar_color="#FF9800",
             name="B",
             additives_count=0,
@@ -75,7 +75,7 @@ class TestHistoryButtonLabel:
         danger = _history_button_label(
             item={},
             score=59,
-            status_text="建议少吃",
+            status_text="需重点看",
             bar_color="#E53935",
             name="C",
             additives_count=0,
@@ -90,18 +90,18 @@ class TestHistoryRowLabel:
     """测试历史页整行按钮纯文本标签."""
 
     def test_label_contains_key_info(self):
-        """标签应包含产品名、分数、状态、添加剂数量、日期."""
+        """标签应包含产品名、状态、添加剂数量、日期；无分数."""
         label = _history_row_label(
             score=92,
-            status_text="较省心",
+            status_text="暂无高关注",
             bar_color="#43A047",
             name="历史产品",
             additives_count=1,
             ts="2026-07-13",
         )
         assert "历史产品" in label
-        assert "92" in label
-        assert "较省心" in label
+        assert "92" not in label
+        assert "暂无高关注" in label
         assert "1种添加剂" in label
         assert "2026-07-13" in label
 

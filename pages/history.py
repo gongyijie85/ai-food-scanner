@@ -13,31 +13,34 @@ from components import (
 )
 from utils.api import MODEL_NAME
 from utils.display import (
-    build_detail_speak,
-    family_conclusion_for_result,
     filter_history_entries,
     format_scan_time,
-    history_band_for_score,
+    history_band_for_item,
     short_product_name,
-    status_copy_for_result,
 )
 from utils.helpers import switch_page
 from utils.history import load_history, load_history_full
+from utils.result_presentation import build_result_presentation
 from utils.security import _safe
 
 
 def _history_row_label(score, status_text, bar_color, name, additives_count, ts):
-    """构造历史页整行可点击按钮的纯文本标签.
+    """构造历史页整行可点击按钮的纯文本标签（无分数主叙事）.
 
-    注意：st.button 会对 label 进行 HTML 转义，因此不能再传入 HTML。
-    使用 emoji 状态圆 + 两行纯文本，保留产品名、分数、状态、添加剂数量和日期。
-    产品名在函数内部做 HTML 转义，避免外部忘记转义时把源码暴露给用户。
+    score / bar_color 保留签名兼容；状态色由 status_text 对应 emoji。
     """
-    status_emoji = "🟢" if score >= 80 else ("🟠" if score >= 60 else "🔴")
+    _ = score
+    _ = bar_color
+    if status_text in ("较省心", "暂无高关注"):
+        status_emoji = "🟢"
+    elif status_text in ("建议少吃", "需重点看"):
+        status_emoji = "🔴"
+    else:
+        status_emoji = "🟠"
     safe_name = _safe(short_product_name(name, max_len=18))
     return (
         f"{status_emoji} {safe_name}\n"
-        f"{score} 分 · {status_text} · {additives_count}种添加剂 · {ts}"
+        f"{status_text} · {additives_count}种添加剂 · {ts}"
     )
 
 
@@ -46,7 +49,7 @@ def render_history_page():
     render_top_nav("历史记录", back_target="home")
 
     st.markdown(
-        "<p class='history-page-hint'>筛选「要注意」可快速复盘少买/留意的商品</p>",
+        "<p class='history-page-hint'>筛选「有关注项」可快速复盘需核对的商品</p>",
         unsafe_allow_html=True,
     )
 
@@ -58,15 +61,14 @@ def render_history_page():
         label_visibility="collapsed",
     )
 
-    # 档位筛选：全部 / 要注意（&lt;80）/ 较省心（≥80）
-    # 新 key 避免旧 segmented 会话态残留「良好/高风险」
+    # 档位：全部 / 有关注项 / 暂无高关注（不再用分数分档）
     filter_options = ["全部", "要注意", "较省心"]
     current_filter = (
         st.segmented_control(
             "记录筛选",
             options=filter_options,
             default="全部",
-            key="history_filter_band_v2",
+            key="history_filter_band_v3",
             label_visibility="collapsed",
         )
         or "全部"
@@ -86,20 +88,19 @@ def render_history_page():
             ):
                 switch_page("scan")
         elif current_filter == "要注意":
-            st.success("当前没有「要注意」的记录，挺好的")
+            st.success("当前没有「有关注项」的记录")
             if st.button("查看全部记录", key="hist_show_all", width="stretch"):
-                st.session_state["history_filter_band_v2"] = "全部"
+                st.session_state["history_filter_band_v3"] = "全部"
                 st.rerun()
         elif current_filter == "较省心":
-            st.info("还没有较省心的记录，去拍一张配料表试试")
+            st.info("还没有「暂无高关注」的记录，去拍一张配料表试试")
         else:
             st.info("没有匹配的记录")
         return
 
     # 历史列表：整行可点击按钮
     for idx, item in filtered:
-        score = item.get("score", 0)
-        status_class, status_text, bar_color = history_band_for_score(score)
+        status_class, status_text, bar_color = history_band_for_item(item)
         ts = format_scan_time(item.get("timestamp", ""))
         # 列表只显示日期部分更短
         if "日" in ts:
@@ -110,7 +111,12 @@ def render_history_page():
         additives_count = item.get("additives_count", 0)
 
         label = _history_row_label(
-            score, status_text, bar_color, name, additives_count, ts_short
+            item.get("score", 0),
+            status_text,
+            bar_color,
+            name,
+            additives_count,
+            ts_short,
         )
         # marker 供 CSS :has 定位，给相邻按钮加左侧状态色条
         st.markdown(
@@ -136,20 +142,27 @@ def render_detail_page():
 
     if record:
         product_name = record.get("product_name", "未知")
-        score = record.get("score", 0)
         additives = record.get("additives", []) or []
         ingredients = record.get("ingredients", []) or []
         advice = record.get("advice", "") or ""
     else:
         product_name = fallback.get("product_name", "未知")
-        score = fallback.get("score", 0)
         additives = fallback.get("additives", []) or []
         ingredients = fallback.get("ingredients", []) or []
         advice = fallback.get("advice", "") or ""
 
     display_name = short_product_name(product_name)
-    label, meaning, score_class = status_copy_for_result(score, additives)
-    family_line, family_tone = family_conclusion_for_result(score, additives)
+    detail_payload = {
+        "type": (record or fallback or {}).get("type", "food"),
+        "product_name": product_name,
+        "additives": additives,
+        "ingredients": ingredients,
+        "ocr_text": (record or {}).get("ocr_text", "") if record else "",
+        "advice": advice,
+    }
+    if record:
+        detail_payload = {**record, **detail_payload}
+    pres = build_result_presentation(detail_payload)
 
     render_top_nav("产品详情", back_target=st.session_state.get("prev_page", "home"))
 
@@ -158,29 +171,25 @@ def render_detail_page():
     )
     ts_friendly = format_scan_time(ts_raw)
 
-    # 与结果页一致：无总分主结论；状态来自添加剂而非分数阈值
+    # 与结果页同一呈现契约
     _render_score_hero(
         0,
-        display_name,
+        pres.product_display_name,
         show_slow_replay=False,
         scan_date=ts_friendly,
-        status_label=label,
-        status_meaning=meaning,
-        score_class=score_class,
-        action_line=family_line,
+        status_label=pres.status_label,
+        status_meaning=pres.status_meaning,
+        score_class=pres.status_class,
+        recognition_label=pres.recognition_label,
+        recognition_meaning=pres.recognition_meaning,
+        action_line=pres.action_line,
         show_score=False,
     )
     if display_name != (product_name or "").strip() and product_name:
         st.caption(f"全称：{_safe(product_name)}")
 
-    # 语音（子女回看历史时也能听；不报参考分）
-    speak = build_detail_speak(
-        product_name, score, additives, advice=advice, ingredients=ingredients
-    )
-    if family_line and family_line not in speak:
-        speak = family_line + "。" + speak
     voice_control_panel(
-        speak,
+        pres.voice_script,
         key_prefix="tts_detail",
         button_text=f"{_ICON_SPEAKER} 听结果",
         wrapper_class="voice-controls voice-controls-primary",
@@ -236,7 +245,8 @@ def render_detail_page():
         with col2:
             if st.button("分享给家人", key="detail_share", width="stretch"):
                 summary = (
-                    f"{display_name}，配料参考分{score}分，{label}。"
+                    f"{pres.product_display_name}，{pres.status_label}。"
+                    f"{pres.action_line}"
                     f"结果仅供参考，不构成医疗建议。"
                 )
                 st.session_state["last_share_summary"] = summary

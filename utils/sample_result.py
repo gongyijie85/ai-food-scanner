@@ -63,7 +63,7 @@ def load_offline_result(name: str) -> Optional[Dict[str, Any]]:
 
 
 def build_sample_food_result() -> Dict[str, Any]:
-    """DESIGN brief 对齐的示例：caution 分 + 多等级添加剂 + 配料标签."""
+    """示例结果：多等级添加剂 + 配料标签；分数仅内部字段，UI 走呈现契约."""
     return {
         "type": "food",
         "product_name": "某品牌谷物夹心饼干（巧克力味） 200g",
@@ -71,7 +71,7 @@ def build_sample_food_result() -> Dict[str, Any]:
         "scan_date": "2026-08-01",
         "timestamp": "2026-08-01T10:00:00",
         "advice": (
-            "建议偶尔食用，留意甜味剂与色素；"
+            "留意甜味剂与色素相关关注项；"
             "有相关健康管理需求时先咨询医生或营养师。"
         ),
         "ingredients": [

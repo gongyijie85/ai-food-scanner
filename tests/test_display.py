@@ -95,18 +95,18 @@ class TestFamilyConclusion:
 
 
 class TestHistoryBandAndFilter:
-    def test_band_copy(self):
-        assert history_band_for_score(90)[1] == "较省心"
-        assert history_band_for_score(70)[1] == "要注意"
-        assert history_band_for_score(40)[1] == "建议少吃"
+    def test_band_copy_legacy_score(self):
+        assert history_band_for_score(90)[1] == "暂无高关注"
+        assert history_band_for_score(70)[1] == "有关注项"
+        assert history_band_for_score(40)[1] == "需重点看"
         assert history_needs_attention(79) is True
         assert history_needs_attention(80) is False
 
-    def test_filter_attention_and_safe(self):
+    def test_filter_prefers_needs_attention_flag(self):
         hist = [
-            {"product_name": "A饼干", "score": 90},
-            {"product_name": "B薯片", "score": 55},
-            {"product_name": "C糖", "score": 72},
+            {"product_name": "A饼干", "score": 10, "needs_attention": False},
+            {"product_name": "B薯片", "score": 95, "needs_attention": True},
+            {"product_name": "C糖", "score": 72, "needs_attention": True},
         ]
         att = filter_history_entries(hist, band="要注意")
         assert [x[1]["product_name"] for x in att] == ["B薯片", "C糖"]

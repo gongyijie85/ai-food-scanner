@@ -4,7 +4,7 @@ import streamlit as st
 
 from components import render_top_nav
 from components.user_guide import render_user_guide
-from utils.display import history_band_for_score
+from utils.display import history_band_for_item
 from utils.helpers import switch_page
 from utils.history import load_history
 from utils.security import _safe
@@ -13,17 +13,23 @@ from utils.security import _safe
 def _history_button_label(
     item, score, status_text, bar_color, name, additives_count, ts
 ):
-    """构造首页历史记录整行按钮的纯文本标签.
+    """构造首页历史记录整行按钮的纯文本标签（无分数主叙事）.
 
-    注意：st.button 会对 label 进行 HTML 转义，因此不能再传入 HTML。
-    使用 emoji 状态圆 + 两行纯文本，保留产品名、分数、状态、添加剂数量和日期。
-    产品名在函数内部做 HTML 转义，避免外部忘记转义时把源码暴露给用户。
+    score / bar_color 保留签名兼容。
     """
-    status_emoji = "🟢" if score >= 80 else ("🟠" if score >= 60 else "🔴")
+    _ = score
+    _ = bar_color
+    _ = item
+    if status_text in ("较省心", "暂无高关注"):
+        status_emoji = "🟢"
+    elif status_text in ("建议少吃", "需重点看"):
+        status_emoji = "🔴"
+    else:
+        status_emoji = "🟠"
     safe_name = _safe(name)
     return (
         f"{status_emoji} {safe_name}\n"
-        f"{score} 分 · {status_text} · {additives_count}种添加剂 · {ts}"
+        f"{status_text} · {additives_count}种添加剂 · {ts}"
     )
 
 
@@ -34,7 +40,7 @@ def _render_home_hero() -> None:
         "<p class='home-hero-kicker'>拍了就懂</p>"
         "<h1 class='home-hero-title'>对准「配料表」拍照</h1>"
         "<p class='home-hero-sub'>"
-        "马上听懂能不能放心给家人吃 · 光线够、尽量平、字要大"
+        "帮家人看清配料关注项 · 光线够、尽量平、字要大"
         "</p>"
         "</div>",
         unsafe_allow_html=True,
@@ -95,14 +101,19 @@ def render_home_page():
             switch_page("scan")
 
         for idx, item in enumerate(history[:3]):
-            score = item.get("score", 0)
-            status_class, status_text, bar_color = history_band_for_score(score)
+            status_class, status_text, bar_color = history_band_for_item(item)
             ts = item.get("timestamp", "")[:10]
             name = item.get("product_name", "未知")
             additives_count = item.get("additives_count", 0)
 
             label = _history_button_label(
-                item, score, status_text, bar_color, name, additives_count, ts
+                item,
+                item.get("score", 0),
+                status_text,
+                bar_color,
+                name,
+                additives_count,
+                ts,
             )
             st.markdown(
                 f"<div class='home-history-row-marker {status_class}'></div>",

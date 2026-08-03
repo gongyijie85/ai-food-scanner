@@ -1,6 +1,7 @@
 """结果呈现契约外部行为测试（Ticket A / Spec #47）."""
 
 from utils.result_presentation import (
+    apply_result_corrections,
     assert_primary_copy_safe,
     build_result_presentation,
     infer_recognition_state,
@@ -103,3 +104,36 @@ class TestBuildResultPresentation:
         for bad in ("能吃", "不能吃", "放心吃"):
             assert bad not in p.action_line
             assert bad not in p.voice_script
+
+    def test_inferred_not_in_decisive_action(self):
+        p = build_result_presentation(
+            _food_complete(
+                additives=[
+                    {
+                        "name": "胭脂红",
+                        "level": "C",
+                        "ai_inferred": True,
+                    }
+                ]
+            )
+        )
+        assert "胭脂红" not in p.attention_names
+        assert "胭脂红" not in p.action_line or "包装" in p.action_line
+        # 不得写成确定「含需关注」却无包装依据的决断句
+        assert p.tone in ("caution", "danger")
+        assert "自动识别" in p.voice_script or "包装" in p.action_line
+
+    def test_correction_removes_additive_and_softens(self):
+        raw = _food_complete(
+            additives=[
+                {"name": "胭脂红", "level": "C"},
+                {"name": "甜菊糖苷", "level": "A"},
+            ]
+        )
+        before = build_result_presentation(raw)
+        assert before.tone == "danger"
+        fixed = apply_result_corrections(raw, remove_additive_names=["胭脂红"])
+        after = build_result_presentation(fixed)
+        assert all(a.get("name") != "胭脂红" for a in fixed["additives"])
+        assert after.tone != "danger"
+        assert fixed.get("corrections_applied") is True

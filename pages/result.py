@@ -22,7 +22,10 @@ from utils.data import (
     load_health_data,
 )
 from utils.helpers import detect_device_type, switch_page
-from utils.result_presentation import build_result_presentation
+from utils.result_presentation import (
+    apply_result_corrections,
+    build_result_presentation,
+)
 from utils.security import _safe
 
 
@@ -55,6 +58,41 @@ def _analyze_warnings(result):
         allergens=health_data.get("allergens", []),
     )
     return engine.analyze(result, profile)
+
+
+def _render_inline_additive_corrections(result: dict) -> None:
+    """允许用户排除识别错的添加剂，立刻降级结论（不写回服务器）."""
+    additives = result.get("additives") or []
+    names = []
+    for a in additives:
+        if isinstance(a, dict) and str(a.get("name") or "").strip():
+            names.append(str(a["name"]).strip())
+    # 去重保序
+    seen = set()
+    uniq = []
+    for n in names:
+        if n not in seen:
+            seen.add(n)
+            uniq.append(n)
+    if not uniq:
+        return
+    with st.expander("有识别错的配料？点这里排除", expanded=False):
+        st.caption("排除后本页结论会立即更新，请仍以包装原文为准。")
+        pick = st.multiselect(
+            "选择要排除的项",
+            options=uniq,
+            key="result_correct_remove_names",
+            label_visibility="collapsed",
+        )
+        if st.button("应用排除并更新结论", key="result_correct_apply", type="secondary"):
+            if not pick:
+                st.warning("请先勾选要排除的配料")
+            else:
+                updated = apply_result_corrections(result, remove_additive_names=pick)
+                st.session_state["last_result"] = updated
+                st.session_state["result_data"] = updated
+                st.success("已更新结论")
+                st.rerun()
 
 
 def _normalize_ingredient_compare_text(text: str) -> str:
@@ -199,6 +237,9 @@ def render_food_page(result):
 
     # 4) 添加剂匹配（默认只展开需留意项）
     _render_additive_card(additives)
+
+    # 4b) 即时纠错：排除错误项后重算呈现（会话内降级结论）
+    _render_inline_additive_corrections(result)
 
     # 5) 一般饮食建议
     if advice:

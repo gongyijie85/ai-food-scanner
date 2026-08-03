@@ -61,11 +61,22 @@ def _warning_titles(warnings: Sequence[Any] | None, limit: int = 4) -> list[str]
     return titles
 
 
-def _attention_names(additives: Sequence[Any] | None, limit: int = 3) -> list[str]:
+def _is_inferred_item(item: Any) -> bool:
+    return bool(isinstance(item, dict) and item.get("ai_inferred"))
+
+
+def _attention_names(
+    additives: Sequence[Any] | None,
+    limit: int = 3,
+    *,
+    include_inferred: bool = True,
+) -> list[str]:
     attention, _ = split_additives_by_attention(additives)
     names: list[str] = []
     for a in attention:
         if not isinstance(a, dict):
+            continue
+        if not include_inferred and _is_inferred_item(a):
             continue
         n = str(a.get("name") or "").strip()
         if n and n not in names:
@@ -73,6 +84,57 @@ def _attention_names(additives: Sequence[Any] | None, limit: int = 3) -> list[st
         if len(names) >= limit:
             break
     return names
+
+
+def _inferred_names(additives: Sequence[Any] | None, limit: int = 5) -> list[str]:
+    names: list[str] = []
+    for a in additives or []:
+        if not isinstance(a, dict) or not _is_inferred_item(a):
+            continue
+        n = str(a.get("name") or "").strip()
+        if n and n not in names:
+            names.append(n)
+        if len(names) >= limit:
+            break
+    return names
+
+
+def apply_result_corrections(
+    result: dict | None,
+    *,
+    remove_additive_names: Sequence[str] | None = None,
+) -> dict:
+    """返回排除指定添加剂后的新结果（不可变纠错，供会话内降级结论）.
+
+    仅移除 additives 中名称匹配项；不编造 OCR。用于「这条识别错了」即时降级。
+    """
+    data = dict(result) if isinstance(result, dict) else {}
+    remove = {
+        str(n).strip()
+        for n in (remove_additive_names or [])
+        if n is not None and str(n).strip()
+    }
+    if not remove:
+        return data
+    additives = data.get("additives")
+    if not isinstance(additives, list):
+        return data
+    kept = []
+    for a in additives:
+        if not isinstance(a, dict):
+            continue
+        name = str(a.get("name") or "").strip()
+        if name in remove:
+            continue
+        kept.append(dict(a))
+    data["additives"] = kept
+    data["corrections_applied"] = True
+    removed_prev = list(data.get("corrected_removed") or [])
+    for n in remove:
+        if n not in removed_prev:
+            removed_prev.append(n)
+    data["corrected_removed"] = removed_prev
+    return data
 
 
 def infer_recognition_state(result: dict | None) -> str:
@@ -176,19 +238,21 @@ def _action_line(
     tone: str,
     recognition_state: str,
     attention_names: Sequence[str],
+    inferred_names: Sequence[str],
     is_supplement: bool,
 ) -> str:
+    """决断行动句：只引用已确认关注项；推断项不得升格为确定结论。"""
     if is_supplement:
         return "保健食品不能代替药物；请按包装说明，必要时咨询医生或药师。"
     if recognition_state == "unconfirmed":
         return "请重新对准包装上的「配料表」拍照，再查看关注提示。"
     if recognition_state == "partial":
+        bits = ["识别不完整：请先核对包装"]
         if attention_names:
-            return (
-                f"识别不完整：请先核对包装，并留意"
-                f"{'、'.join(attention_names[:2])}。"
-            )
-        return "识别不完整：请先对照包装原文或重拍，再参考本页提示。"
+            bits.append("并留意" + "、".join(attention_names[:2]))
+        if inferred_names:
+            bits.append("有自动识别项须以包装为准")
+        return "，".join(bits) + "。"
     if tone == "danger":
         if attention_names:
             return f"建议先查看需关注配料（如{'、'.join(attention_names[:2])}），再决定是否购买。"
@@ -196,7 +260,11 @@ def _action_line(
     if tone == "caution":
         if attention_names:
             return f"购买前请留意{'、'.join(attention_names[:2])}，并对照包装。"
+        if inferred_names:
+            return "有待包装核对的自动识别项，请先对照原文再参考本页。"
         return "有需留意项：请结合健康情况与包装核对后再购买。"
+    if inferred_names:
+        return "有自动识别项未写入包装原文，请先核对包装；暂不作为确定结论。"
     return "按当前规则暂未标出高关注添加剂；购买前仍请对照包装与个人医嘱。"
 
 
@@ -206,6 +274,7 @@ def _voice_script(
     recognition_label: str,
     action_line: str,
     attention_names: Sequence[str],
+    inferred_names: Sequence[str],
     warning_titles: Sequence[str],
     advice: str,
     is_supplement: bool,
@@ -229,9 +298,12 @@ def _voice_script(
         parts.append("健康档案提示：" + "；".join(warning_titles) + "。")
     if attention_names:
         parts.append("配料关注：" + "、".join(attention_names) + "。")
+    if inferred_names:
+        parts.append(
+            "以下为自动识别、须以包装为准：" + "、".join(inferred_names[:3]) + "。"
+        )
     if advice:
         a = advice.strip()
-        # 去掉可能的判决口吻残留
         if not re.search(r"能吃|不能吃|放心吃", a):
             parts.append(a if a.endswith("。") else a + "。")
     parts.append(_DISCLAIMER)
@@ -263,21 +335,40 @@ def build_result_presentation(
         state = "complete" if has_any else "unconfirmed"
 
     rec_label, rec_meaning = _recognition_copy(state)
-    names = _attention_names(additives)
+    # 决断只引用非推断关注项；推断单独标注
+    decisive_names = _attention_names(additives, include_inferred=False)
+    inferred = _inferred_names(additives)
+    # 状态色：推断项可进 caution，但不单独制造 danger 的「已确认」感
+    tone_names = list(decisive_names) + list(inferred)
     tone, status_label, status_meaning, status_class = _tone_and_status(
-        names, additives, state
+        tone_names, additives, state
     )
+    # 仅有推断、无确认关注且识别完整时，降为 caution，禁止 soft all-clear
+    if (
+        state == "complete"
+        and not decisive_names
+        and inferred
+        and tone == "safe"
+    ):
+        tone, status_label, status_meaning, status_class = (
+            "caution",
+            "有待核对项",
+            "存在未在包装原文确认的自动识别项，请先对照包装。",
+            "score-caution",
+        )
     action = _action_line(
         tone=tone,
         recognition_state=state,
-        attention_names=names,
+        attention_names=decisive_names,
+        inferred_names=inferred,
         is_supplement=is_supplement,
     )
     voice = _voice_script(
         product_display_name=display,
         recognition_label=rec_label,
         action_line=action,
-        attention_names=names,
+        attention_names=decisive_names,
+        inferred_names=inferred,
         warning_titles=_warning_titles(warnings),
         advice=str(data.get("advice") or ""),
         is_supplement=is_supplement,
@@ -293,7 +384,7 @@ def build_result_presentation(
         status_label=status_label,
         status_meaning=status_meaning,
         status_class=status_class,
-        attention_names=tuple(names),
+        attention_names=tuple(decisive_names),
         voice_script=voice,
         product_full_name=full_name,
     )
