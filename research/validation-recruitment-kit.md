@@ -1,7 +1,8 @@
-# 验证期招募与访谈工具包（#30）
+# 验证期招募与访谈工具包（#30 / Spec #53）
 
 > 归属地图：[#26 商业化落地蓝图与架构决策（验证优先）](https://github.com/gongyijie85/ai-food-scanner/issues/26)  
-> 对齐：#27 价值假设 · #28 闸门 · #29 功能冻结 · #35 获客路径  
+> 对齐：#27 价值假设 · #28 闸门 · #29 功能冻结 · #35 获客路径 · **#53 证据账本**  
+> 门槛：[validation-publish-gate.md](validation-publish-gate.md) · 预检：[validation-redteam-precheck.md](validation-redteam-precheck.md)  
 > 目标：4–6 周内获得 **8–15 名有效子女样本**（#28：≥8 才可下 Go/Pivot/Stop）  
 > 性质：执行手册，不是统计显著研究
 
@@ -10,6 +11,11 @@ https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
 **产品一句话（对外，合规）**  
 帮子女看懂父母食品包装上的配料，结合健康档案给出「需留意」的参考提示（大字/语音）；**不是**医疗诊断，**不是**「能不能吃」的权威结论。
+
+**证据账本（唯一记账接缝）**  
+- CSV：`research/validation-sample-log.csv`  
+- 纸质速记：`research/validation-field-sheet.md`  
+- 程序校验：`utils/validation_evidence.py`（禁语检查、行校验、#28 速算）
 
 ---
 
@@ -88,9 +94,10 @@ https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 | 1 | 完成法律同意（若出现） | 是否读、是否卡 |
 | 2 | 进入健康档案：尽量填 **父母** 的 1 项慢病或用药（可匿名化描述） | 是否愿填（软证伪信号） |
 | 3 | 去扫描页：拍/上传 **真实包装配料表**（家里零食/保健品均可） | 是否会拍、是否模糊放弃 |
-| 4 | 等待结果；查看 **参考分** 与 **关注提示** | 是否理解「参考」 |
-| 5 | 点一次 **语音播报** | 是否有声、是否觉得吵/有用 |
-| 6 | （可选）回历史看刚才那条 | 是否找到 |
+| 4 | 等待结果；查看 **识别状态**、**建议下一步** 与 **关注项**（无大号参考分） | 是否理解「参考/核对」而非判决 |
+| 5 | 点一次 **听结果**（与屏幕同源） | 是否有声、是否觉得吵/有用 |
+| 6 | （可选）「有识别错的配料」排除一项 | 结论是否更新 |
+| 7 | （可选）回历史看刚才那条 | 是否找到、是否仍出现「XX 分」主叙事 |
 
 **阻断时你可做（#29 允许）**
 
@@ -134,21 +141,26 @@ https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 | date | 试用日期 |
 | channel | 微信熟人 / 体验群 / 小红书 / 其他 |
 | relation | 强熟人 / 弱熟人 / 陌生 |
-| role | 子女（主）/ 老人（二级，不计入 8） |
+| role | 子女 / 配对子女 / 老人 / 配对老人 |
 | device_own | 是/否（对方自己手机） |
 | path_complete | 是/否（上传→出结果） |
-| archive_filled | 是/否/部分 |
-| voice_ok | 是/否/未试 |
-| reuse_verbal | 是/否/不确定（Q6） |
+| archive_filled | 是/否/跳过 |
+| voice_ok | 是/否/跳过 |
+| **recognition_honesty** | 完整 / 部分 / 无法确认 / 未观察 |
+| **saw_action_line** | 是否看到「建议下一步」 |
+| **correction_tried** | 是否试过排除错误配料 |
+| reuse_verbal | 是/否/未知（Q6） |
 | reuse_rescan_7d | 是/否/未知（7 日） |
 | reuse_count | 再用记 1（口头是 **或** 复扫是） |
 | delta_clear | 是/否（Q3 说得清增量） |
 | pay_tier | 1 / 2 / 3（Q7） |
 | pay_signal | 是/否（2 或 3 为是） |
+| **gate_incident** | 是/否（人身风险误信 / P0 回退等 → 停扩招） |
 | soft_fail_notes | 拒档案 / 百度就够 / 其他 |
-| blocker_notes | 卡点 |
-| quote | 一句原话 |
-| valid_sample | 是/否（计入 ≥8） |
+| blocker_notes | 卡点（勿写「已告知能吃」类执行备注） |
+| quote | 一句原话（用户原话可保留口语） |
+| valid_sample | 是/否（子女计入 #28 的 ≥8） |
+| **wave** | 招募波次 wave1… |
 
 **闸门速算（有效样本 ≥8 后）**
 
