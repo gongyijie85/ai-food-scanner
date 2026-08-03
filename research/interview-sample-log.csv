@@ -1,0 +1,3 @@
+id,date,cohort,age_band,relation,paired_family_id,channel,device_own,path_complete,archive_filled,photo_quality,understood_score,thought_safe_to_eat,voice_ok,voice_want_segment,reuse_verbal,reuse_rescan_7d,family_share_ok,want_ask_before_share,pay_tier,H1,H2,H3,H4,H5,H6,H7,blocker_notes,quote,valid
+E01,YYYY-MM-DD,elder,70-79,self,,微信熟人,是,是,部分,模糊,否,是,否,是,否,未知,否,是,,否,否,是,是,是,是,否,拍了正面广告,分数高就能吃,是
+C01,YYYY-MM-DD,child,30-39,son/daughter,,微信熟人,是,是,是,清晰,部分,是,是,否,是,未知,是,是,2,是,是,是,否,否,是,是,,档案有用,是
