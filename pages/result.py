@@ -100,22 +100,59 @@ def _build_speak_content(result, warnings):
     return "".join(parts)
 
 
+def _normalize_ingredient_compare_text(text: str) -> str:
+    """去掉配料前缀与标点，用于判断「标签」与「原文」是否实质相同。"""
+    import re
+
+    s = str(text or "").strip()
+    s = re.sub(r"^(配料表?|原料|成分)\s*[：:]\s*", "", s)
+    s = re.sub(r"[\s、,，。；;·:：\(\)（）\[\]【】≥>≤%％\d\.]+", "", s)
+    return s
+
+
+def _ocr_duplicates_ingredients(ocr_text: str, ingredients: list) -> bool:
+    """原文与标签列表实质相同时视为重复展示。"""
+    if not ocr_text or not ingredients:
+        return False
+    o = _normalize_ingredient_compare_text(ocr_text)
+    j = _normalize_ingredient_compare_text("".join(str(x) for x in ingredients))
+    if not o or not j:
+        return False
+    if o == j:
+        return True
+    # 仅当长度几乎一致且一方包含另一方（标点差异），避免「标签是子集」误判为重复
+    if abs(len(o) - len(j)) <= max(2, min(len(o), len(j)) // 20):
+        shorter, longer = (o, j) if len(o) <= len(j) else (j, o)
+        if shorter in longer:
+            return True
+    return False
+
+
 def _render_ingredients_section(result):
-    """配料列表：有则展示标签，无则展示原文/重拍提示（避免「配料消失」）。"""
+    """配料列表：标签为主；原文仅在与标签有差异或兜底恢复时展示，避免重复。
+
+    说明：标签 = 结构化 ingredients；原文 = 模型 OCR。
+    两者逻辑不同，但内容相同时只保留标签，减少老人阅读负担。
+    整块用一次 markdown 输出，保证卡片包住内容（避免标题空壳、正文掉到卡外）。
+    """
     ingredients = result.get("ingredients") or []
     ocr_text = str(result.get("ocr_text", "") or "").strip()
     recovered = bool(result.get("ingredients_recovered_from_ocr"))
-
-    st.markdown(
-        "<div class='content-card ingredients-card'>"
-        "<h2 class='card-title'>全部配料</h2>"
-        "<div class='card-body'>",
-        unsafe_allow_html=True,
+    show_ocr = bool(ocr_text) and (
+        not ingredients
+        or recovered
+        or not _ocr_duplicates_ingredients(ocr_text, ingredients)
     )
+
+    parts = [
+        "<div class='content-card ingredients-card'>",
+        "<h2 class='card-title'>全部配料</h2>",
+        "<div class='card-body'>",
+    ]
 
     if ingredients:
         if recovered:
-            st.markdown(
+            parts.append(
                 "<div class='advice-block advice-block-general'>"
                 "<div class='advice-block-icon'>⚠️</div>"
                 "<div class='advice-block-body'>"
@@ -123,34 +160,36 @@ def _render_ingredients_section(result):
                 "<p class='advice-block-text'>"
                 "未能直接识别出配料表，已根据拍到的文字自动整理，可能与包装原文有出入，"
                 "请核对包装后再参考本页提示。"
-                "</p></div></div>",
-                unsafe_allow_html=True,
+                "</p></div></div>"
             )
         tags_html = "".join(
             f"<span class='ingredient-tag'>{_safe(item)}</span>" for item in ingredients
         )
-        st.markdown(
-            f"<div class='ingredient-tags'>{tags_html}</div>",
-            unsafe_allow_html=True,
-        )
+        parts.append(f"<div class='ingredient-tags'>{tags_html}</div>")
     else:
-        st.markdown(
+        parts.append(
             "<div class='ingredients-empty'>"
             "<p class='ingredients-empty-title'>暂时没看清配料列表</p>"
             "<p class='ingredients-empty-tip'>"
             "请重新对准包装上的「配料表」文字拍照：光线充足、尽量平行、配料小字占满画面。"
-            "</p></div>",
-            unsafe_allow_html=True,
+            "</p></div>"
         )
 
-    if ocr_text:
-        st.markdown(
-            f"<div class='ocr-text-box'><div class='ocr-text-label'>识别到的原文</div>"
-            f"<p class='ocr-text-body'>{_safe(ocr_text)}</p></div>",
-            unsafe_allow_html=True,
+    if show_ocr:
+        label = (
+            "包装原文（供核对，与上方标签有差异）"
+            if ingredients and not recovered
+            else "包装原文（供核对）"
+        )
+        parts.append(
+            f"<div class='ocr-text-box'>"
+            f"<div class='ocr-text-label'>{_safe(label)}</div>"
+            f"<p class='ocr-text-body'>{_safe(ocr_text)}</p>"
+            f"</div>"
         )
 
-    st.markdown("</div></div>", unsafe_allow_html=True)
+    parts.append("</div></div>")
+    st.markdown("".join(parts), unsafe_allow_html=True)
 
 
 def render_food_page(result):
