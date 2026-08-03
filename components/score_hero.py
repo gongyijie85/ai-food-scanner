@@ -1,6 +1,7 @@
 """评分英雄区组件（设计稿：产品名+分数横向排布）."""
 
 import streamlit as st
+import streamlit.components.v1 as components
 
 from utils.security import _safe
 
@@ -82,6 +83,7 @@ def _render_score_hero(
             f"<span>慢速再读一遍</span></button>"
         )
 
+    # data-target 供下方脚本做 0→score 滚动；先显示目标分避免脚本失败时空白
     st.markdown(
         f"<div class='score-card {score_class}'>"
         f"<div class='score-card-top'>"
@@ -91,7 +93,7 @@ def _render_score_hero(
         f"</div>"
         f"<div class='score-circle'>"
         f"<div class='score-ring'></div>"
-        f"<span class='score-number'>{score}</span>"
+        f"<span class='score-number' data-score-target='{int(score)}'>{int(score)}</span>"
         f"<span class='score-label'>配料参考分</span>"
         f"</div></div>"
         f"<div class='status-pill'>{pill_icon}<span>{_safe(label)}</span></div>"
@@ -102,4 +104,41 @@ def _render_score_hero(
         f"{replay_btn}"
         f"</div></div>",
         unsafe_allow_html=True,
+    )
+    # 分数滚动动画（读 parent DOM；不依赖用户手势）
+    components.html(
+        f"""
+        <script>
+        (function() {{
+          try {{
+            var doc = window.parent && window.parent.document;
+            if (!doc) return;
+            var nodes = doc.querySelectorAll('.score-number[data-score-target]');
+            if (!nodes || !nodes.length) return;
+            var el = nodes[nodes.length - 1];
+            if (el.getAttribute('data-animated') === '1') return;
+            el.setAttribute('data-animated', '1');
+            var target = parseInt(el.getAttribute('data-score-target') || '0', 10) || 0;
+            var duration = 900;
+            var start = 0;
+            var t0 = null;
+            function easeOut(t) {{ return 1 - Math.pow(1 - t, 3); }}
+            function frame(ts) {{
+              if (t0 === null) t0 = ts;
+              var p = Math.min(1, (ts - t0) / duration);
+              var val = Math.round(start + (target - start) * easeOut(p));
+              el.textContent = String(val);
+              if (p < 1) {{
+                window.parent.requestAnimationFrame(frame);
+              }} else {{
+                el.textContent = String(target);
+              }}
+            }}
+            el.textContent = '0';
+            window.parent.requestAnimationFrame(frame);
+          }} catch (e) {{}}
+        }})();
+        </script>
+        """,
+        height=0,
     )

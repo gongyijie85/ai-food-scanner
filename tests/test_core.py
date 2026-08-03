@@ -234,6 +234,19 @@ class TestParseResult:
         assert "降三高" not in result["advice"]
         assert "高血压" in result["advice"]
 
+    def test_additive_status_rated_not_pending(self):
+        """山梨酸钾应写入 rated + B，UI 不应显示待确认"""
+        raw = (
+            '{"type":"food","product_name":"测试",'
+            '"additives":[{"name":"山梨酸钾"}],"advice":"适量"}'
+        )
+        result = parse_result(raw)
+        assert result is not None
+        a = result["additives"][0]
+        assert a["level"] == "B"
+        assert a["status"] == "rated"
+        assert a.get("note")
+
 
 class TestNormalizeModelOutput:
     """测试 normalize_model_output 函数"""

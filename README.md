@@ -2,7 +2,7 @@
 
 > 老人打开手机，拍照配料表，**3 秒内语音读出**配料风险，帮助看懂包装上的添加剂。
 
-![版本](https://img.shields.io/badge/version-0.10.22-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
+![版本](https://img.shields.io/badge/version-0.10.23-blue) ![Python](https://img.shields.io/badge/Python-3.10%2B-green) ![Streamlit](https://img.shields.io/badge/Streamlit-1.58-red) ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
 **公开体验地址**：https://gongyijie85-ai-food-scanner-app-w4mpmt.streamlit.app/
 
@@ -42,6 +42,7 @@
 
 ## 最新更新
 
+- **v0.10.23（2026-08-03）**：修「待确认」误标、分数滚动动画、edge-tts 自然女声、首页/扫描/结果使用指引。
 - **v0.10.22（2026-07-25）**：修复手机/微信语音无声：听结果与播报在同一点击手势内完成；微信内提示改用系统浏览器打开。
 - **v0.10.21（2026-07-25）**：详情页短产品名、友好时间、有 B 级时「有可留意项」、历史页「听结果」。
 - **v0.10.20（2026-07-25）**：修复常见添加剂（山梨酸钾/磷酸盐等）被标「未识别」与分数虚高：匹配器回退 CSV 风险表，并从复合配料中补捞。

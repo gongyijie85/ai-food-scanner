@@ -13,6 +13,7 @@ from components import (
     render_top_nav,
     voice_control_panel,
 )
+from components.user_guide import render_user_guide
 from services.additive_matcher import AdditiveMatcher
 from services.health_warning_engine import HealthWarningEngine
 from utils.data import (
@@ -162,6 +163,7 @@ def render_food_page(result):
     status_label, status_meaning, score_class = status_copy_for_result(score, additives)
 
     render_top_nav("识别结果", back_target="home")
+    render_user_guide("result")
 
     # 1) 配料参考分摘要（短名 + 与添加剂一致的状态）
     _render_score_hero(

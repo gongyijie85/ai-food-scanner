@@ -3,6 +3,7 @@
 import streamlit as st
 
 from components import render_top_nav
+from components.user_guide import render_user_guide
 from utils.helpers import switch_page
 from utils.history import load_history
 from utils.security import _safe
@@ -41,6 +42,7 @@ def render_home_page():
         subtitle="拍照即懂，吃得更安心",
         show_back=False,
     )
+    render_user_guide("home")
 
     history = load_history()
 

@@ -12,7 +12,11 @@ import requests
 import streamlit as st
 from PIL import Image
 
-from services.additive_matcher import _clean_name
+from services.additive_matcher import AdditiveMatcher, MatchStatus, _clean_name
+from utils.data import (
+    get_additive_override_repository,
+    get_additive_risk_repository,
+)
 from utils.score import (
     _is_blocklisted,
     compute_score_from_additives,
@@ -673,18 +677,29 @@ def parse_result(raw, health_groups=None):
     if name and re.fullmatch(r"[A-Za-z\s\-\.\&]+", name):
         result["product_name"] = "该产品"
 
-    # 仅对普通食品做客户端本地 GB 2760 名称匹配和分类
+    # 仅对普通食品做客户端本地 GB 2760 / 风险表匹配和分类
     if result.get("type") == "food":
         additives = result.get("additives", [])
         if isinstance(additives, list):
+            matcher = AdditiveMatcher(
+                get_additive_risk_repository(),
+                get_additive_override_repository(),
+            )
             for a in additives:
                 if isinstance(a, dict) and a.get("name"):
-                    level, ins, note = normalize_additive(a["name"])
-                    a["level"] = level
-                    if ins and not a.get("code"):
-                        a["code"] = ins
-                    if note and not a.get("note"):
-                        a["note"] = note
+                    # 必须写入 status，否则 UI 默认 pending → 误显示「待确认」
+                    m = matcher.match(a["name"])
+                    a["level"] = m.level
+                    a["status"] = m.status.value
+                    a["canonical_name"] = m.canonical_name
+                    a["cns"] = m.cns
+                    a["function"] = m.function
+                    if m.ins and not a.get("code"):
+                        a["code"] = m.ins
+                    if m.ins:
+                        a["ins"] = m.ins
+                    if m.note:
+                        a["note"] = m.note
             result["additives"] = additives
             result["score"] = compute_score_from_additives(
                 additives, health_groups or []

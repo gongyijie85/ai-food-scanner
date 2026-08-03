@@ -6,6 +6,7 @@ import streamlit as st
 from PIL import Image
 
 from components import render_error, render_top_nav
+from components.user_guide import render_user_guide
 from utils.api import (
     AGNES_API_URL,
     AGNES_MODEL_NAME,
@@ -129,6 +130,7 @@ def _render_recent_scans():
 def render_scan_page():
     """扫描上传页：统一图片上传入口."""
     render_top_nav("扫描识别", back_target="home")
+    render_user_guide("scan")
 
     groups, api_key, uploader_key = _scan_common_setup()
 

@@ -7,21 +7,33 @@ from utils.security import _safe
 
 
 def _get_level_info(level: str, status) -> tuple[str, str, str]:
-    """统一返回添加剂等级信息：标签、颜色、形状图标."""
-    # 未匹配项：中性灰色，不参与评分，不显示等级图标
-    if getattr(status, "value", "") == "unmatched" or level == "":
-        # 文案避免「未识别到」像识别失败：这里是「标准库未匹配」，不是没看到该词
+    """统一返回添加剂等级信息：标签、颜色、形状图标.
+
+    - rated + A/B/C → 较友好/注意/建议少吃
+    - pending_rating → 待确认（标准有、风险级未定）
+    - unmatched / 无 level → 待核对包装
+    历史数据若未写 status 但有 A/B/C level，按 level 显示（避免全员「待确认」）。
+    """
+    status_val = ""
+    if status is not None:
+        status_val = getattr(status, "value", None) or str(status)
+    status_val = (status_val or "").lower()
+    level = (level or "").upper()
+
+    if status_val == "unmatched":
         return "待核对包装", "#9E9E9E", ""
+    if status_val == "pending_rating":
+        return "待确认", "#FF9800", "▲"
     if level == "A":
-        label, color, shape = "较友好", "#43A047", "●"
-    elif level == "C":
-        label, color, shape = "建议少吃", "#E53935", "■"
-    else:
-        label, color, shape = "注意", "#FF9800", "▲"
-    # status 是 MatchStatus 枚举或带有 value 属性的对象
-    if getattr(status, "value", "") == "pending_rating":
-        label = "待确认"
-    return label, color, shape
+        return "较友好", "#43A047", "●"
+    if level == "C":
+        return "建议少吃", "#E53935", "■"
+    if level == "B":
+        return "注意", "#FF9800", "▲"
+    if level == "" and status_val in ("", "pending_rating"):
+        # 无 status 且无 level：兼容极旧数据
+        return "待核对包装", "#9E9E9E", ""
+    return "注意", "#FF9800", "▲"
 
 
 def _render_additive_card(additives, key="additive_card"):
