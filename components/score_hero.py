@@ -106,11 +106,12 @@ def _render_score_hero(
         unsafe_allow_html=True,
     )
     # 分数滚动动画（读 parent DOM；不依赖用户手势）
+    # 使用普通字符串，避免 flake8 F541（无占位 f-string）
     components.html(
-        f"""
+        """
         <script>
-        (function() {{
-          try {{
+        (function() {
+          try {
             var doc = window.parent && window.parent.document;
             if (!doc) return;
             var nodes = doc.querySelectorAll('.score-number[data-score-target]');
@@ -122,22 +123,22 @@ def _render_score_hero(
             var duration = 900;
             var start = 0;
             var t0 = null;
-            function easeOut(t) {{ return 1 - Math.pow(1 - t, 3); }}
-            function frame(ts) {{
+            function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+            function frame(ts) {
               if (t0 === null) t0 = ts;
               var p = Math.min(1, (ts - t0) / duration);
               var val = Math.round(start + (target - start) * easeOut(p));
               el.textContent = String(val);
-              if (p < 1) {{
+              if (p < 1) {
                 window.parent.requestAnimationFrame(frame);
-              }} else {{
+              } else {
                 el.textContent = String(target);
-              }}
-            }}
+              }
+            }
             el.textContent = '0';
             window.parent.requestAnimationFrame(frame);
-          }} catch (e) {{}}
-        }})();
+          } catch (e) {}
+        })();
         </script>
         """,
         height=0,

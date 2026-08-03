@@ -12,7 +12,7 @@ import requests
 import streamlit as st
 from PIL import Image
 
-from services.additive_matcher import AdditiveMatcher, MatchStatus, _clean_name
+from services.additive_matcher import AdditiveMatcher, _clean_name
 from utils.data import (
     get_additive_override_repository,
     get_additive_risk_repository,
@@ -20,7 +20,6 @@ from utils.data import (
 from utils.score import (
     _is_blocklisted,
     compute_score_from_additives,
-    normalize_additive,
 )
 
 logger = logging.getLogger("ai-food-scanner")

@@ -8,8 +8,6 @@ import html
 import streamlit as st
 import streamlit.components.v1 as components
 
-from components.icons import _ICON_SPEAKER
-
 _tts_counter = 0
 
 
@@ -48,7 +46,7 @@ def _preload_tts_voices():
 def voice_control_panel(
     speak_content: str,
     key_prefix: str = "tts",
-    button_text: str = f"{_ICON_SPEAKER} 听结果",
+    button_text: str = "听结果",
     wrapper_class: str = "voice-control-wrap",
 ):
     """听结果面板：云端自然语音优先，浏览器 TTS 兜底。"""
@@ -56,8 +54,11 @@ def voice_control_panel(
         st.session_state["tts_rate"] = 1.0
 
     rate = float(st.session_state["tts_rate"] or 1.0)
-    plain_label = "听结果"
     text = (speak_content or "").strip()
+    # button_text / wrapper_class 保留 API 兼容；面板标签用纯文本
+    _ = wrapper_class
+    if button_text and "慢" in str(button_text):
+        pass
 
     # 尝试生成更自然的 MP3（edge-tts）
     audio_b64 = ""
