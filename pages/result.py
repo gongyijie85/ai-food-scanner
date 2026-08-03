@@ -21,12 +21,8 @@ from utils.data import (
     get_additive_risk_repository,
     load_health_data,
 )
-from utils.display import (
-    family_conclusion_for_result,
-    short_product_name,
-    status_copy_for_result,
-)
 from utils.helpers import detect_device_type, switch_page
+from utils.result_presentation import build_result_presentation
 from utils.security import _safe
 
 
@@ -59,49 +55,6 @@ def _analyze_warnings(result):
         allergens=health_data.get("allergens", []),
     )
     return engine.analyze(result, profile)
-
-
-def _build_speak_content(result, warnings):
-    """组装适老语音文案：分数 + 关注提示 + 配料摘要 + 免责."""
-    score = result.get("score", 0)
-    product_name = result.get("product_name", "该产品")
-    advice = str(result.get("advice", "") or "").strip()
-    ingredients = result.get("ingredients") or []
-    additives = result.get("additives") or []
-    parts = [f"识别结果。{product_name}，配料参考分{score}分。"]
-
-    if warnings:
-        titles = [
-            getattr(w, "title", None) or (w.get("title") if isinstance(w, dict) else "")
-            for w in warnings[:4]
-        ]
-        titles = [t for t in titles if t]
-        if titles:
-            parts.append("需要留意：" + "；".join(titles) + "。")
-
-    named = []
-    for a in additives[:5]:
-        if isinstance(a, dict) and a.get("name"):
-            named.append(str(a["name"]))
-    if named:
-        parts.append("识别到的添加剂包括：" + "、".join(named) + "。")
-    elif ingredients:
-        preview = [str(x) for x in ingredients[:6] if str(x).strip()]
-        if preview:
-            parts.append("主要配料：" + "、".join(preview) + "。")
-    else:
-        ocr = str(result.get("ocr_text", "") or "").strip()
-        if ocr:
-            parts.append("配料列表不完整，请对照包装原文核对。")
-        else:
-            parts.append("未能识别配料表文字，请重新对准配料表拍照。")
-
-    if advice:
-        parts.append(advice if advice.endswith("。") else advice + "。")
-    parts.append(
-        "本工具仅供参考，不构成医疗建议。如有健康问题请咨询医生、药师或营养师。"
-    )
-    return "".join(parts)
 
 
 def _normalize_ingredient_compare_text(text: str) -> str:
@@ -198,50 +151,42 @@ def _render_ingredients_section(result):
 
 def render_food_page(result):
     """普通食品结果页：根据设备类型自适应渲染."""
-    score = result.get("score", 0)
     product_name = result.get("product_name", "未知")
     advice = result.get("advice", "")
     additives = result.get("additives", [])
-    display_name = short_product_name(product_name)
-    status_label, status_meaning, score_class = status_copy_for_result(score, additives)
-    family_line, family_tone = family_conclusion_for_result(score, additives)
+
+    # 2) 个性化警告（先算，供呈现契约写入语音）
+    warnings = _analyze_warnings(result)
+    pres = build_result_presentation(result, warnings=warnings)
 
     render_top_nav("识别结果", back_target="home")
-    # 结果页指引默认收起，避免挤占「一句话结论」首屏
+    # 结果页指引默认收起，避免挤占首屏
     render_user_guide("result")
 
-    # 1) 配料参考分摘要（短名 + 与添加剂一致的状态）
+    # 1) 呈现契约：识别状态 → 状态 → 行动（无总分主结论）
     _render_score_hero(
-        score,
-        display_name,
-        status_label=status_label,
-        status_meaning=status_meaning,
-        score_class=score_class,
+        0,
+        pres.product_display_name,
+        status_label=pres.status_label,
+        status_meaning=pres.status_meaning,
+        score_class=pres.status_class,
+        recognition_label=pres.recognition_label,
+        recognition_meaning=pres.recognition_meaning,
+        action_line=pres.action_line,
+        show_score=False,
     )
-    if display_name != (product_name or "").strip() and product_name:
+    if (
+        pres.product_display_name != (product_name or "").strip()
+        and product_name
+    ):
         st.caption(f"全称：{_safe(product_name)}")
 
-    # 1b) 家人一句话结论（结论优先）
-    st.markdown(
-        f"<div class='family-verdict family-verdict-{_safe(family_tone)}' role='status'>"
-        f"<span class='family-verdict-kicker'>一句话</span>"
-        f"<p class='family-verdict-text'>{_safe(family_line)}</p>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-
-    # 2) 个性化警告
-    warnings = _analyze_warnings(result)
     if warnings:
         render_personal_warnings(warnings)
 
-    # 3) 语音提前到中部，手机端少滚动（手势路径更稳）
-    speak_content = _build_speak_content(result, warnings)
-    # 语音稿开头带上家庭结论，听感与屏幕一致
-    if family_line and not speak_content.startswith("给家人"):
-        speak_content = family_line + "。" + speak_content
+    # 3) 语音与屏幕同源（同一契约）
     voice_control_panel(
-        speak_content,
+        pres.voice_script,
         key_prefix="tts_food",
         button_text=f"{_ICON_SPEAKER} 听结果",
         wrapper_class="voice-controls voice-controls-primary",
@@ -298,7 +243,6 @@ def render_supplement_page(result):
     """保健食品结果页：根据设备类型自适应渲染."""
     product_name = result.get("product_name", "未知")
     summary = result.get("summary", "")
-    score = result.get("score", 0) or 0
     ingredients = result.get("ingredients", [])
     approval_no = result.get("approval_no", "未显示")
     functional = result.get("functional_ingredients", [])
@@ -307,6 +251,7 @@ def render_supplement_page(result):
     unsuitable = result.get("unsuitable_for", "")
     usage = result.get("usage", "")
     is_desktop = detect_device_type() == "desktop"
+    pres = build_result_presentation(result)
 
     render_top_nav("识别结果", back_target="home")
 
@@ -318,14 +263,19 @@ def render_supplement_page(result):
         unsafe_allow_html=True,
     )
 
-    _render_score_hero(score if score else 100, product_name)
-
-    speak_content = (
-        f"保健食品：{product_name}。"
-        f"{summary}。"
-        f"保健食品不是药物，不能代替药物治疗疾病。"
-        f"如需选择，请咨询医生/药师/营养师。"
+    _render_score_hero(
+        0,
+        pres.product_display_name,
+        status_label=pres.status_label,
+        status_meaning=pres.status_meaning,
+        score_class=pres.status_class,
+        recognition_label=pres.recognition_label,
+        recognition_meaning=pres.recognition_meaning,
+        action_line=pres.action_line,
+        show_score=False,
     )
+
+    speak_content = pres.voice_script
 
     if is_desktop:
         left, right = st.columns([1, 1])

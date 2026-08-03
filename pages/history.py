@@ -158,32 +158,26 @@ def render_detail_page():
     )
     ts_friendly = format_scan_time(ts_raw)
 
-    # 评分英雄区：短名 + 与添加剂一致的状态
+    # 与结果页一致：无总分主结论；状态来自添加剂而非分数阈值
     _render_score_hero(
-        score,
+        0,
         display_name,
         show_slow_replay=False,
         scan_date=ts_friendly,
         status_label=label,
         status_meaning=meaning,
         score_class=score_class,
+        action_line=family_line,
+        show_score=False,
     )
     if display_name != (product_name or "").strip() and product_name:
         st.caption(f"全称：{_safe(product_name)}")
 
-    st.markdown(
-        f"<div class='family-verdict family-verdict-{_safe(family_tone)}' role='status'>"
-        f"<span class='family-verdict-kicker'>一句话</span>"
-        f"<p class='family-verdict-text'>{_safe(family_line)}</p>"
-        f"</div>",
-        unsafe_allow_html=True,
-    )
-
-    # 语音（子女回看历史时也能听）
+    # 语音（子女回看历史时也能听；不报参考分）
     speak = build_detail_speak(
         product_name, score, additives, advice=advice, ingredients=ingredients
     )
-    if family_line and not speak.startswith("给家人"):
+    if family_line and family_line not in speak:
         speak = family_line + "。" + speak
     voice_control_panel(
         speak,

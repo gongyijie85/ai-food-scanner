@@ -43,23 +43,26 @@ class TestStatusCopy:
         assert cls == "score-caution"
         assert "留意" in meaning
 
-    def test_all_a_high_score(self):
+    def test_all_a_ignores_low_score_number(self):
+        """总分不再覆盖添加剂等级：全 A 即使传入低分也非 danger。"""
         label, meaning, cls = status_copy_for_result(
-            95, [{"name": "甜菊糖苷", "level": "A"}]
+            10, [{"name": "甜菊糖苷", "level": "A"}]
         )
-        assert label == "暂未发现明显问题"
         assert cls == "score-safe"
+        assert "高关注" in label or "暂未" in label
+        assert "包装" in meaning
 
 
 class TestBuildDetailSpeak:
-    def test_includes_score_and_disclaimer(self):
+    def test_no_score_primary_and_has_disclaimer(self):
         text = build_detail_speak(
             "北田蛋白棒",
             92,
             [{"name": "山梨糖醇", "level": "B"}],
             advice="请适量",
         )
-        assert "92" in text
+        assert "92" not in text
+        assert "参考分" not in text
         assert "山梨糖醇" in text
         assert "参考" in text
 
@@ -70,9 +73,10 @@ class TestFamilyConclusion:
             72, [{"name": "阿斯巴甜", "level": "B"}]
         )
         assert tone == "caution"
-        assert "偶尔" in text
         assert "阿斯巴甜" in text
         assert text.startswith("给家人")
+        assert "能吃" not in text
+        assert "偶尔吃" not in text
 
     def test_danger_prefers_less(self):
         text, tone = family_conclusion_for_result(
@@ -87,7 +91,7 @@ class TestFamilyConclusion:
             95, [{"name": "甜菊糖苷", "level": "A"}]
         )
         assert tone == "safe"
-        assert "省心" in text
+        assert "高关注" in text or "对照包装" in text
 
 
 class TestHistoryBandAndFilter:

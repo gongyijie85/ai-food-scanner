@@ -122,15 +122,11 @@ def family_conclusion_for_result(
     """家人一句话结论：(文案, tone)。
 
     tone: safe | caution | danger — 对应 CSS family-verdict-*。
-    口语、短句、不写医疗承诺。
+    口语、短句、不写医疗承诺；不依赖总分作主叙事（score 参数仅兼容旧调用）。
     """
-    try:
-        score_i = int(score)
-    except (TypeError, ValueError):
-        score_i = 0
-
-    _, _, score_class = status_copy_for_result(score_i, additives)
+    _ = score
     attention, _friendly = split_additives_by_attention(additives)
+    _, _, score_class = status_copy_for_result(0, additives)
 
     names: List[str] = []
     for a in attention:
@@ -145,33 +141,34 @@ def family_conclusion_for_result(
 
     if score_class == "score-danger":
         if name_part:
-            text = f"给家人：建议少买或少吃 · 留意{name_part}"
+            text = f"给家人：建议少买或少吃前先核对 · 留意{name_part}"
         else:
-            text = "给家人：建议少买或少吃 · 请先看下方关注项"
+            text = "给家人：建议少买或少吃前先核对 · 请先看下方关注项"
         return text, "danger"
     if score_class == "score-caution":
         if name_part:
-            text = f"给家人：可以偶尔吃 · 留意{name_part}"
+            text = f"给家人：购买前请留意 · {name_part}"
         else:
-            text = "给家人：可以偶尔吃 · 有少量需留意项"
+            text = "给家人：有少量需留意项 · 请对照包装"
         return text, "caution"
-    # safe
     if name_part:
-        # 仅有待核对包装等灰项时仍可能进 attention
-        text = f"给家人：配料较省心 · 请核对{name_part}"
+        text = f"给家人：请核对 · {name_part}"
         return text, "caution"
-    return "给家人：配料看起来比较省心 · 仍请对照包装", "safe"
+    return "给家人：暂未标出高关注添加剂 · 仍请对照包装", "safe"
 
 
 def status_copy_for_result(
     score: int, additives: Sequence[Any] | None = None
 ) -> Tuple[str, str, str]:
-    """返回 (label, meaning, score_class)，与添加剂等级一致。
+    """返回 (label, meaning, score_class)，以添加剂等级为主，不依赖总分阈值。
 
+    score 参数保留兼容，不再用 <60/<80 覆盖等级结论。
     score_class: score-safe | score-caution | score-danger
     """
+    _ = score
     has_c = False
     has_b = False
+    has_attention = False
     for a in additives or []:
         if not isinstance(a, dict):
             continue
@@ -180,21 +177,23 @@ def status_copy_for_result(
             has_c = True
         elif level == "B":
             has_b = True
+        if is_attention_additive(a):
+            has_attention = True
 
-    if has_c or score < 60:
+    if has_c:
         return (
             "含需关注成分",
-            "含有建议少吃或需特别留意的添加剂，请结合自身情况查看详情",
+            "含有建议少买或少吃前先核对的添加剂，请结合自身情况查看详情",
             "score-danger",
         )
-    if has_b or score < 80:
+    if has_b or has_attention:
         return (
             "有可留意项",
-            "含少量需留意的添加剂，请结合健康档案查看，结果仅供参考",
+            "含少量需留意的添加剂或待核对项，请结合健康档案查看，结果仅供参考",
             "score-caution",
         )
     return (
-        "暂未发现明显问题",
+        "暂未标出高关注添加剂",
         "根据当前规则，暂未标出需特别注意的添加剂；仍请以包装与医嘱为准",
         "score-safe",
     )
@@ -259,9 +258,10 @@ def build_detail_speak(
     advice: str = "",
     ingredients: List[str] | None = None,
 ) -> str:
-    """详情页语音摘要。"""
+    """详情页语音摘要（不以总分为主结论；score 仅兼容旧调用）."""
+    _ = score
     short = short_product_name(product_name, max_len=28)
-    parts = [f"产品详情。{short}，配料参考分{score}分。"]
+    parts = [f"产品详情。{short}。"]
     caution = []
     friendly = []
     for a in additives or []:
@@ -278,12 +278,12 @@ def build_detail_speak(
     if caution:
         parts.append("需要留意：" + "、".join(caution[:5]) + "。")
     elif friendly:
-        parts.append("识别到的添加剂较友好，例如：" + "、".join(friendly[:3]) + "。")
+        parts.append("识别到的添加剂例如：" + "、".join(friendly[:3]) + "。")
     if ingredients:
         preview = [str(x) for x in ingredients[:5] if str(x).strip()]
         if preview:
             parts.append("主要配料：" + "、".join(preview) + "。")
-    if advice:
+    if advice and not re.search(r"能吃|不能吃|放心吃", advice):
         parts.append(advice if advice.endswith("。") else advice + "。")
     parts.append("本结果仅供参考，不构成医疗建议。")
     return "".join(parts)

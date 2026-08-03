@@ -120,24 +120,28 @@ class TestHistoryRowLabel:
 
 
 class TestScoreHeroColorClass:
-    """测试评分卡按分数输出正确状态类."""
+    """结果摘要卡：按传入 status_class 渲染；默认不展示总分。"""
 
     @pytest.mark.parametrize(
-        "score, expected_class",
-        [
-            (100, "score-safe"),
-            (80, "score-safe"),
-            (79, "score-caution"),
-            (60, "score-caution"),
-            (59, "score-danger"),
-            (0, "score-danger"),
-        ],
+        "status_class",
+        ["score-safe", "score-caution", "score-danger"],
     )
-    def test_score_class(self, score, expected_class):
-        """不同分数区间应渲染对应状态类."""
+    def test_status_class_passthrough(self, status_class):
         with patch("components.score_hero.st.markdown") as mock_markdown:
-            _render_score_hero(score, "测试产品", show_slow_replay=False)
+            _render_score_hero(
+                0,
+                "测试产品",
+                show_slow_replay=False,
+                status_label="状态",
+                status_meaning="含义",
+                score_class=status_class,
+                recognition_label="识别较完整",
+                action_line="请对照包装",
+                show_score=False,
+            )
             mock_markdown.assert_called_once()
             rendered_html = mock_markdown.call_args[0][0]
-            assert expected_class in rendered_html
+            assert status_class in rendered_html
             assert "score-card" in rendered_html
+            assert "配料参考分" not in rendered_html
+            assert "识别较完整" in rendered_html

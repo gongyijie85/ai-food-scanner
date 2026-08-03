@@ -1,47 +1,38 @@
-"""评分英雄区组件（设计稿：产品名+分数横向排布）."""
+"""结果摘要英雄区：识别状态 + 行动导向状态，不以总分为主结论."""
 
 import streamlit as st
-import streamlit.components.v1 as components
 
 from utils.security import _safe
 
 
 def _render_score_hero(
-    score: int,
-    product_name: str,
+    score: int = 0,
+    product_name: str = "",
     show_slow_replay: bool = True,
     scan_date: str = "",
     status_label: str = "",
     status_meaning: str = "",
     score_class: str = "",
+    *,
+    recognition_label: str = "",
+    recognition_meaning: str = "",
+    action_line: str = "",
+    show_score: bool = False,
 ):
-    """渲染新版评分摘要卡片.
+    """渲染结果摘要卡片（默认不展示数字总分）.
 
-    布局参考 result_optimized_v2.html：
-    - 顶部横向：左侧产品名+识别时间，右侧放大分数圆形
-    - 中部：圆角胶囊状态标签 + 状态含义
-    - 底部：免责声明 + 慢速重听按钮
-    - 分数圈带 popIn / pulseRing / rotateRing 动画
-    可根据添加剂等级传入 status_*，避免「高分却写暂无问题」不一致。
+    Ticket A：主结论为识别状态 + 状态标签 + 行动句；
+    show_score=True 仅兼容旧调用/测试，验证期 UI 应保持 False。
+    score 参数保留签名兼容，默认不参与主叙事。
     """
-    if not (status_label and status_meaning and score_class):
-        if score >= 80:
-            status_label = status_label or "暂未发现明显问题"
-            status_meaning = (
-                status_meaning
-                or "根据当前规则，暂未标出需特别注意的添加剂；仍请以包装与医嘱为准"
-            )
-            score_class = score_class or "score-safe"
-        elif score >= 60:
-            status_label = status_label or "有可留意项"
-            status_meaning = status_meaning or "含少量需留意的成分，请结合自身情况查看"
-            score_class = score_class or "score-caution"
-        else:
-            status_label = status_label or "含需关注成分"
-            status_meaning = (
-                status_meaning or "该食品含多种高关注配料，建议查看详情后再选择"
-            )
-            score_class = score_class or "score-danger"
+    _ = score  # 保留参数；主路径不展示
+
+    if not score_class:
+        score_class = "score-caution"
+    if not status_label:
+        status_label = "请对照包装查看"
+    if not status_meaning:
+        status_meaning = "结果仅供参考，请以包装与医嘱为准。"
 
     label = status_label
     meaning = status_meaning
@@ -71,75 +62,64 @@ def _render_score_hero(
     if scan_date:
         meta_html = f"<p class='product-meta'>配料表识别于 {_safe(scan_date)}</p>"
 
-    replay_btn = ""
-    if show_slow_replay:
-        replay_id = f"slow-replay-{score}"
-        replay_btn = (
-            f"<button id='{replay_id}' class='btn-replay food-scanner-tts-replay-btn' "
-            f"data-action='replay' aria-label='慢速再读一遍'>"
-            f"<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' "
-            f"stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>"
-            f"<path d='M1 4v6h6'/><path d='M3.51 15a9 9 0 1 0 2.13-9.36L1 10'/></svg>"
-            f"<span>慢速再读一遍</span></button>"
+    rec_html = ""
+    if recognition_label:
+        rec_html = (
+            f"<div class='recognition-state' role='status'>"
+            f"<span class='recognition-state-kicker'>识别状态</span>"
+            f"<span class='recognition-state-label'>{_safe(recognition_label)}</span>"
+            f"<p class='recognition-state-meaning'>{_safe(recognition_meaning or '')}</p>"
+            f"</div>"
         )
 
-    # data-target 供下方脚本做 0→score 滚动；先显示目标分避免脚本失败时空白
+    action_html = ""
+    if action_line:
+        action_html = (
+            f"<div class='family-verdict family-verdict-action' role='status'>"
+            f"<span class='family-verdict-kicker'>建议下一步</span>"
+            f"<p class='family-verdict-text'>{_safe(action_line)}</p>"
+            f"</div>"
+        )
+
+    score_block = ""
+    if show_score:
+        # 兼容旧测试/调试；生产路径默认关闭
+        score_block = (
+            f"<div class='score-circle'>"
+            f"<div class='score-ring'></div>"
+            f"<span class='score-number'>{int(score)}</span>"
+            f"<span class='score-label'>内部参考</span>"
+            f"</div>"
+        )
+
+    replay_btn = ""
+    if show_slow_replay:
+        replay_btn = (
+            "<button class='btn-replay food-scanner-tts-replay-btn' "
+            "data-action='replay' aria-label='慢速再读一遍'>"
+            "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' "
+            "stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>"
+            "<path d='M1 4v6h6'/><path d='M3.51 15a9 9 0 1 0 2.13-9.36L1 10'/></svg>"
+            "<span>慢速再读一遍</span></button>"
+        )
+
     st.markdown(
-        f"<div class='score-card {score_class}'>"
+        f"<div class='score-card {score_class} score-card-no-total'>"
         f"<div class='score-card-top'>"
         f"<div class='product-info'>"
         f"<h1 class='product-name'>{_safe(product_name)}</h1>"
         f"{meta_html}"
         f"</div>"
-        f"<div class='score-circle'>"
-        f"<div class='score-ring'></div>"
-        f"<span class='score-number' data-score-target='{int(score)}'>{int(score)}</span>"
-        f"<span class='score-label'>配料参考分</span>"
-        f"</div></div>"
+        f"{score_block}"
+        f"</div>"
+        f"{rec_html}"
         f"<div class='status-pill'>{pill_icon}<span>{_safe(label)}</span></div>"
         f"<p class='score-card-subtitle'>{_safe(meaning)}</p>"
+        f"{action_html}"
         f"<div class='score-card-footer'>"
         f"<p class='disclaimer'>结果仅供参考，不能代替医生诊断。"
         f"身体不适或患有疾病，请先咨询医生。</p>"
         f"{replay_btn}"
         f"</div></div>",
         unsafe_allow_html=True,
-    )
-    # 分数滚动动画（读 parent DOM；不依赖用户手势）
-    # 使用普通字符串，避免 flake8 F541（无占位 f-string）
-    components.html(
-        """
-        <script>
-        (function() {
-          try {
-            var doc = window.parent && window.parent.document;
-            if (!doc) return;
-            var nodes = doc.querySelectorAll('.score-number[data-score-target]');
-            if (!nodes || !nodes.length) return;
-            var el = nodes[nodes.length - 1];
-            if (el.getAttribute('data-animated') === '1') return;
-            el.setAttribute('data-animated', '1');
-            var target = parseInt(el.getAttribute('data-score-target') || '0', 10) || 0;
-            var duration = 900;
-            var start = 0;
-            var t0 = null;
-            function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
-            function frame(ts) {
-              if (t0 === null) t0 = ts;
-              var p = Math.min(1, (ts - t0) / duration);
-              var val = Math.round(start + (target - start) * easeOut(p));
-              el.textContent = String(val);
-              if (p < 1) {
-                window.parent.requestAnimationFrame(frame);
-              } else {
-                el.textContent = String(target);
-              }
-            }
-            el.textContent = '0';
-            window.parent.requestAnimationFrame(frame);
-          } catch (e) {}
-        })();
-        </script>
-        """,
-        height=0,
     )

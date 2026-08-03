@@ -3784,6 +3784,47 @@ div[data-testid="stElementContainer"]:has(.home-history-row-marker) + div[data-t
   color: #C62828;
 }
 
+/* 结果摘要内：识别状态 + 建议下一步（Ticket A 去分数化） */
+.score-card-no-total .score-card-top {
+  align-items: flex-start;
+}
+
+.recognition-state {
+  margin: 0 0 12px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-muted, #f5f5f5);
+  border: 1px solid var(--color-border);
+}
+
+.recognition-state-kicker {
+  display: block;
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-tertiary);
+  margin-bottom: 4px;
+}
+
+.recognition-state-label {
+  display: block;
+  font-size: var(--font-size-body-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.recognition-state-meaning {
+  margin: 6px 0 0 0;
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+.family-verdict-action {
+  margin: 12px 0 0 0;
+  border-left-color: var(--color-primary, #2E7D32);
+  background: var(--color-primary-light, #E8F5E9);
+}
+
 .additive-list-hint {
   margin: 0 0 var(--spacing-md) 0;
   font-size: var(--font-size-body-sm);
