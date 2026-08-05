@@ -1,6 +1,6 @@
 # 验证执行看板
 
-> 更新日期：2026-08-03  
+> 更新日期：2026-08-03（**Wave1 已开跑**）  
 > 地图：[#26](https://github.com/gongyijie85/ai-food-scanner/issues/26)  
 > 规格：[#53 扩招与真人证据](https://github.com/gongyijie85/ai-food-scanner/issues/53)  
 > 手册：[validation-recruitment-kit.md](validation-recruitment-kit.md)  
@@ -18,8 +18,8 @@
 | 信任止血 A–E（呈现契约/清单/门槛） | ✅ #48–#52 已关 |
 | 证据账本接缝（#53） | ✅ 字段 + 校验 + 场次单 |
 | 公开链接探活 | ⏳ 扩招前 owner 再测 |
-| 招募执行 | ⏳ **待 owner**（有条件允许扩招） |
-| 有效子女样本 ≥8 | ⏳ 未开始 |
+| 招募执行 | ▶️ **Wave1 开跑** — [validation-wave1-kickoff.md](validation-wave1-kickoff.md) |
+| 有效子女样本 ≥8 | ⏳ 0 / 8 |
 | Go / Pivot / Stop 判定 | ⏳ 样本达标后 |
 
 ## 每波扩招前（5 分钟）
@@ -29,14 +29,15 @@
 - [ ] 用 `default_wechat_invite` 口径发邀（或 kit 话术），禁医疗承诺  
 - [ ] 复制 CSV 新 wave 行；纸质场用 field-sheet  
 
-## 本周 checklist（owner）
+## Wave1 checklist（owner · 今天）
 
 - [ ] 自己手机完整走通 L2（**不要**用 `?demo=1` 冒充真样本）  
-- [ ] 列出 30–50 名可邀请子女  
-- [ ] 发出 ≥15 条微信 1v1  
-- [ ] 每完成 1 人：脚本 + 写入 CSV（含 recognition_honesty / gate_incident）  
+- [ ] G6：Cloud/本地密钥自测通过  
+- [ ] 名单填满 30 人（kickoff 表）  
+- [ ] 发出 ≥15 条微信 1v1（kickoff 话术）  
+- [ ] 每完成 1 人：脚本 + 写入 CSV（`wave=wave1`）  
 - [ ] 第 5–7 天跟进复扫  
-- [ ] 每波结束：评论 #40 附 `summarize` 口径（有效 n / 再用 / 付费信号 / 事故）  
+- [ ] 波次小结评论 #40（有效 n / 再用 / 付费信号 / 事故）  
 
 ## 链接
 
